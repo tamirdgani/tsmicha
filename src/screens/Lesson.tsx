@@ -14,7 +14,7 @@ import { clock, CountUp, useNow, useShortScreen } from '../ds/ui'
 import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { Calc, Explain, Mcq, Scenario, Sort, type Status, Basket, Week } from '../lesson/Steps'
-import { Build, Match, Order, Pick, Trace } from '../lesson/KidSteps'
+import { Build, Fact, Match, Order, Pick, Trace } from '../lesson/KidSteps'
 import { Memory, Puzzle } from '../lesson/Games'
 import { useAuth } from '../lib/auth'
 import { CHALLENGE_XP, completePart, failPart, loadProgress, lockOf, PARTS_PER_LESSON, PASS_RATE, recordChoice, type PartLock, type PartResult } from '../lib/progress'
@@ -205,6 +205,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
             {item.step.kind === 'match' && <Match step={item.step} status={status} report={report} />}
             {item.step.kind === 'build' && <Build step={item.step} status={status} report={report} />}
             {item.step.kind === 'trace' && <Trace step={item.step} report={report} />}
+            {item.step.kind === 'fact' && <Fact step={item.step} report={report} />}
             {item.step.kind === 'puzzle' && <Puzzle step={item.step} report={report} />}
             {item.step.kind === 'memory' && <Memory step={item.step} report={report} />}
             {item.step.kind === 'scenario' && <Scenario step={item.step} report={report} onChoose={(i) => recordChoice(uid, choiceKey(lessonId, partIndex, item.idx), i)} />}

@@ -47,8 +47,11 @@ export type PuzzleStep = { kind: 'puzzle'; title: L; g: string; word?: string; e
 /** Memory: flip two cards, find the pairs (letter ↔ picture, digit ↔ amount, rhymes…). Not graded; finishing is the win. */
 export type MemoryStep = { kind: 'memory'; title: L; pairs: [Tile, Tile][] }
 
+/** "Did you know?" — a short surprising fact for the parent to read aloud. Not graded. */
+export type FactStep = { kind: 'fact'; e: string; text: L }
+
 export type Step = ExplainStep | McqStep | PredictStep | SortStep | CalcStep | ScenarioStep | BasketStep | WeekStep
-  | PickStep | OrderStep | MatchStep | TraceStep | BuildStep | PuzzleStep | MemoryStep
+  | PickStep | OrderStep | MatchStep | TraceStep | BuildStep | PuzzleStep | MemoryStep | FactStep
 /** `teaser`: a question from the next part, shown when this part ends. */
 export type Part = { title: L; steps: Step[]; teaser?: L }
 /** `teaser`: a question from the next lesson, shown when the last part ends. */

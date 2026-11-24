@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import type { BuildStep, MatchStep, OrderStep, PickStep, Shape, Show, Tile, TraceStep } from '../curriculum/lessonTypes'
+import type { BuildStep, FactStep, MatchStep, OrderStep, PickStep, Shape, Show, Tile, TraceStep } from '../curriculum/lessonTypes'
 import { Icon } from '../ds/Icon'
 import { useI18n } from '../i18n/I18n'
 import type { Report, Status } from './Steps'
@@ -191,6 +191,24 @@ function Mark({ s }: { s: CardState }) {
 
 function Question({ text }: { text: string }) {
   return <motion.h2 {...rise()} className="t-h1 m-0 text-center" style={{ textWrap: 'balance' }}>{text}</motion.h2>
+}
+
+/* ─────────────────────────── Did you know? ─────────────────────────── */
+
+export function Fact({ step, report }: { step: FactStep; report: Report }) {
+  const { t, pick } = useI18n()
+  useEffect(() => report(true, true), [report])
+  return (
+    <div className="flex flex-col items-center text-center">
+      <motion.span {...rise()} className="chip chip-sun" style={{ height: 34, fontSize: 16 }}><Icon name="sparkle" size={16} />{t('fact.title')}</motion.span>
+      <motion.div initial={{ scale: 0.3, rotate: -20, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 12, delay: 0.1 }}
+        className="grid place-items-center rounded-full mt-5" style={{ width: 150, height: 150, background: 'var(--sun-soft)' }}>
+        <span style={{ fontFamily: EMOJI_FONT, fontSize: 84, lineHeight: 1 }} aria-hidden="true">{step.e}</span>
+      </motion.div>
+      <motion.p {...rise(0.25)} className="t-h2 mt-5 mb-0 max-w-lg" style={{ textWrap: 'balance', lineHeight: 1.45 }}>{pick(step.text)}</motion.p>
+      <motion.p {...rise(0.4)} className="t-small ink-2 mt-3 mb-0 flex items-center gap-1.5"><Icon name="book" size={14} />{t('fact.read')}</motion.p>
+    </div>
+  )
 }
 
 /* ─────────────────────────── Pick the right card ─────────────────────────── */

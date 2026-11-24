@@ -4,11 +4,11 @@
    Generation is seeded by the lesson id, so a lesson is the same every time it's opened. */
 
 import type { L, PathNode, Skill, Spec } from './course'
-import type { ExplainStep, Lesson, MemoryStep, Part, PuzzleStep, Shape, Step, Tile } from './lessonTypes'
+import type { ExplainStep, FactStep, Lesson, MemoryStep, Part, PuzzleStep, Shape, Step, Tile } from './lessonTypes'
 import {
   alike, CATS, CLEAR_SOUNDS, COLORS, CRITTERS, DAYS, FEELINGS, LETTER_NAME, LETTERS, PLACES, RHYMES, ROUTINE, SCHOOLBAG,
   SEASONS, SHAPES, SHORT2, SHORT3, SOCIAL, SORT_PAIRS, SORT_PAIRS_HARD, STORIES, SYLL, WORDS_BY_LETTER, type Pic,
-  ANALOGIES, CORNERS, FEEL_THINK, KIDS, LOOKALIKE, MIXES, ODD_PROPS, PROP_SORTS,
+  ANALOGIES, CORNERS, FEEL_THINK, KIDS, LOOKALIKE, MIXES, ODD_PROPS, PROP_SORTS, FACTS, type Fact,
 } from './kdata'
 
 /* ───────── seeded randomness ───────── */
@@ -665,11 +665,14 @@ export function buildLesson(node: PathNode): Lesson {
   const specs = node.specs.length ? node.specs : [{ s: 'count' as Skill }]
   const isMix = node.kind !== 'lesson'
   let turn = int(r, 0, specs.length - 1)
+  const used = new Set<string>()
   const nextSpec = () => specs[turn++ % specs.length]
 
   const parts: Part[] = PART_STEPS.map((count, d) => {
     const steps: Step[] = []
     if (d === 0) steps.push(intro(node, specs[0], isMix))
+    // parts 2 and 3 open with a "did you know?" — a breather, and something to wonder about
+    else steps.push(factFor(specs, used, r))
     const seen = new Set<string>()
     for (let i = 0; i < count; i++) {
       let step: Step | null = null
@@ -694,6 +697,14 @@ export function buildLesson(node: PathNode): Lesson {
     return { title: he(PART_TITLES[d]), steps, teaser: d < 2 ? he(d === 0 ? 'עוד תרגול, ופיקו כבר מתלהב!' : 'שאלת אתגר מחכה בסוף!') : undefined }
   })
   return { id: node.id, parts }
+}
+
+/** A fact from this lesson's topics (never the same one twice in a lesson), or a general one. */
+function factFor(specs: Spec[], used: Set<string>, r: R): FactStep {
+  const pool: Fact[] = specs.flatMap((s) => FACTS[s.s] ?? []).filter((f) => !used.has(f.t))
+  const f = pool.length ? one(r, pool) : one(r, FACTS.general.filter((x) => !used.has(x.t)))
+  used.add(f.t)
+  return { kind: 'fact', e: f.e, text: he(f.t) }
 }
 
 function intro(node: PathNode, sp: Spec, isMix: boolean): ExplainStep {
