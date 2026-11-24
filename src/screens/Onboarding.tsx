@@ -13,8 +13,8 @@ import { useAuth, type User } from '../lib/auth'
 import { focusUnits, goalXp, type AgeRange, type Goal, type Minutes, type Profile, type Situation } from '../lib/profile'
 import { sfx } from '../lib/sfx'
 
-type Step = 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy' | 'plant'
-const ORDER: Step[] = ['welcome', 'age', 'goal', 'sit', 'time', 'buddy', 'plant']
+type Step = 'name' | 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy' | 'plant'
+const ORDER: Step[] = ['name', 'welcome', 'age', 'goal', 'sit', 'time', 'buddy', 'plant']
 const QUESTIONS: Step[] = ['age', 'goal', 'sit', 'time', 'buddy']
 
 const AGES: AgeRange[] = ['pre', 'k', 'g1', 'g2']
@@ -37,9 +37,9 @@ const TIMES: Minutes[] = [5, 10, 15, 20]
 export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) => void }) {
   const { t, dir } = useI18n()
   const { signOut } = useAuth()
-  const [step, setStep] = useState<Step>('welcome')
+  const [step, setStep] = useState<Step>('name')
   const [forward, setForward] = useState(true)
-  const [name, setName] = useState(user.firstName)
+  const [name, setName] = useState('')
   const [age, setAge] = useState<AgeRange | null>(null)
   const [goal, setGoal] = useState<Goal | null>(null)
   const [sit, setSit] = useState<Situation[]>([])
@@ -67,7 +67,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
   useEffect(() => () => window.clearTimeout(advTimer.current), [])
 
   const canNext =
-    step === 'welcome' || (step === 'age' && !!age) || (step === 'goal' && !!goal) || (step === 'sit' && sit.length > 0) || (step === 'time' && !!minutes) || (step === 'buddy' && !!buddy)
+    (step === 'name' && name.trim().length > 0) || step === 'welcome' || (step === 'age' && !!age) || (step === 'goal' && !!goal) || (step === 'sit' && sit.length > 0) || (step === 'time' && !!minutes) || (step === 'buddy' && !!buddy)
 
   // Keyboard: 1–n picks an option, Enter continues.
   useEffect(() => {
@@ -94,6 +94,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
   }
 
   const say: Record<Step, string> = {
+    name: t('ob.name.say'),
     welcome: t('ob.welcome.say', { name }),
     age: t('ob.age.say'),
     goal: t('ob.goal.say'),
@@ -113,17 +114,16 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
   return (
     <div className="h-dvh flex flex-col overflow-hidden">
       <header className="shrink-0 max-w-2xl w-full mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center gap-3">
-        <div className={step === 'welcome' ? '' : 'w-11'}>
-          {step === 'welcome' && <Logo size={28} />}
+        <div className={step === 'welcome' || step === 'name' ? '' : 'w-11'}>
+          {step === 'name' && <Logo size={28} />}
           {idx > 0 && step !== 'plant' && (
             <button className={cn(buttonVariants({ variant: 'ghost', size: 'icon-lg' }))} onClick={back} aria-label={t('ob.back')}>
               <Icon name="chevron" style={{ transform: dir === 'rtl' ? 'none' : 'scaleX(-1)' }} />
             </button>
           )}
         </div>
-        <div className="flex-1 flex gap-1.5" role="progressbar" aria-valuemin={0} aria-valuemax={QUESTIONS.length} aria-valuenow={Math.max(0, qIndex)}
-          aria-label={qIndex >= 0 ? t('ob.step', { i: qIndex + 1, n: QUESTIONS.length }) : undefined}>
-          {step !== 'welcome' && QUESTIONS.map((q, i) => (
+        <div className="flex-1 flex gap-1.5" {...(qIndex >= 0 || step === 'plant' ? { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': QUESTIONS.length, 'aria-valuenow': Math.max(0, qIndex), 'aria-label': t('ob.step', { i: Math.max(0, qIndex) + 1, n: QUESTIONS.length }) } : {})}>
+          {step !== 'welcome' && step !== 'name' && QUESTIONS.map((q, i) => (
             <span key={q} className="h-2.5 flex-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-deep)' }}>
               <motion.i className="block h-full rounded-full" style={{ background: 'var(--brand)' }}
                 initial={false} animate={{ width: step === 'plant' || i < qIndex ? '100%' : i === qIndex ? '50%' : '0%' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} />
@@ -139,12 +139,14 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
 
       <main className="flex-1 min-h-0 w-full max-w-2xl mx-auto flex flex-col">
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 pb-3" data-ob-main>
-        {step !== 'plant' && step !== 'welcome' && step !== 'buddy' && <SproutSays mood={mood} text={react ?? say[step]} />}
+        {step !== 'plant' && step !== 'welcome' && step !== 'name' && step !== 'buddy' && <SproutSays mood={mood} text={react ?? say[step]} />}
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.section key={step} className="mt-3 sm:mt-6"
             initial={{ opacity: 0, x: slide }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -slide }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+
+            {step === 'name' && <NameStep text={say.name} name={name} setName={setName} onDone={() => { if (name.trim()) { setName(name.trim()); next() } }} />}
 
             {step === 'welcome' && <Welcome text={say.welcome} name={name} setName={setName} />}
 
@@ -185,9 +187,9 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
         </div>
         {step !== 'plant' && (
           <div className="shrink-0 px-4 sm:px-6 py-3 sm:pt-6 sm:pb-10 max-sm:border-t" style={{ background: 'var(--bg)', borderColor: 'var(--line)' }}>
-            <div className={`max-w-2xl mx-auto flex items-center gap-4 ${step === 'welcome' ? 'sm:justify-center' : ''}`}>
+            <div className={`max-w-2xl mx-auto flex items-center gap-4 ${step === 'welcome' || step === 'name' ? 'sm:justify-center' : ''}`}>
               <button className={cn(buttonVariants({ variant: 'default', size: 'xl' }), 'flex-1 sm:flex-none sm:min-w-56')} onClick={next} disabled={!canNext}>
-                {step === 'welcome' ? t('ob.welcome.cta') : step === 'buddy' && buddy ? t('ob.buddy.cta') : t('ob.next')}
+                {step === 'name' ? t('ob.next') : step === 'welcome' ? t('ob.welcome.cta') : step === 'buddy' && buddy ? t('ob.buddy.cta') : t('ob.next')}
               </button>
               {qIndex >= 0 && step !== 'buddy' && <span className="hidden sm:inline t-small ink-3">{t('ob.hint.keys', { n: step === 'goal' || step === 'sit' ? 5 : 4 })}</span>}
             </div>
@@ -209,7 +211,8 @@ function SproutSays({ text, mood, big }: { text: string; mood: SproutMood; big?:
         <Sprout size={big ? (short ? 100 : 140) : short ? 68 : 96} stage={1} mood={mood} />
       </motion.div>
       <div className="relative card px-4 py-3 sm:px-5 sm:py-4 mb-4 sm:mb-6 flex-1" style={{ borderRadius: 22, borderEndStartRadius: 6 }}>
-        <p className={`m-0 font-semibold ${big ? 't-h2' : 't-h3'}`} aria-live="polite" aria-label={text}>
+        <p className={`m-0 font-semibold ${big ? 't-h2' : 't-h3'}`} aria-live="polite">
+          <span className="sr-only">{text}</span>
           <span aria-hidden="true">{shown}</span>
           <span aria-hidden="true" className="invisible">{text.slice(shown.length)}</span>
         </p>
@@ -245,7 +248,8 @@ function Welcome({ text, name, setName }: { text: string; name: string; setName:
   return (
     <div className="flex flex-col items-center text-center pt-2 sm:pt-8">
       <div className="relative card px-6 py-5 max-w-md" style={{ borderRadius: 24 }}>
-        <p className="m-0 t-h2" aria-live="polite" aria-label={text}>
+        <p className="m-0 t-h2" aria-live="polite">
+          <span className="sr-only">{text}</span>
           <span aria-hidden="true">{shown}</span><span aria-hidden="true" className="invisible">{text.slice(shown.length)}</span>
         </p>
         <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45" style={{ background: 'var(--surface)', borderRight: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }} />
@@ -261,31 +265,34 @@ function Welcome({ text, name, setName }: { text: string; name: string; setName:
         ))}
       </ol>
       <p className="t-small ink-3 mt-3 mb-2">{t('ob.prev.time.total')}</p>
-      <NameEditor name={name} setName={setName} />
     </div>
   )
 }
 
-function NameEditor({ name, setName }: { name: string; setName: (s: string) => void }) {
+/** The very first screen: Piko asks the child's name, so everything after can talk to them by name. */
+function NameStep({ text, name, setName, onDone }: { text: string; name: string; setName: (s: string) => void; onDone: () => void }) {
   const { t } = useI18n()
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(name)
-  if (!editing) {
-    return (
-      <button className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'ink-2')} onClick={() => { setDraft(name); setEditing(true) }}>
-        <Icon name="user" size={16} />{t('ob.welcome.name', { name })}
-      </button>
-    )
-  }
+  const short = useShortScreen()
+  const shown = useTypewriter(text)
   return (
-    <form className="card p-4 flex flex-wrap items-end gap-3 max-w-md" onSubmit={(e) => { e.preventDefault(); if (draft.trim()) { setName(draft.trim()); setEditing(false) } }}>
-      <label className="flex-1 min-w-48">
-        <span className="t-small ink-2 font-medium">{t('ob.welcome.nameLabel')}</span>
-        <input autoFocus value={draft} maxLength={24} onChange={(e) => setDraft(e.target.value)}
-          className="mt-1 w-full h-12 px-4 rounded-lg font-semibold outline-none"
-          style={{ background: 'var(--surface-2)', border: '1.5px solid var(--line-strong)', color: 'var(--ink)', font: 'inherit' }} />
+    <form className="flex flex-col items-center text-center pt-2 sm:pt-8" onSubmit={(e) => { e.preventDefault(); onDone() }}>
+      <div className="relative card px-6 py-5 max-w-md" style={{ borderRadius: 24 }}>
+        <p className="m-0 t-h2" aria-live="polite">
+          <span className="sr-only">{text}</span>
+          <span aria-hidden="true">{shown}</span><span aria-hidden="true" className="invisible">{text.slice(shown.length)}</span>
+        </p>
+        <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45" style={{ background: 'var(--surface)', borderRight: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }} />
+      </div>
+      <motion.div className="mt-4" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 15, delay: 0.1 }}>
+        <Sprout size={short ? 110 : 150} stage={1} mood={name.trim() ? 'cheer' : 'happy'} />
+      </motion.div>
+      <label className="w-full max-w-sm mt-5 text-start">
+        <span className="t-small ink-2 font-medium">{t('ob.name.label')}</span>
+        <input id="child-name" autoFocus value={name} maxLength={24} onChange={(e) => setName(e.target.value)} placeholder={t('ob.name.placeholder')}
+          className="mt-1 w-full h-14 px-4 rounded-xl font-bold outline-none text-center"
+          style={{ background: 'var(--surface)', border: '1.5px solid var(--line-strong)', color: 'var(--ink)', font: 'inherit', fontSize: 22 }} />
       </label>
-      <button className={cn(buttonVariants({ variant: 'default', size: 'lg' }))} type="submit">{t('ob.welcome.nameSave')}</button>
+      <p className="t-small ink-3 mt-2 mb-0">{t('ob.name.hint')}</p>
     </form>
   )
 }
@@ -484,7 +491,7 @@ function PlantStep({ profile, onDone }: { profile: Profile; onDone: () => void }
       </div>
 
       {/* scene */}
-      <button onClick={plant} disabled={phase !== 'idle'} aria-label={t('ob.plant.cta')}
+      <button onClick={plant} disabled={phase !== 'idle'} aria-label={`${t('ob.plant.hint')}: ${t('ob.plant.cta')}`}
         className={`relative mt-4 sm:mt-6 w-full max-w-md rounded-2xl overflow-hidden border-0 p-0 transition-[height] duration-700 ${phase === 'grown' ? 'h-[clamp(170px,26dvh,288px)]' : 'h-[clamp(200px,40dvh,288px)]'}`}
         style={{ background: 'var(--brand-soft)', cursor: phase === 'idle' ? 'pointer' : 'default' }}>
         {/* sun */}

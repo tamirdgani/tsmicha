@@ -7,8 +7,8 @@
 @theme {
   --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
 
-  --color-leaf-50: #edfaf3;
-  --color-leaf-100: #d6f4e5;
+  --color-leaf-50: #e6f8ee;
+  --color-leaf-100: #cdf1de;
   --color-leaf-200: #b5ebd2;
   --color-leaf-300: #93dfbd;
   --color-leaf-400: #74d1a8;
@@ -18,14 +18,14 @@
   --color-leaf-800: #1f6b4b;
   --color-leaf-900: #134733;
 
-  --color-lime: #cff5dd;
-  --color-sun: #ffd97a;
+  --color-lime: #c2f2d3;
+  --color-sun: #ffd25e;
   --color-sun-ink: #7a5600;
-  --color-flame: #ffb38a;
+  --color-flame: #ffa77a;
   --color-flame-ink: #8a2e0b;
-  --color-sky: #9ccbff;
+  --color-sky: #8cc4ff;
   --color-sky-ink: #0b4a8f;
-  --color-berry: #c3b1f5;
+  --color-berry: #b8a3f7;
   --color-berry-ink: #3d2799;
 
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -41,7 +41,7 @@
   --bg: var(--background);
   --bg-deep: var(--muted);
   --surface: var(--card);
-  --surface-2: #f9fbff;
+  --surface-2: #f7f9ff;
   --ink: var(--foreground);
   --ink-2: #4a5370;
   --ink-3: var(--muted-foreground);
@@ -55,14 +55,14 @@
   --brand-ink: var(--color-leaf-800);
   --on-brand: var(--primary-foreground);
 
-  --sun-soft: #fff6d9;
+  --sun-soft: #fff1c9;
   --sun-text: #7a5600;
   --flame-text: #9a3412;
-  --flame-soft: #ffece2;
-  --sky-soft: #e6f1ff;
-  --berry-soft: #efe9ff;
+  --flame-soft: #ffe4d6;
+  --sky-soft: #ddebff;
+  --berry-soft: #ebe3ff;
   --danger: var(--destructive);
-  --danger-soft: #ffe8e6;
+  --danger-soft: #ffe1de;
 
   /* Accessible accents. The raw palette (sky, berry, flame, sun) is for fills and illustrations;
      anything that carries meaning — text, borders of selected states, progress rings, icons on fills —

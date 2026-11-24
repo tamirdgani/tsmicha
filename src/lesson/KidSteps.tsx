@@ -142,7 +142,10 @@ function cardStyle(s: CardState, accent?: string): CSSProperties {
   return {
     font: 'inherit', color: 'var(--ink)', background: bg, border: `2px solid ${border}`,
     boxShadow: s === 'idle' || s === 'dim' ? '0 3px 0 var(--line-strong)' : `0 0 0 3px color-mix(in oklab, ${border} 22%, transparent)`,
-    opacity: s === 'dim' ? 0.4 : 1, transition: 'background .15s, border-color .15s, box-shadow .15s, opacity .2s',
+    // a dimmed card (not chosen, after checking) steps back with a quieter fill and greyed pictures,
+    // but its words keep full contrast (WCAG 1.4.3) — no opacity on text
+    ...(s === 'dim' ? { background: 'var(--muted)', boxShadow: 'none', filter: 'grayscale(.7)' } : {}),
+    transition: 'background .15s, border-color .15s, box-shadow .15s, filter .2s',
   }
 }
 function Mark({ s }: { s: CardState }) {
@@ -183,7 +186,7 @@ export function Pick({ step, status, report }: { step: PickStep; status: Status;
           return (
             <motion.button key={i} {...rise(0.1 + i * 0.05)} role="radio" aria-checked={sel === i} onClick={() => choose(i)}
               whileTap={locked ? undefined : { scale: 0.95 }}
-              animate={s === 'wrong' ? { x: [0, -8, 8, -5, 5, 0], opacity: 1, y: 0 } : s === 'right' ? { scale: [1, 1.06, 1], opacity: 1, y: 0 } : { opacity: s === 'dim' ? 0.4 : 1, y: 0 }}
+              animate={s === 'wrong' ? { x: [0, -8, 8, -5, 5, 0], opacity: 1, y: 0 } : s === 'right' ? { scale: [1, 1.06, 1], opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
               className={`relative grid place-items-center rounded-2xl p-3 ${textOnly ? 'min-h-20' : 'min-h-32 sm:min-h-36'}`}
               style={{ ...cardStyle(s), cursor: locked ? 'default' : 'pointer' }}>
               <TileView tile={o} />

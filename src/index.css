@@ -9,23 +9,23 @@
 :root {
   /* pastel: soft sky page, mint brand, dark navy text (all text ≥ 4.5:1) */
   --radius: 0.75rem;
-  --background: #f6f8ff;
+  --background: #f4f7ff;
   --foreground: #2b3350;
   --card: #ffffff;
   --card-foreground: #2b3350;
   --popover: #ffffff;
   --popover-foreground: #2b3350;
-  --primary: #8fd9b6;
-  --primary-foreground: #0f3d2a;
-  --secondary: #eef2fb;
+  --primary: #6fd3a5;
+  --primary-foreground: #0b3324;
+  --secondary: #eaeffb;
   --secondary-foreground: #2b3350;
-  --muted: #eef2fb;
+  --muted: #eaeffb;
   --muted-foreground: #5f6985; /* 5.3:1 on white, 4.9:1 on muted — WCAG AA */
-  --accent: #eef2fb;
+  --accent: #eaeffb;
   --accent-foreground: #2b3350;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #e2e7f3;
-  --input: #e2e7f3;
+  --border: #dde4f3;
+  --input: #dde4f3;
   --ring: #268259; /* focus outline: 5:1 on white */
 }
 

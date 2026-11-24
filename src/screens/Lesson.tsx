@@ -157,7 +157,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
       <header className="shrink-0 max-w-3xl w-full mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center gap-3">
         <button className={cn(buttonVariants({ variant: 'ghost', size: 'icon-lg' }))} aria-label={t('lesson.exit')} onClick={() => setExitOpen(true)}><Icon name="x" /></button>
         <div className="flex-1">
-          <div className="bar" style={{ height: 14 }} role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <div className="bar" style={{ height: 14 }} role="progressbar" aria-label={t('lesson.progress')} aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
             <i style={{ width: `${Math.max(3, progress * 100)}%`, background: 'var(--brand)', boxShadow: 'inset 0 -4px 0 rgb(0 0 0 / .12)' }} />
           </div>
         </div>
@@ -346,7 +346,7 @@ function PartComplete({ lessonTitle, partIndex, result, questions, missed, secon
       <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="ink-2 mt-2 mb-0">{lessonTitle}</motion.p>
 
       {/* lesson parts tracker */}
-      <div className="flex gap-2 mt-4" aria-label={t('lesson.partOf', { i: num(partIndex + 1), n: num(PARTS_PER_LESSON) })}>
+      <div className="flex gap-2 mt-4" role="img" aria-label={t('lesson.partOf', { i: num(partIndex + 1), n: num(PARTS_PER_LESSON) })}>
         {Array.from({ length: PARTS_PER_LESSON }, (_, i) => (
           <motion.span key={i} className="h-3 w-14 rounded-full" initial={{ background: 'var(--bg-deep)' }}
             animate={{ background: i <= partIndex ? 'var(--brand)' : 'var(--bg-deep)' }} transition={{ delay: i === partIndex ? 0.6 : 0, duration: 0.4 }} />
