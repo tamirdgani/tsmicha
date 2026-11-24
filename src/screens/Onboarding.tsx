@@ -8,7 +8,7 @@ import { Sprout, type SproutMood } from '../ds/Sprout'
 import { LangThemeToggles, Logo, useShortScreen } from '../ds/ui'
 import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
-import type { User } from '../lib/auth'
+import { useAuth, type User } from '../lib/auth'
 import { focusUnits, goalXp, type AgeRange, type Goal, type Minutes, type Profile, type Situation } from '../lib/profile'
 
 type Step = 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'plant'
@@ -34,6 +34,7 @@ const TIMES: Minutes[] = [5, 10, 15, 20]
 
 export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) => void }) {
   const { t, dir } = useI18n()
+  const { signOut } = useAuth()
   const [step, setStep] = useState<Step>('welcome')
   const [forward, setForward] = useState(true)
   const [name, setName] = useState(user.firstName)
@@ -126,6 +127,10 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
           ))}
         </div>
         <LangThemeToggles />
+        {/* a way back to the login screen, e.g. to sign in with a different account */}
+        <button className={cn(buttonVariants({ variant: 'ghost', size: 'icon-lg' }))} onClick={signOut} aria-label={t('menu.signout')} title={t('menu.signout')}>
+          <Icon name="logout" />
+        </button>
       </header>
 
       <main className="flex-1 min-h-0 w-full max-w-2xl mx-auto flex flex-col">
