@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { BuddyId } from '../ds/buddies'
 
 /** The child's stage this year. */
 export type AgeRange = 'pre' | 'k' | 'g1' | 'g2'
@@ -14,6 +15,8 @@ export type Profile = {
   goal: Goal
   situation: Situation[]
   minutes: Minutes
+  /** The Piko the child picked; older profiles may not have one yet. */
+  buddy?: BuddyId
   createdAt: string
 }
 
@@ -41,10 +44,17 @@ export function useProfile(uid: string | undefined) {
     if (uid) try { const raw = localStorage.getItem(key(uid)); profile = raw ? JSON.parse(raw) : null } catch { /* ignore */ }
     setState({ uid, profile })
   }, [uid])
+  // Other screens holding the profile (e.g. the Piko everyone draws) refresh when it's saved.
+  useEffect(() => {
+    const onSave = (e: Event) => { const d = (e as CustomEvent<{ uid: string; profile: Profile }>).detail; if (d.uid === uid) setState(d) }
+    window.addEventListener('kfitza-profile', onSave)
+    return () => window.removeEventListener('kfitza-profile', onSave)
+  }, [uid])
   const save = useCallback((p: Profile) => {
     if (!uid) return
     try { localStorage.setItem(key(uid), JSON.stringify(p)) } catch { /* private mode */ }
     setState({ uid, profile: p })
+    window.dispatchEvent(new CustomEvent('kfitza-profile', { detail: { uid, profile: p } }))
   }, [uid])
   return { profile: state.profile, loaded: state.uid === uid, save }
 }

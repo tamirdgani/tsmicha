@@ -35,6 +35,7 @@
 /* Legacy semantic names, now mapped onto the shadcn tokens in index.css.
    Neutral surfaces; green only for brand, progress and success. */
 :root {
+  --paper-line: rgb(31 111 197 / 0.09);
   --bg: var(--background);
   --bg-deep: var(--muted);
   --surface: var(--card);
@@ -78,6 +79,7 @@
 }
 
 :root[data-theme="dark"] {
+  --paper-line: rgb(156 202 255 / 0.07);
   --surface-2: oklch(0.18 0 0);
   --ink-2: oklch(0.8 0 0);
   --line-strong: oklch(1 0 0 / 18%);
@@ -186,6 +188,8 @@ body {
 @keyframes twinkle { 0%,100% { transform: scale(0.4) rotate(0deg); opacity: 0; } 45% { transform: scale(1) rotate(45deg); opacity: 1; } 70% { opacity: .2; } }
 @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @keyframes ping-ring { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(1.55); opacity: 0; } }
+/* notebook-grid patches in the background (PaperGrid.tsx): fade in, linger, fade out */
+@keyframes paper-patch { 0% { opacity: 0; } 25% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes float-up { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {

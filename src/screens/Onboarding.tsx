@@ -5,15 +5,16 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { FIN_LIT, courseMinutes } from '../curriculum/course'
 import { Icon, type IconName } from '../ds/Icon'
 import { Sprout, type SproutMood } from '../ds/Sprout'
+import { BUDDIES, buddyInfo, type BuddyId } from '../ds/buddies'
 import { LangThemeToggles, Logo, useShortScreen } from '../ds/ui'
 import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { useAuth, type User } from '../lib/auth'
 import { focusUnits, goalXp, type AgeRange, type Goal, type Minutes, type Profile, type Situation } from '../lib/profile'
 
-type Step = 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'plant'
-const ORDER: Step[] = ['welcome', 'age', 'goal', 'sit', 'time', 'plant']
-const QUESTIONS: Step[] = ['age', 'goal', 'sit', 'time']
+type Step = 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy' | 'plant'
+const ORDER: Step[] = ['welcome', 'age', 'goal', 'sit', 'time', 'buddy', 'plant']
+const QUESTIONS: Step[] = ['age', 'goal', 'sit', 'time', 'buddy']
 
 const AGES: AgeRange[] = ['pre', 'k', 'g1', 'g2']
 const GOALS: { id: Goal; icon: IconName }[] = [
@@ -42,6 +43,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
   const [goal, setGoal] = useState<Goal | null>(null)
   const [sit, setSit] = useState<Situation[]>([])
   const [minutes, setMinutes] = useState<Minutes | null>(null)
+  const [buddy, setBuddy] = useState<BuddyId | null>(null)
   const [react, setReact] = useState<string | null>(null)
   const advTimer = useRef<number>()
 
@@ -64,7 +66,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
   useEffect(() => () => window.clearTimeout(advTimer.current), [])
 
   const canNext =
-    step === 'welcome' || (step === 'age' && !!age) || (step === 'goal' && !!goal) || (step === 'sit' && sit.length > 0) || (step === 'time' && !!minutes)
+    step === 'welcome' || (step === 'age' && !!age) || (step === 'goal' && !!goal) || (step === 'sit' && sit.length > 0) || (step === 'time' && !!minutes) || (step === 'buddy' && !!buddy)
 
   // Keyboard: 1–n picks an option, Enter continues.
   useEffect(() => {
@@ -96,14 +98,15 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
     goal: t('ob.goal.say'),
     sit: t('ob.sit.say'),
     time: t('ob.time.say'),
+    buddy: t('ob.buddy.say', { name }),
     plant: t('ob.plant.say'),
   }
   const mood: SproutMood = react ? 'cheer' : step === 'welcome' ? 'happy' : 'think'
   const qIndex = QUESTIONS.indexOf(step)
   const slide = (forward ? 1 : -1) * (dir === 'rtl' ? -1 : 1) * 40
 
-  const profile: Profile | null = age && goal && minutes && sit.length
-    ? { name: name.trim() || user.firstName, age, goal, situation: sit, minutes, createdAt: new Date().toISOString() }
+  const profile: Profile | null = age && goal && minutes && sit.length && buddy
+    ? { name: name.trim() || user.firstName, age, goal, situation: sit, minutes, buddy, createdAt: new Date().toISOString() }
     : null
 
   return (
@@ -135,7 +138,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
 
       <main className="flex-1 min-h-0 w-full max-w-2xl mx-auto flex flex-col">
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 pb-3" data-ob-main>
-        {step !== 'plant' && step !== 'welcome' && <SproutSays mood={mood} text={react ?? say[step]} />}
+        {step !== 'plant' && step !== 'welcome' && step !== 'buddy' && <SproutSays mood={mood} text={react ?? say[step]} />}
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.section key={step} className="mt-3 sm:mt-6"
@@ -170,6 +173,8 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
               </Options>
             )}
 
+            {step === 'buddy' && <BuddyStep name={name} text={say.buddy} buddy={buddy} pick={setBuddy} />}
+
             {step === 'time' && <TimeStep minutes={minutes} pick={(m) => { setMinutes(m); setReact(t('ob.time.react')) }} />}
 
             {step === 'plant' && profile && <PlantStep profile={profile} onDone={() => onDone(profile)} />}
@@ -181,9 +186,9 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
           <div className="shrink-0 px-4 sm:px-6 py-3 sm:pt-6 sm:pb-10 max-sm:border-t" style={{ background: 'var(--bg)', borderColor: 'var(--line)' }}>
             <div className={`max-w-2xl mx-auto flex items-center gap-4 ${step === 'welcome' ? 'sm:justify-center' : ''}`}>
               <button className={cn(buttonVariants({ variant: 'default', size: 'xl' }), 'flex-1 sm:flex-none sm:min-w-56')} onClick={next} disabled={!canNext}>
-                {step === 'welcome' ? t('ob.welcome.cta') : t('ob.next')}
+                {step === 'welcome' ? t('ob.welcome.cta') : step === 'buddy' && buddy ? t('ob.buddy.cta') : t('ob.next')}
               </button>
-              {qIndex >= 0 && <span className="hidden sm:inline t-small ink-3">{t('ob.hint.keys', { n: step === 'goal' || step === 'sit' ? 5 : 4 })}</span>}
+              {qIndex >= 0 && step !== 'buddy' && <span className="hidden sm:inline t-small ink-3">{t('ob.hint.keys', { n: step === 'goal' || step === 'sit' ? 5 : 4 })}</span>}
             </div>
           </div>
         )}
@@ -229,6 +234,7 @@ const PREVIEW: { k: StrKey; icon: IconName }[] = [
   { k: 'ob.prev.goal', icon: 'target' },
   { k: 'ob.prev.sit', icon: 'map' },
   { k: 'ob.prev.time', icon: 'clock' },
+  { k: 'ob.prev.buddy', icon: 'heart' },
 ]
 
 function Welcome({ text, name, setName }: { text: string; name: string; setName: (s: string) => void }) {
@@ -372,6 +378,87 @@ function TimeGlyph({ level, active }: { level: number; active: boolean }) {
   )
 }
 
+/* ─────────────────────────── Choose your Piko ─────────────────────────── */
+
+/** Ten friends to choose from. Tapping one puts it in the spotlight with a short story the parent reads
+ *  aloud; the child decides. The chosen one becomes Piko on every screen from here on. */
+function BuddyStep({ name, text, buddy, pick }: { name: string; text: string; buddy: BuddyId | null; pick: (b: BuddyId) => void }) {
+  const { t } = useI18n()
+  const short = useShortScreen()
+  const [shown, setShown] = useState<BuddyId>(buddy ?? BUDDIES[0].id)
+  const [pop, setPop] = useState(0)
+  const info = buddyInfo(shown)
+  const choose = (id: BuddyId) => { setShown(id); pick(id); setPop((n) => n + 1) }
+  return (
+    <div>
+      <h2 className="t-h2 m-0 text-center" style={{ textWrap: 'balance' }}>{text}</h2>
+      <p className="t-small ink-2 text-center mt-1 mb-0">{t('ob.buddy.hint', { name })}</p>
+
+      {/* the spotlight: the friend in front, its story for the parent to read aloud */}
+      <div className="card mt-4 overflow-hidden" style={{ borderRadius: 22 }}>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={shown} className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5 p-4 sm:p-5"
+            initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.22 }}>
+            <div className="relative shrink-0 grid place-items-center rounded-2xl" style={{ background: info.tint, width: short ? 132 : 160, height: short ? 132 : 160 }}>
+              <motion.div key={pop} initial={{ scale: 0.6, rotate: -8 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 12 }}>
+                <Sprout size={short ? 112 : 136} stage={buddy === shown ? 2 : 1} mood={buddy === shown ? 'cheer' : 'happy'} kind={shown} />
+              </motion.div>
+              {buddy === shown && pop > 0 && <ChoiceBurst key={pop} />}
+            </div>
+            <div className="min-w-0 text-center sm:text-start">
+              <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                <h3 className="t-h2 m-0">{info.name}</h3>
+                {buddy === shown && <span className="badge"><Icon name="check" size={12} />{t('ob.buddy.mine')}</span>}
+              </div>
+              <p className="ink-2 m-0 mt-0.5 t-small">{info.tagline}</p>
+              <span className="chip chip-sun mt-2" style={{ height: 28 }}>{info.power}</span>
+              <p className="m-0 mt-3" style={{ fontSize: 17, lineHeight: 1.6 }}>
+                <span className="t-caption ink-3 block mb-0.5"><Icon name="book" size={12} /> {t('ob.buddy.read')}</span>
+                {info.story}
+              </p>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* the lineup */}
+      <div role="radiogroup" aria-label={text} className="grid grid-cols-5 gap-2 sm:gap-3 mt-4">
+        {BUDDIES.map((b, i) => {
+          const on = buddy === b.id, looking = shown === b.id
+          return (
+            <motion.button key={b.id} role="radio" aria-checked={on} aria-label={b.name} onClick={() => choose(b.id)}
+              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i, type: 'spring', stiffness: 400, damping: 22 }}
+              whileHover={{ y: -4 }} whileTap={{ scale: 0.92 }}
+              className="relative flex flex-col items-center gap-0.5 rounded-2xl p-1.5 sm:p-2 cursor-pointer"
+              style={{ font: 'inherit', color: 'var(--ink)', background: on ? 'var(--brand-soft)' : looking ? b.tint : 'var(--surface)',
+                border: `2px solid ${on ? 'var(--brand)' : looking ? 'var(--line-strong)' : 'var(--line)'}`,
+                boxShadow: on ? '0 0 0 3px color-mix(in oklab, var(--brand) 22%, transparent)' : 'var(--shadow-card)' }}>
+              <Sprout size={short ? 50 : 62} stage={1} mood={on ? 'cheer' : 'happy'} kind={b.id} interactive={false} />
+              <span className="t-caption font-semibold truncate max-w-full">{b.name.split(' ')[1]}</span>
+              {on && <span className="absolute -top-2 -end-2 grid place-items-center w-6 h-6 rounded-full" style={{ background: 'var(--brand)', color: 'var(--on-brand)' }}><Icon name="check" size={14} /></span>}
+            </motion.button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ChoiceBurst() {
+  const bits = Array.from({ length: 12 }, (_, i) => {
+    const a = (i / 12) * Math.PI * 2
+    return { x: Math.cos(a) * (70 + (i % 3) * 14), y: Math.sin(a) * (60 + (i % 2) * 12), c: ['#C9F27B', '#4FB65A', '#FFC83D', '#4DA3FF', '#FF7A45'][i % 5] }
+  })
+  return (
+    <span className="absolute left-1/2 top-1/2 pointer-events-none" aria-hidden="true">
+      {bits.map((b, i) => (
+        <motion.span key={i} className="absolute w-2.5 h-2.5" style={{ background: b.c, borderRadius: i % 2 ? 999 : 2 }}
+          initial={{ x: 0, y: 0, opacity: 1, scale: 0.5 }} animate={{ x: b.x, y: b.y, opacity: 0, scale: 1 }} transition={{ duration: 0.9, ease: 'easeOut' }} />
+      ))}
+    </span>
+  )
+}
+
 /* ─────────────────────────── Plant the seed ─────────────────────────── */
 
 function PlantStep({ profile, onDone }: { profile: Profile; onDone: () => void }) {
@@ -426,7 +513,7 @@ function PlantStep({ profile, onDone }: { profile: Profile; onDone: () => void }
           {phase === 'grown' && (
             <motion.span className="absolute left-1/2 -translate-x-1/2 bottom-12"
               initial={{ y: 90, scale: 0.3 }} animate={{ y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 160, damping: 12 }}>
-              <Sprout size={short ? 110 : 150} stage={1} mood="cheer" />
+              <Sprout size={short ? 110 : 150} stage={1} mood="cheer" kind={profile.buddy} />
             </motion.span>
           )}
         </AnimatePresence>

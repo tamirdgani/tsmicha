@@ -11,6 +11,9 @@ import { Onboarding } from './screens/Onboarding'
 import { LessonRoute } from './screens/Lesson'
 import { useProfile } from './lib/profile'
 import { Sprout } from './ds/Sprout'
+import { BuddyProvider } from './ds/buddies'
+import { PaperGrid } from './ds/PaperGrid'
+import type { ReactNode } from 'react'
 
 function Home() {
   const { user, ready } = useAuth()
@@ -21,10 +24,19 @@ function Home() {
   return <PathMap profile={profile} />
 }
 
+/** Every Piko on every screen is the one this child picked. */
+function ChosenBuddy({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const { profile } = useProfile(user?.id)
+  return <BuddyProvider id={profile?.buddy ?? 'robot'}>{children}</BuddyProvider>
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <I18nProvider>
       <AuthProvider>
+        <PaperGrid />
+        <ChosenBuddy>
         <HashRouter>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -33,6 +45,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </HashRouter>
+        </ChosenBuddy>
       </AuthProvider>
     </I18nProvider>
   </StrictMode>,

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, type MotionValue } from 'motion/react'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { pointer } from './pointer'
+import { SHAPES, Upgrades, useBuddy, type BuddyId } from './buddies'
 
 /** Piko, the little robot who learns with the child. He upgrades as the child moves along:
  *  stage 0 = just switched on · 1 = antenna lights up · 2 = side lights · 3 = second antenna and rocket hands · 4 = star.
@@ -16,6 +17,8 @@ export type SproutMood = 'happy' | 'cheer' | 'think' | 'wink' | 'calm'
 export type SproutProps = {
   size?: number
   stage?: 0 | 1 | 2 | 3 | 4
+  /** Which Piko to draw. Defaults to the one this learner chose (or the robot before they choose). */
+  kind?: BuddyId | 'robot'
   mood?: SproutMood
   /** Gentle idle motion (sway, blink, breathing). */
   animate?: boolean
@@ -80,7 +83,9 @@ export function useLook(ref: React.RefObject<Element | null>, enabled: boolean) 
   return { lookX, lookY, swing }
 }
 
-function SproutSvg({ size = 120, stage = 1, mood = 'happy', animate = true, interactive = true, className, title }: SproutProps) {
+function SproutSvg({ size = 120, stage = 1, mood = 'happy', animate = true, interactive = true, className, title, kind: kindProp }: SproutProps) {
+  const chosen = useBuddy()
+  const kind = kindProp ?? chosen
   const ref = useRef<SVGSVGElement>(null)
   const live = animate && interactive && size >= 40
   const { lookX, lookY, swing } = useLook(ref, live)
@@ -127,6 +132,20 @@ function SproutSvg({ size = 120, stage = 1, mood = 'happy', animate = true, inte
         animate={tapped ? { y: [0, -14, 0, -5, 0] } : hover ? { y: -3 } : { y: 0 }}
         transition={tapped ? { duration: 0.7, times: [0, 0.3, 0.6, 0.8, 1], ease: 'easeOut' } : { type: 'spring', stiffness: 300, damping: 18 }}
       >
+        {kind !== 'robot' ? (
+          <g style={{ transformOrigin: '60px 118px', animation: animate ? 'breathe 3.6s ease-in-out infinite' : undefined }}>
+            <motion.g style={{ originX: '60px', originY: '118px', rotate: live ? headTilt : 0 }}>
+              {SHAPES[kind].body}
+              <g transform={`translate(0 ${SHAPES[kind].eyeY - 94})`}>
+                <motion.g style={{ x: live ? faceX : 0, y: live ? faceY : 0 }}>
+                  <Face mood={face} animate={animate} pupilX={live ? pupilX : undefined} pupilY={live ? pupilY : undefined} wide={hover && !tapped} mouthDy={SHAPES[kind].mouthDy ?? 0} />
+                </motion.g>
+              </g>
+              {SHAPES[kind].front}
+              <Upgrades stage={stage} top={SHAPES[kind].top} />
+            </motion.g>
+          </g>
+        ) : (<>
         {/* breathing: the whole robot swells a hair, from its feet */}
         <g style={{ transformOrigin: '60px 118px', animation: animate ? 'breathe 3.6s ease-in-out infinite' : undefined }}>
           {/* antenna leans toward the pointer and wobbles when it moves fast */}
@@ -158,6 +177,7 @@ function SproutSvg({ size = 120, stage = 1, mood = 'happy', animate = true, inte
             </motion.g>
           </motion.g>
         </g>
+        </>)}
       </motion.g>
     </svg>
   )
@@ -205,7 +225,7 @@ function Arms({ stage, wave }: { stage: number; wave: boolean }) {
   return <>{arm(1)}{arm(-1)}</>
 }
 
-function Face({ mood, animate, pupilX, pupilY, wide }: { mood: SproutMood; animate: boolean; pupilX?: MotionValue<number>; pupilY?: MotionValue<number>; wide: boolean }) {
+function Face({ mood, animate, pupilX, pupilY, wide, mouthDy = 0 }: { mood: SproutMood; animate: boolean; pupilX?: MotionValue<number>; pupilY?: MotionValue<number>; wide: boolean; mouthDy?: number }) {
   const eyeY = 94
   const blink = animate ? { transformOrigin: `60px ${eyeY}px`, animation: 'blink 5s infinite' } : undefined
   const r = wide ? 4.8 : 4.2
@@ -244,6 +264,7 @@ function Face({ mood, animate, pupilX, pupilY, wide }: { mood: SproutMood; anima
               {eye(71, mood === 'think' ? -1 : 0)}
             </g>
           )}
+          <g transform={`translate(0 ${mouthDy})`}>
           {mood === 'think' ? (
             <path d="M55 105 H65" stroke="#10361C" strokeWidth="3" strokeLinecap="round" />
           ) : mood === 'cheer' ? (
@@ -251,6 +272,7 @@ function Face({ mood, animate, pupilX, pupilY, wide }: { mood: SproutMood; anima
           ) : (
             <path d="M53 103 Q60 109 67 103" stroke="#10361C" strokeWidth="3" strokeLinecap="round" fill="none" />
           )}
+          </g>
         </motion.g>
       </AnimatePresence>
     </g>
