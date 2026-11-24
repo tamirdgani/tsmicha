@@ -31,7 +31,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = lang
     document.documentElement.dir = dir
-    document.title = lang === 'he' ? 'קפיצה · מוכנים לכיתה א׳' : 'Kfitza · Ready for first grade'
+    document.title = lang === 'he' ? 'צמיחה · מוכנים לכיתה א׳' : 'Tsmicha · Ready for first grade'
   }, [lang, dir])
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
 

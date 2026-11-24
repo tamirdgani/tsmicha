@@ -1,4 +1,4 @@
-# קפיצה · Kfitza
+# צמיחה · Tsmicha
 
 A learning path that gets a child ready for the next school year, built on the Shoresh app (same design system and lesson player).
 Unit 1 — Kindergarten (גן חובה): 12 chapters, 132 short lessons, ready for first grade. Unit 2 — First grade comes next.

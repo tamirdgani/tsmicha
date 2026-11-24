@@ -1,8 +1,8 @@
 export const STRINGS = {
   he: {
-    brand: 'קפיצה',
+    brand: 'צמיחה',
     'login.eyebrow': 'הכנה לכיתה א׳ · גן חובה',
-    'login.title': 'קופצים לכיתה א׳ מוכנים',
+    'login.title': 'צומחים לכיתה א׳, צעד אחרי צעד',
     'login.lead': 'שיעור קצר ביום, משחקים עם אותיות, מספרים וצורות, ופיקו הרובוט שמשתדרג יחד עם הילד. ההורה מקריא, הילד משחק.',
     'login.google': 'המשך עם Google',
     'login.signing': 'מתחברים…',
@@ -20,7 +20,7 @@ export const STRINGS = {
     'login.stat.hours': 'שעות תוכן',
     'login.stat.units': 'פרקים',
     'login.stat.lessons': 'שיעורים',
-    'login.bubble': 'היי! אני פיקו. קופצים לכיתה א׳ ביחד?',
+    'login.bubble': 'היי! אני פיקו. נצמח ביחד לכיתה א׳?',
 
     'top.streak': 'רצף ימים',
     'top.xp': 'נקודות XP',
@@ -304,7 +304,7 @@ export const STRINGS = {
     'kid.build.hint': 'מקישים על האותיות לפי הסדר',
   },
   en: {
-    brand: 'Kfitza',
+    brand: 'Tsmicha',
     'login.eyebrow': 'Financial literacy for teens and young adults',
     'login.title': 'Your money starts growing here',
     'login.lead': 'Short lessons, real tasks and one little sprout that grows with you. No lectures, no scary jargon.',
