@@ -4,7 +4,7 @@
    Generation is seeded by the lesson id, so a lesson is the same every time it's opened. */
 
 import type { L, PathNode, Skill, Spec } from './course'
-import type { ExplainStep, FactStep, Lesson, MemoryStep, Part, PuzzleStep, Shape, Step, Tile } from './lessonTypes'
+import type { ArcadeStep, ExplainStep, FactStep, Lesson, MemoryStep, Part, PuzzleStep, Shape, Step, Tile } from './lessonTypes'
 import {
   alike, CATS, CLEAR_SOUNDS, COLORS, CRITTERS, DAYS, FEELINGS, LETTER_NAME, LETTERS, PLACES, RHYMES, ROUTINE, SCHOOLBAG,
   SEASONS, SHAPES, SHORT2, SHORT3, SOCIAL, SORT_PAIRS, SORT_PAIRS_HARD, STORIES, SYLL, WORDS_BY_LETTER, type Pic,
@@ -654,6 +654,13 @@ function memoryGame(unit: number, specs: Spec[], r: R): MemoryStep {
   return { kind: 'memory', title: he('זיכרון: אות ותמונה'), pairs: ls.map((l) => [{ g: l }, picTile(one(r, WORDS_BY_LETTER[l]))]) }
 }
 
+const ARCADE: ArcadeStep[] = [
+  { kind: 'arcade', game: 'hoop', title: he('הפסקה: קליעה לסל!'), target: 3 },
+  { kind: 'arcade', game: 'goal', title: he('הפסקה: בעיטה לשער!'), target: 3 },
+  { kind: 'arcade', game: 'bowl', title: he('הפסקה: באולינג!'), target: 2 },
+]
+const arcadeGame = (i: number): ArcadeStep => ({ ...ARCADE[i] })
+
 /* ───────── assembling a lesson ───────── */
 const PART_TITLES = ['מתחילים', 'מתאמנים', 'אתגר!']
 const PART_STEPS = [4, 5, 5]
@@ -691,6 +698,12 @@ export function buildLesson(node: PathNode): Lesson {
       const unit = Number(node.id.match(/^u(\d+)/)?.[1] ?? 1)
       const k = Number(node.id.match(/-l(\d+)$/)?.[1] ?? 0)
       steps.push(node.kind === 'test' || k % 2 === 1 ? puzzleGame(unit, specs, r) : memoryGame(unit, specs, r))
+    }
+    // Now and then (every second lesson) the first part ends with a ball game, just for fun.
+    if (d === 0 && node.kind === 'lesson') {
+      const unit = Number(node.id.match(/^u(\d+)/)?.[1] ?? 1)
+      const k = Number(node.id.match(/-l(\d+)$/)?.[1] ?? 0)
+      if (k % 2 === 0) steps.push(arcadeGame((unit + k / 2) % 3))
     }
     // The challenge is the last question of part 3; earlier questions aren't flagged.
     steps.forEach((s, i) => { if ('challenge' in s) (s as { challenge?: boolean }).challenge = d === 2 && i === steps.length - 1 })

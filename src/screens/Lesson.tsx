@@ -16,6 +16,7 @@ import type { StrKey } from '../i18n/strings'
 import { Calc, Explain, Mcq, Scenario, Sort, type Status, Basket, Week } from '../lesson/Steps'
 import { Build, Fact, Match, Order, Pick, Trace } from '../lesson/KidSteps'
 import { Memory, Puzzle } from '../lesson/Games'
+import { Arcade } from '../lesson/Arcade'
 import { useAuth } from '../lib/auth'
 import { CHALLENGE_XP, completePart, failPart, loadProgress, lockOf, PARTS_PER_LESSON, PASS_RATE, recordChoice, type PartLock, type PartResult } from '../lib/progress'
 import { choiceKey } from '../lib/future'
@@ -169,7 +170,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
         <SoundToggle />
       </header>
 
-      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain" data-lesson-main>
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain focus-visible:outline-2" data-lesson-main tabIndex={0} aria-label={t('lesson.area')}>
         <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-2 sm:pt-4 pb-4">
         <div className="flex items-center gap-2 t-small ink-3 mb-3 sm:mb-4 empty:hidden">
           <span className="[@media(max-height:700px)]:hidden">{pick(part.title)}</span>
@@ -205,6 +206,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
             {item.step.kind === 'match' && <Match step={item.step} status={status} report={report} />}
             {item.step.kind === 'build' && <Build step={item.step} status={status} report={report} />}
             {item.step.kind === 'trace' && <Trace step={item.step} report={report} />}
+            {item.step.kind === 'arcade' && <Arcade step={item.step} report={report} />}
             {item.step.kind === 'fact' && <Fact step={item.step} report={report} />}
             {item.step.kind === 'puzzle' && <Puzzle step={item.step} report={report} />}
             {item.step.kind === 'memory' && <Memory step={item.step} report={report} />}
