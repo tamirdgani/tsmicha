@@ -32,6 +32,8 @@ export type Show =
   | { kind: 'scene'; a: string; b: string; rel: 'above' | 'below' | 'inside' | 'next' }
   | { kind: 'sum'; e: string; a: number; b: number; op: '+' | '-' }
   | { kind: 'word'; e?: string; w: string; hide?: number }
+  /** A is to B as C is to ? — two pairs, one above the other. */
+  | { kind: 'analogy'; a: [string, string]; b: string }
 
 export type PickStep = { kind: 'pick'; q: L; show?: Show; options: Tile[]; correct: number; why: L; challenge?: boolean }
 export type OrderStep = { kind: 'order'; q: L; items: Tile[]; why: L; challenge?: boolean }
@@ -40,8 +42,13 @@ export type MatchStep = { kind: 'match'; q: L; pairs: [Tile, Tile][]; why: L; ch
 export type TraceStep = { kind: 'trace'; q: L; g: string }
 export type BuildStep = { kind: 'build'; q: L; e: string; w: string; extra: string[]; why: L; challenge?: boolean }
 
+/** A jigsaw puzzle of a picture that teaches: a big letter (or digit) with its word and picture. Not graded; solving it is the win. */
+export type PuzzleStep = { kind: 'puzzle'; title: L; g: string; word?: string; e: string; n?: number; cols: number; rows: number }
+/** Memory: flip two cards, find the pairs (letter ↔ picture, digit ↔ amount, rhymes…). Not graded; finishing is the win. */
+export type MemoryStep = { kind: 'memory'; title: L; pairs: [Tile, Tile][] }
+
 export type Step = ExplainStep | McqStep | PredictStep | SortStep | CalcStep | ScenarioStep | BasketStep | WeekStep
-  | PickStep | OrderStep | MatchStep | TraceStep | BuildStep
+  | PickStep | OrderStep | MatchStep | TraceStep | BuildStep | PuzzleStep | MemoryStep
 /** `teaser`: a question from the next part, shown when this part ends. */
 export type Part = { title: L; steps: Step[]; teaser?: L }
 /** `teaser`: a question from the next lesson, shown when the last part ends. */

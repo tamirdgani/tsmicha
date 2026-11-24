@@ -11,7 +11,7 @@ export type Skill =
   | 'colors' | 'shapes' | 'size' | 'position' | 'odd' | 'pattern' | 'sortcat'
   | 'count' | 'numrec' | 'moreless' | 'numorder' | 'add' | 'sub' | 'trace'
   | 'syll' | 'rhyme' | 'firstsound' | 'letters' | 'lettersound' | 'build' | 'read'
-  | 'story' | 'days' | 'seasons' | 'feelings' | 'social' | 'schoolbag'
+  | 'story' | 'days' | 'seasons' | 'feelings' | 'social' | 'schoolbag' | 'logic'
 
 /** `max`/`min`: number range · `set`: letters or digits to work on · `hard`: harder variant. */
 export type Spec = { s: Skill; max?: number; min?: number; set?: string; hard?: boolean }
@@ -58,10 +58,10 @@ const SEEDS: UnitSeed[] = [
       ['עיגול, ריבוע, משולש', 'Circle, square, triangle', [{ s: 'shapes' }]],
       ['גדול, קטן, הכי גדול', 'Big, small, biggest', [{ s: 'size' }]],
       ['מעל, מתחת, בפנים', 'Above, below, inside', [{ s: 'position' }]],
-      ['מה לא שייך?', 'Which one doesn’t belong?', [{ s: 'odd' }]],
+      ['מה לא שייך?', 'Which one doesn’t belong?', [{ s: 'odd' }, { s: 'logic' }]],
       ['מסדרים לקבוצות', 'Sorting into groups', [{ s: 'sortcat' }]],
       ['דפוסים: מה בא עכשיו?', 'Patterns: what comes next?', [{ s: 'pattern' }]],
-      ['החידון הצבעוני', 'The colorful quiz', [{ s: 'colors' }, { s: 'shapes' }, { s: 'size' }, { s: 'pattern' }]],
+      ['החידון הצבעוני', 'The colorful quiz', [{ s: 'colors' }, { s: 'shapes' }, { s: 'size' }, { s: 'pattern' }, { s: 'logic' }]],
     ],
   },
   {
@@ -139,13 +139,13 @@ const SEEDS: UnitSeed[] = [
     goal: { he: 'דפוסים, מיון, סדר והיגיון', en: 'Patterns, sorting, order and logic' },
     lessons: [
       ['דפוסים קשים', 'Tricky patterns', [{ s: 'pattern', hard: true }]],
-      ['מה לא שייך? חלק 2', 'Odd one out, part 2', [{ s: 'odd', hard: true }]],
-      ['מהקטן לגדול', 'Smallest to biggest', [{ s: 'size', hard: true }]],
+      ['מה לא שייך? חלק 2', 'Odd one out, part 2', [{ s: 'odd', hard: true }, { s: 'logic' }]],
+      ['מהקטן לגדול', 'Smallest to biggest', [{ s: 'size', hard: true }, { s: 'logic' }]],
       ['מה קרה קודם?', 'What happened first?', [{ s: 'story' }]],
-      ['מיון חכם', 'Smart sorting', [{ s: 'sortcat', hard: true }]],
+      ['מיון חכם', 'Smart sorting', [{ s: 'sortcat', hard: true }, { s: 'logic' }]],
       ['איפה הוא מסתתר?', 'Where is it hiding?', [{ s: 'position', hard: true }]],
       ['צורות מסביבנו', 'Shapes around us', [{ s: 'shapes', hard: true }]],
-      ['אלופי החשיבה', 'Thinking champions', [{ s: 'pattern', hard: true }, { s: 'odd', hard: true }, { s: 'story' }, { s: 'sortcat' }]],
+      ['אלופי החשיבה', 'Thinking champions', [{ s: 'pattern', hard: true }, { s: 'odd', hard: true }, { s: 'story' }, { s: 'sortcat' }, { s: 'logic' }]],
     ],
   },
   {
@@ -170,7 +170,7 @@ const SEEDS: UnitSeed[] = [
       ['מורידים עד 5', 'Taking away to 5', [{ s: 'sub', max: 5 }]],
       ['מחברים עד 10', 'Adding to 10', [{ s: 'add', max: 10 }]],
       ['מורידים עד 10', 'Taking away to 10', [{ s: 'sub', max: 10 }]],
-      ['סיפורי חשבון', 'Number stories', [{ s: 'add', max: 10, hard: true }, { s: 'sub', max: 10, hard: true }]],
+      ['סיפורי חשבון', 'Number stories', [{ s: 'add', max: 10, hard: true }, { s: 'sub', max: 10, hard: true }, { s: 'logic' }]],
       ['יותר, פחות, שווה', 'More, less, equal', [{ s: 'moreless', max: 10 }, { s: 'add', max: 6 }]],
       ['מספר לפני ומספר אחרי', 'Number before and after', [{ s: 'numorder', max: 10, hard: true }]],
       ['אלופי החשבון', 'Math champions', [{ s: 'add', max: 10 }, { s: 'sub', max: 10 }, { s: 'count', max: 10 }]],
@@ -215,7 +215,7 @@ const SEEDS: UnitSeed[] = [
       ['עונות השנה', 'The seasons', [{ s: 'seasons' }]],
       ['הבוקר שלי', 'My morning', [{ s: 'story' }, { s: 'days' }]],
       ['כללים בכיתה', 'Classroom rules', [{ s: 'social', hard: true }, { s: 'feelings' }]],
-      ['מוכנים לכיתה א׳!', 'Ready for first grade!', [{ s: 'count', max: 10 }, { s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN + PE_TAV }, { s: 'add', max: 10 }, { s: 'social' }]],
+      ['מוכנים לכיתה א׳!', 'Ready for first grade!', [{ s: 'count', max: 10 }, { s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN + PE_TAV }, { s: 'add', max: 10 }, { s: 'social' }, { s: 'logic' }]],
     ],
   },
 ]

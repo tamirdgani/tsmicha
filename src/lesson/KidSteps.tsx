@@ -70,15 +70,43 @@ export function ShowView({ show }: { show: Show }) {
     return (
       <motion.div {...rise(0.08)} className={box} style={boxStyle}>
         <span className="flex flex-wrap justify-center items-center gap-2 sm:gap-3">
-          {show.items.map((t, i) => (
-            <motion.span key={i} className="grid place-items-center w-14 h-14 sm:w-16 sm:h-16" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.07 }}>
-              {t.shape ? <ShapeSvg shape={t.shape} color={t.color} size={46} /> : <span style={{ fontFamily: EMOJI_FONT, fontSize: 40 }}>{t.e}</span>}
+          {show.items.map((t, i) => t.t === '?' ? (
+            // a missing piece in the middle of a row
+            <motion.span key={i} className="grid place-items-center w-14 h-14 sm:w-16 sm:h-16 rounded-xl t-h1" style={{ border: '2.5px dashed var(--sky-strong)', color: 'var(--sky-strong)' }}
+              animate={{ scale: [1, 1.08, 1] }} transition={{ repeat: Infinity, duration: 1.4 }}>?</motion.span>
+          ) : (
+            <motion.span key={i} className={`grid place-items-center ${t.many ? 'min-w-16 px-1 py-1 rounded-xl' : 'w-14 h-14 sm:w-16 sm:h-16'}`} style={t.many ? { background: 'var(--surface)', border: '1.5px solid var(--line)' } : undefined}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.07 }}>
+              {t.shape ? <ShapeSvg shape={t.shape} color={t.color} size={46} />
+                : t.many ? <Pile e={t.many.e} n={t.many.n} size={24} />
+                : t.g ? <span className="font-extrabold t-num" style={{ fontSize: 40, lineHeight: 1 }}>{t.g}</span>
+                : <span style={{ fontFamily: EMOJI_FONT, fontSize: 40 }}>{t.e}</span>}
             </motion.span>
           ))}
           {show.ask && (
             <motion.span className="grid place-items-center w-14 h-14 sm:w-16 sm:h-16 rounded-xl t-h1" style={{ border: '2.5px dashed var(--sky-strong)', color: 'var(--sky-strong)' }}
               animate={{ scale: [1, 1.08, 1] }} transition={{ repeat: Infinity, duration: 1.4 }}>?</motion.span>
           )}
+        </span>
+      </motion.div>
+    )
+  }
+  if (show.kind === 'analogy') {
+    const pair = (l: string, r: string | null, delay: number) => (
+      <motion.span className="flex items-center gap-3 sm:gap-4" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
+        <span style={{ fontFamily: EMOJI_FONT, fontSize: 52, lineHeight: 1 }}>{l}</span>
+        <Icon name="chevron" size={28} className="ink-2" style={{ transform: 'scaleX(-1)' }} />
+        {r ? <span style={{ fontFamily: EMOJI_FONT, fontSize: 52, lineHeight: 1 }}>{r}</span>
+          : <motion.span className="grid place-items-center w-16 h-16 rounded-xl t-h1" style={{ border: '2.5px dashed var(--sky-strong)', color: 'var(--sky-strong)' }}
+              animate={{ scale: [1, 1.08, 1] }} transition={{ repeat: Infinity, duration: 1.4 }}>?</motion.span>}
+      </motion.span>
+    )
+    return (
+      <motion.div {...rise(0.08)} className={box} style={boxStyle}>
+        <span className="flex flex-col items-center gap-3">
+          {pair(show.a[0], show.a[1], 0.1)}
+          <span className="w-24 border-t-2 border-dashed" style={{ borderColor: 'var(--line-strong)' }} aria-hidden="true" />
+          {pair(show.b, null, 0.35)}
         </span>
       </motion.div>
     )
@@ -127,7 +155,11 @@ export function ShowView({ show }: { show: Show }) {
     <motion.div {...rise(0.08)} className={box} style={boxStyle}>
       <span className="flex items-center gap-4">
         {show.e && <span style={{ fontFamily: EMOJI_FONT, fontSize: 64 }}>{show.e}</span>}
-        <span className="font-extrabold tracking-wide" style={{ fontSize: 'clamp(56px, 12vw, 84px)', lineHeight: 1 }}>{show.w}</span>
+        <span className="font-extrabold tracking-wide" style={{ fontSize: 'clamp(56px, 12vw, 84px)', lineHeight: 1 }}>
+          {show.hide === undefined ? show.w : [...show.w].map((ch, i) => i === show.hide
+            ? <span key={i} className="inline-block text-center" style={{ minWidth: '0.8em', color: 'var(--sky-strong)', borderBottom: '5px dashed var(--sky-strong)' }}>?</span>
+            : <span key={i}>{ch}</span>)}
+        </span>
       </span>
     </motion.div>
   )

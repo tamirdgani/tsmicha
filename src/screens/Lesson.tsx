@@ -15,6 +15,7 @@ import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { Calc, Explain, Mcq, Scenario, Sort, type Status, Basket, Week } from '../lesson/Steps'
 import { Build, Match, Order, Pick, Trace } from '../lesson/KidSteps'
+import { Memory, Puzzle } from '../lesson/Games'
 import { useAuth } from '../lib/auth'
 import { CHALLENGE_XP, completePart, failPart, loadProgress, lockOf, PARTS_PER_LESSON, PASS_RATE, recordChoice, type PartLock, type PartResult } from '../lib/progress'
 import { choiceKey } from '../lib/future'
@@ -105,7 +106,10 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
   const advance = () => {
     if (pos + 1 >= queue.length) {
       // Below the pass rate on first tries, a first attempt doesn't count: no XP, and the part rests.
-      const score = questions ? (questions - missed.size) / questions : 1
+      // The closing challenge is a stretch: it earns bonus XP when right, but never locks a part.
+      const graded = part.steps.filter((s) => isQuestion(s) && !isChallenge(s)).length
+      const missedGraded = [...missed].filter((i) => !isChallenge(part.steps[i])).length
+      const score = graded ? (graded - missedGraded) / graded : 1
       if (score < PASS_RATE) {
         const lock = failPart(uid, lessonId, partIndex)
         if (lock) { sfx.rest(); setFailed({ lock, score }); return }
@@ -201,6 +205,8 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
             {item.step.kind === 'match' && <Match step={item.step} status={status} report={report} />}
             {item.step.kind === 'build' && <Build step={item.step} status={status} report={report} />}
             {item.step.kind === 'trace' && <Trace step={item.step} report={report} />}
+            {item.step.kind === 'puzzle' && <Puzzle step={item.step} report={report} />}
+            {item.step.kind === 'memory' && <Memory step={item.step} report={report} />}
             {item.step.kind === 'scenario' && <Scenario step={item.step} report={report} onChoose={(i) => recordChoice(uid, choiceKey(lessonId, partIndex, item.idx), i)} />}
           </motion.div>
         </AnimatePresence>
