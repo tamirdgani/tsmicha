@@ -14,16 +14,19 @@ import { CountUp, Logo, Ring, Toast, clock, useNow } from '../ds/ui'
 import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { useAuth, type User } from '../lib/auth'
-import { focusUnits, goalXp, type Profile as LearnerProfile } from '../lib/profile'
+import { focusUnits, goalXp, resetLearner, type Profile as LearnerProfile } from '../lib/profile'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { BADGES, PARTS_PER_LESSON, currentNode, lockOf, levelOf, nodeStates, sproutStage, useProgress, type NodeState, type Progress } from '../lib/progress'
+import { useSound } from '../lib/sfx'
 
 /* fill + on: the step circle and its icon (≥3:1 against the page and each other, both themes).
    soft + ink: badges and labels for that kind (≥4.5:1). */
 const KIND: Record<NodeKind, { icon: IconName; fill: string; on: string; soft: string; ink: string; edge?: string }> = {
-  lesson: { icon: 'book', fill: 'var(--brand)', on: 'var(--on-strong)', soft: 'var(--brand-soft)', ink: 'var(--brand-ink)' },
-  checkpoint: { icon: 'flag', fill: 'var(--berry-strong)', on: 'var(--on-strong)', soft: 'var(--berry-soft)', ink: 'var(--color-berry-ink)' },
-  review: { icon: 'refresh', fill: 'var(--sky-strong)', on: 'var(--on-strong)', soft: 'var(--sky-soft)', ink: 'var(--color-sky-ink)' },
-  test: { icon: 'trophy', fill: 'var(--color-sun)', on: 'var(--color-leaf-900)', soft: 'var(--sun-soft)', ink: 'var(--color-sun-ink)', edge: 'var(--sun-strong)' },
+  // pastel circles with a dark icon on top (the icon carries the contrast, ≥4.5:1 on every fill)
+  lesson: { icon: 'book', fill: 'var(--primary)', on: 'var(--primary-foreground)', soft: 'var(--brand-soft)', ink: 'var(--brand-ink)', edge: 'var(--color-leaf-700)' },
+  checkpoint: { icon: 'flag', fill: 'var(--color-berry)', on: 'var(--on-pastel)', soft: 'var(--berry-soft)', ink: 'var(--color-berry-ink)', edge: 'var(--berry-strong)' },
+  review: { icon: 'refresh', fill: 'var(--color-sky)', on: 'var(--on-pastel)', soft: 'var(--sky-soft)', ink: 'var(--color-sky-ink)', edge: 'var(--sky-strong)' },
+  test: { icon: 'trophy', fill: 'var(--color-sun)', on: 'var(--on-pastel)', soft: 'var(--sun-soft)', ink: 'var(--color-sun-ink)', edge: 'var(--sun-strong)' },
 }
 
 const UNITS = FIN_LIT.units.length
@@ -173,7 +176,10 @@ function UserMenu({ user }: { user: User }) {
   const { signOut } = useAuth()
   const navigate = useNavigate()
   const initials = user.name.split(' ').map((w) => w[0]).slice(0, 2).join('')
+  const [resetOpen, setResetOpen] = useState(false)
+  const [sound, setSound] = useSound()
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger className="rounded-full p-0.5 cursor-pointer border-0 bg-transparent outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
         <Avatar className="size-9">
@@ -189,11 +195,27 @@ function UserMenu({ user }: { user: User }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => setLang(lang === 'he' ? 'en' : 'he')}><Icon name="globe" size={16} />{t('menu.lang')}</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => setTheme(theme === 'dark' ? 'light' : 'dark')}><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />{theme === 'dark' ? t('menu.theme.light') : t('menu.theme.dark')}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setSound(!sound)}><Icon name={sound ? 'mute' : 'volume'} size={16} />{t(sound ? 'sound.off' : 'sound.on')}</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => navigate('/design-system')}><Icon name="sparkle" size={16} />{t('menu.ds')}</DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => setResetOpen(true)}><Icon name="refresh" size={16} />{t('menu.reset')}</DropdownMenuItem>
         <DropdownMenuItem onSelect={signOut}><Icon name="logout" size={16} />{t('menu.signout')}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+      <AlertDialogContent className="sm:max-w-sm text-center">
+        <AlertDialogHeader className="items-center text-center sm:text-center">
+          <Sprout size={88} stage={1} mood="think" />
+          <AlertDialogTitle className="t-h2">{t('menu.reset.title')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('menu.reset.body')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+          <AlertDialogAction variant="default" size="xl" className="w-full m-0" onClick={() => { resetLearner(user.id); navigate('/') }}>{t('menu.reset.yes')}</AlertDialogAction>
+          <AlertDialogCancel variant="ghost" size="xl" className="w-full m-0">{t('menu.reset.no')}</AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }
 

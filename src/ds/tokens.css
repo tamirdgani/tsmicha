@@ -7,25 +7,25 @@
 @theme {
   --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
 
-  --color-leaf-50: #eef8ec;
-  --color-leaf-100: #d9f1d3;
-  --color-leaf-200: #b4e3aa;
-  --color-leaf-300: #84cf7a;
-  --color-leaf-400: #4fb65a;
-  --color-leaf-500: #2e9a48;
-  --color-leaf-600: #22803b;
-  --color-leaf-700: #1c6631;
-  --color-leaf-800: #174f28;
-  --color-leaf-900: #10361c;
+  --color-leaf-50: #edfaf3;
+  --color-leaf-100: #d6f4e5;
+  --color-leaf-200: #b5ebd2;
+  --color-leaf-300: #93dfbd;
+  --color-leaf-400: #74d1a8;
+  --color-leaf-500: #55bf92;
+  --color-leaf-600: #3fa97c;
+  --color-leaf-700: #2e8a63;
+  --color-leaf-800: #1f6b4b;
+  --color-leaf-900: #134733;
 
-  --color-lime: #c9f27b;
-  --color-sun: #ffc83d;
+  --color-lime: #cff5dd;
+  --color-sun: #ffd97a;
   --color-sun-ink: #7a5600;
-  --color-flame: #ff7a45;
+  --color-flame: #ffb38a;
   --color-flame-ink: #8a2e0b;
-  --color-sky: #4da3ff;
+  --color-sky: #9ccbff;
   --color-sky-ink: #0b4a8f;
-  --color-berry: #8b6cf6;
+  --color-berry: #c3b1f5;
   --color-berry-ink: #3d2799;
 
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -36,15 +36,17 @@
    Neutral surfaces; green only for brand, progress and success. */
 :root {
   --paper-line: rgb(31 111 197 / 0.09);
+  /* dark icon/text on a pastel fill (map circles); pastel fills stay light in both themes */
+  --on-pastel: #1f2a44;
   --bg: var(--background);
   --bg-deep: var(--muted);
   --surface: var(--card);
-  --surface-2: oklch(0.985 0 0);
+  --surface-2: #f9fbff;
   --ink: var(--foreground);
-  --ink-2: oklch(0.45 0 0);
+  --ink-2: #4a5370;
   --ink-3: var(--muted-foreground);
   --line: var(--border);
-  --line-strong: oklch(0.87 0 0);
+  --line-strong: #d3dbec;
 
   --brand: var(--primary);
   --brand-hover: var(--color-leaf-700);
@@ -53,22 +55,22 @@
   --brand-ink: var(--color-leaf-800);
   --on-brand: var(--primary-foreground);
 
-  --sun-soft: #fff7e0;
+  --sun-soft: #fff6d9;
   --sun-text: #7a5600;
   --flame-text: #9a3412;
-  --flame-soft: #fff1ea;
-  --sky-soft: #eaf3ff;
-  --berry-soft: #f1edfe;
+  --flame-soft: #ffece2;
+  --sky-soft: #e6f1ff;
+  --berry-soft: #efe9ff;
   --danger: var(--destructive);
-  --danger-soft: #fdeceb;
+  --danger-soft: #ffe8e6;
 
   /* Accessible accents. The raw palette (sky, berry, flame, sun) is for fills and illustrations;
      anything that carries meaning — text, borders of selected states, progress rings, icons on fills —
      uses these. Each passes WCAG AA: 4.5:1 as text, 3:1 as a graphic, in both themes. */
-  --sky-strong: #1f6fc5;
-  --berry-strong: #6447d6;
-  --flame-strong: #c2410c;
-  --sun-strong: #946200;
+  --sky-strong: #2f72bd;
+  --berry-strong: #6a4fcf;
+  --flame-strong: #b5471c;
+  --sun-strong: #8a5d00;
   --on-strong: #ffffff;
 
   --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.05);

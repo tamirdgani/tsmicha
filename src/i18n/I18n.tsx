@@ -25,7 +25,7 @@ const write = (k: string, v: string) => { try { localStorage.setItem(k, v) } cat
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => read<Lang>('kfitza.lang', 'he'))
   const [theme, setThemeState] = useState<Theme>(() =>
-    read<Theme>('kfitza.theme', window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
+    read<Theme>('kfitza.theme', 'light'))
   const dir = lang === 'he' ? 'rtl' : 'ltr'
 
   useEffect(() => {

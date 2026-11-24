@@ -14,6 +14,7 @@ import { Sprout } from './ds/Sprout'
 import { BuddyProvider } from './ds/buddies'
 import { PaperGrid } from './ds/PaperGrid'
 import type { ReactNode } from 'react'
+import { installTapSound } from './lib/sfx'
 
 function Home() {
   const { user, ready } = useAuth()
@@ -30,6 +31,8 @@ function ChosenBuddy({ children }: { children: ReactNode }) {
   const { profile } = useProfile(user?.id)
   return <BuddyProvider id={profile?.buddy ?? 'robot'}>{children}</BuddyProvider>
 }
+
+installTapSound()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

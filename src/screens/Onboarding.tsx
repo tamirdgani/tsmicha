@@ -11,6 +11,7 @@ import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { useAuth, type User } from '../lib/auth'
 import { focusUnits, goalXp, type AgeRange, type Goal, type Minutes, type Profile, type Situation } from '../lib/profile'
+import { sfx } from '../lib/sfx'
 
 type Step = 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy' | 'plant'
 const ORDER: Step[] = ['welcome', 'age', 'goal', 'sit', 'time', 'buddy', 'plant']
@@ -388,7 +389,7 @@ function BuddyStep({ name, text, buddy, pick }: { name: string; text: string; bu
   const [shown, setShown] = useState<BuddyId>(buddy ?? BUDDIES[0].id)
   const [pop, setPop] = useState(0)
   const info = buddyInfo(shown)
-  const choose = (id: BuddyId) => { setShown(id); pick(id); setPop((n) => n + 1) }
+  const choose = (id: BuddyId) => { sfx.chosen(); setShown(id); pick(id); setPop((n) => n + 1) }
   return (
     <div>
       <h2 className="t-h2 m-0 text-center" style={{ textWrap: 'balance' }}>{text}</h2>
@@ -467,6 +468,7 @@ function PlantStep({ profile, onDone }: { profile: Profile; onDone: () => void }
   const plant = () => {
     if (phase !== 'idle') return
     setPhase('dropping')
+    sfx.wake()
     window.setTimeout(() => setPhase('grown'), 750)
   }
   const focus = useMemo(() => focusUnits(profile).map((id) => FIN_LIT.units.find((u) => u.id === id)!).filter(Boolean).slice(0, 4), [profile])

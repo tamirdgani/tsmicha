@@ -4,6 +4,7 @@ import type { BuildStep, MatchStep, OrderStep, PickStep, Shape, Show, Tile, Trac
 import { Icon } from '../ds/Icon'
 import { useI18n } from '../i18n/I18n'
 import type { Report, Status } from './Steps'
+import { sfx } from '../lib/sfx'
 
 /* Kid steps: the same cards, borders and feedback colors as the rest of the app,
    only bigger — pictures carry the meaning, the words are for the parent to read. */
@@ -163,7 +164,7 @@ export function Pick({ step, status, report }: { step: PickStep; status: Status;
   const { pick } = useI18n()
   const [sel, setSel] = useState<number | null>(null)
   const locked = status !== 'answering'
-  const choose = (i: number) => { if (locked) return; setSel(i); report(true, i === step.correct) }
+  const choose = (i: number) => { if (locked) return; sfx.pick(); setSel(i); report(true, i === step.correct) }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { const n = Number(e.key); if (n >= 1 && n <= step.options.length) choose(n - 1) }
     window.addEventListener('keydown', onKey)
@@ -203,8 +204,8 @@ export function Order({ step, status, report }: { step: OrderStep; status: Statu
   const [slots, setSlots] = useState<number[]>([])
   const locked = status !== 'answering'
   useEffect(() => { report(slots.length === step.items.length, slots.every((v, i) => v === i)) }, [slots, step, report])
-  const add = (i: number) => { if (!locked && !slots.includes(i)) setSlots((s) => [...s, i]) }
-  const remove = (k: number) => { if (!locked) setSlots((s) => s.filter((_, j) => j !== k)) }
+  const add = (i: number) => { if (!locked && !slots.includes(i)) { sfx.place(slots.length); setSlots((s) => [...s, i]) } }
+  const remove = (k: number) => { if (!locked) { sfx.unplace(); setSlots((s) => s.filter((_, j) => j !== k)) } }
   const small = step.items.length > 4
   return (
     <div>
@@ -267,14 +268,15 @@ export function Match({ step, status, report }: { step: MatchStep; status: Statu
 
   const tapLeft = (l: number) => {
     if (locked) return
-    if (links[l] !== undefined) { setLinks((m) => { const n = { ...m }; delete n[l]; return n }); return }
-    setHeld(held === l ? null : l)
+    if (links[l] !== undefined) { sfx.unplace(); setLinks((m) => { const n = { ...m }; delete n[l]; return n }); return }
+    sfx.pick(); setHeld(held === l ? null : l)
   }
   const tapRight = (r: number) => {
     if (locked) return
     const owner = leftOf(r)
-    if (owner !== null) { setLinks((m) => { const n = { ...m }; delete n[owner]; return n }); return }
+    if (owner !== null) { sfx.unplace(); setLinks((m) => { const n = { ...m }; delete n[owner]; return n }); return }
     if (held === null) return
+    sfx.place(Object.keys(links).length + 1)
     setLinks((m) => ({ ...m, [held]: r }))
     setHeld(null)
   }
@@ -361,7 +363,7 @@ export function Trace({ step, report }: { step: TraceStep; report: Report }) {
     setCover(0); setMessy(false)
   }, [size, step.g, font])
 
-  useEffect(() => { report(done, true) }, [done, report])
+  useEffect(() => { report(done, true); if (done) sfx.sparkle() }, [done, report])
 
   const measure = () => {
     const x = ink.current!.getContext('2d')!
@@ -432,8 +434,8 @@ export function Build({ step, status, report }: { step: BuildStep; status: Statu
     const word = slots.map((k) => pool.find((p) => p.i === k)!.ch).join('')
     report(slots.length === letters.length, word === step.w)
   }, [slots, pool, letters, step, report])
-  const add = (k: number) => { if (!locked && slots.length < letters.length && !slots.includes(k)) setSlots((s) => [...s, k]) }
-  const remove = (j: number) => { if (!locked) setSlots((s) => s.filter((_, x) => x !== j)) }
+  const add = (k: number) => { if (!locked && slots.length < letters.length && !slots.includes(k)) { sfx.place(slots.length); setSlots((s) => [...s, k]) } }
+  const remove = (j: number) => { if (!locked) { sfx.unplace(); setSlots((s) => s.filter((_, x) => x !== j)) } }
   return (
     <div>
       <Question text={pick(step.q)} />

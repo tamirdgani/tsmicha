@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, type 
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { pointer } from './pointer'
 import { SHAPES, Upgrades, useBuddy, type BuddyId } from './buddies'
+import { sfx } from '../lib/sfx'
 
 /** Piko, the little robot who learns with the child. He upgrades as the child moves along:
  *  stage 0 = just switched on · 1 = antenna lights up · 2 = side lights · 3 = second antenna and rocket hands · 4 = star.
@@ -126,7 +127,7 @@ function SproutSvg({ size = 120, stage = 1, mood = 'happy', animate = true, inte
       style={{ overflow: 'visible', cursor: live ? 'pointer' : undefined, touchAction: 'manipulation' }}
       onPointerEnter={live ? () => setHover(true) : undefined}
       onPointerLeave={live ? () => setHover(false) : undefined}
-      onPointerDown={live ? () => setTapped(Date.now()) : undefined}
+      onPointerDown={live ? () => { sfx.boing(); setTapped(Date.now()) } : undefined}
     >
       <motion.g
         animate={tapped ? { y: [0, -14, 0, -5, 0] } : hover ? { y: -3 } : { y: 0 }}

@@ -46,7 +46,7 @@ export function useProfile(uid: string | undefined) {
   }, [uid])
   // Other screens holding the profile (e.g. the Piko everyone draws) refresh when it's saved.
   useEffect(() => {
-    const onSave = (e: Event) => { const d = (e as CustomEvent<{ uid: string; profile: Profile }>).detail; if (d.uid === uid) setState(d) }
+    const onSave = (e: Event) => { const d = (e as CustomEvent<{ uid: string; profile: Profile | null }>).detail; if (d.uid === uid) setState(d) }
     window.addEventListener('kfitza-profile', onSave)
     return () => window.removeEventListener('kfitza-profile', onSave)
   }, [uid])
@@ -57,4 +57,13 @@ export function useProfile(uid: string | undefined) {
     window.dispatchEvent(new CustomEvent('kfitza-profile', { detail: { uid, profile: p } }))
   }, [uid])
   return { profile: state.profile, loaded: state.uid === uid, save }
+}
+
+/** Starts over for this account: forgets the child's profile, chosen Piko and progress, so onboarding runs again. */
+export function resetLearner(uid: string) {
+  try {
+    localStorage.removeItem(key(uid))
+    localStorage.removeItem(`kfitza.progress.${uid}`)
+  } catch { /* private mode */ }
+  window.dispatchEvent(new CustomEvent('kfitza-profile', { detail: { uid, profile: null } }))
 }

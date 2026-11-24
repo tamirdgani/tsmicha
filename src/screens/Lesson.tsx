@@ -18,6 +18,7 @@ import { Build, Match, Order, Pick, Trace } from '../lesson/KidSteps'
 import { useAuth } from '../lib/auth'
 import { CHALLENGE_XP, completePart, failPart, loadProgress, lockOf, PARTS_PER_LESSON, PASS_RATE, recordChoice, type PartLock, type PartResult } from '../lib/progress'
 import { choiceKey } from '../lib/future'
+import { sfx, useSound } from '../lib/sfx'
 
 const PRAISE: StrKey[] = ['lesson.ok.1', 'lesson.ok.2', 'lesson.ok.3', 'lesson.ok.4']
 
@@ -88,9 +89,12 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
     if (answer.current.correct) {
       if (challenge && !item.retry) challengeWon.current = true
       setStatus('correct')
-      if (!item.retry) { const c = combo + 1; setCombo(c); if (c >= 3) setShowCombo(c) }
+      const c = item.retry ? combo : combo + 1
+      if (c >= 3 && !item.retry) sfx.combo(c); else sfx.correct()
+      if (!item.retry) { setCombo(c); if (c >= 3) setShowCombo(c) }
     } else {
       setStatus('wrong')
+      sfx.wrong()
       setCombo(0)
       setMissed((m) => new Set(m).add(item.idx))
       // Comes back at the end of the part — no punishment, just another go.
@@ -104,7 +108,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
       const score = questions ? (questions - missed.size) / questions : 1
       if (score < PASS_RATE) {
         const lock = failPart(uid, lessonId, partIndex)
-        if (lock) { setFailed({ lock, score }); return }
+        if (lock) { sfx.rest(); setFailed({ lock, score }); return }
       }
       setResult(completePart(uid, lessonId, partIndex, missed.size === 0, challengeWon.current))
       return
@@ -158,6 +162,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
           </div>
         </div>
         <span className="t-small font-semibold ink-2 whitespace-nowrap">{t('lesson.partOf', { i: num(partIndex + 1), n: num(PARTS_PER_LESSON) })}</span>
+        <SoundToggle />
       </header>
 
       <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain" data-lesson-main>
@@ -235,6 +240,17 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
   )
 }
 
+/** Sounds on or off, remembered on this device. */
+function SoundToggle() {
+  const { t } = useI18n()
+  const [on, set] = useSound()
+  return (
+    <button className={cn(buttonVariants({ variant: 'ghost', size: 'icon-lg' }))} aria-pressed={on} aria-label={t(on ? 'sound.off' : 'sound.on')} title={t(on ? 'sound.off' : 'sound.on')} onClick={() => set(!on)}>
+      <Icon name={on ? 'volume' : 'mute'} />
+    </button>
+  )
+}
+
 function ExitDialog({ open, onStay, onLeave }: { open: boolean; onStay: () => void; onLeave: () => void }) {
   const { t } = useI18n()
   return (
@@ -308,6 +324,8 @@ function PartComplete({ lessonTitle, partIndex, result, questions, missed, secon
   const accuracy = questions ? Math.round(((questions - missed) / questions) * 100) : 100
   const mm = Math.floor(seconds / 60), ss = String(seconds % 60).padStart(2, '0')
   const streakUp = result.streakAfter > result.streakBefore
+  // the reward moment: a fanfare for a part, a little tune when the whole lesson is done
+  useEffect(() => { if (result.lessonDone) sfx.lessonDone(); else sfx.partDone() }, [result])
   const short = useShortScreen()
 
   useEffect(() => {

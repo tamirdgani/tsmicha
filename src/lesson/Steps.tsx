@@ -7,6 +7,7 @@ import { LessonVisual } from './Visuals'
 import { Sprout } from '../ds/Sprout'
 import { Slider } from '@/components/ui/slider'
 import { HABITS } from '../lib/future'
+import { sfx } from '../lib/sfx'
 
 /** Roomier track and thumb than the shadcn default, for thumbs on phones. */
 const SLIDER = 'mt-4 py-2 [&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-thumb]]:size-6 [&_[data-slot=slider-thumb]]:border-2'
@@ -57,7 +58,7 @@ export function Mcq({ step, status, report }: { step: McqStep | PredictStep; sta
   const { pick, num } = useI18n()
   const [sel, setSel] = useState<number | null>(null)
   const locked = status !== 'answering'
-  const choose = (i: number) => { if (locked) return; setSel(i); report(true, i === step.correct) }
+  const choose = (i: number) => { if (locked) return; sfx.pick(); setSel(i); report(true, i === step.correct) }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { const n = Number(e.key); if (n >= 1 && n <= step.options.length) choose(n - 1) }
@@ -118,7 +119,7 @@ export function Sort({ step, status, report }: { step: SortStep; status: Status;
   }, [placed, step, report])
 
   const allPlaced = Object.keys(placed).length === step.items.length
-  const place = (item: number, bucket: number) => { if (locked) return; setPlaced((p) => ({ ...p, [item]: bucket })); setPicked(null) }
+  const place = (item: number, bucket: number) => { if (locked) return; sfx.place(Object.keys(placed).length); setPlaced((p) => ({ ...p, [item]: bucket })); setPicked(null) }
   const unplace = (item: number) => { if (locked) return; setPlaced((p) => { const n = { ...p }; delete n[item]; return n }) }
 
   const chip = (i: number, inBucket: boolean) => {

@@ -74,9 +74,9 @@ const pairs = [
   // strong accents used as text, selected borders and progress
   ['--sky-strong', '--card', TEXT], ['--berry-strong', '--card', TEXT], ['--flame-strong', '--card', TEXT], ['--sun-strong', '--card', TEXT],
   ['--sky-strong', '--background', TEXT], ['--berry-strong', '--background', TEXT], ['--flame-strong', '--background', TEXT], ['--sun-strong', '--background', TEXT],
-  // map steps: the circle against the page, and its icon against the circle
-  ['--primary', '--background', GRAPHIC], ['--on-strong', '--primary', GRAPHIC],
-  ['--on-strong', '--berry-strong', GRAPHIC], ['--on-strong', '--sky-strong', GRAPHIC],
+  // map steps are pastel circles: a darker edge carries the circle against the page, a dark icon sits on the fill
+  ['--color-leaf-700', '--background', GRAPHIC], ['--berry-strong', '--background', GRAPHIC], ['--sky-strong', '--background', GRAPHIC],
+  ['--primary-foreground', '--primary', GRAPHIC], ['--on-pastel', '--color-berry', GRAPHIC], ['--on-pastel', '--color-sky', GRAPHIC], ['--on-pastel', '--color-sun', GRAPHIC],
   // the yellow unit-test circle is outlined in --sun-strong, which carries its edge on the page
   ['--color-leaf-900', '--color-sun', GRAPHIC], ['--sun-strong', '--background', GRAPHIC], ['--sun-strong', '--card', GRAPHIC],
   ['--muted-foreground', '--muted', GRAPHIC],
