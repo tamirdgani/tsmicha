@@ -23,13 +23,13 @@ const lineArt = (m: string) => m.replace(/fill="(?!none)[^"]*"/g, 'fill="none"')
 /** The world's own drawings doodled behind every screen, as thin lines in the world's tint.
     Laid out over the whole screen at once (not a repeating tile): a jittered, staggered grid of small cells,
     each with a different drawing at its own size and angle, and never the same drawing as its neighbours,
-    so the eye never finds a repeat. */
+    so the eye never finds a repeat. Every cell is filled and the jitter is small, so there are no bare patches. */
 function doodleSheet(w: WorldId, W: number, H: number): string {
   const r = seeded(`${w}:${Math.round(W / 200)}:${Math.round(H / 200)}`)
   const kit = KITS[w]
   const keys = [...kit.things.map((t) => t.k), ...kit.chars.map((c) => c.k), 'badge'].filter((k) => ARTS[w][k])
   const defs = keys.map((k, i) => `<symbol id="d${i}" viewBox="0 0 100 100"><g fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${lineArt(ARTS[w][k])}</g></symbol>`).join('')
-  const cell = 74
+  const cell = 68
   const cols = Math.ceil(W / cell) + 1, rows = Math.ceil(H / cell) + 1
   const grid: number[][] = []
   let bag: number[] = []
@@ -43,10 +43,9 @@ function doodleSheet(w: WorldId, W: number, H: number): string {
       let k = draw(), guard = 0
       while (near.includes(k) && guard++ < 6) { bag.unshift(k); k = draw() }
       grid[row][col] = k
-      if (r() < 0.08) continue // an empty cell now and then breaks up the rows
-      const size = 24 + r() * 26
-      const x = (col + (row % 2 ? 0.5 : 0) + 0.2 + r() * 0.6) * cell - cell / 2
-      const y = (row + 0.2 + r() * 0.6) * cell - cell / 2
+      const size = 30 + r() * 20
+      const x = (col + (row % 2 ? 0.5 : 0) + 0.32 + r() * 0.36) * cell - cell / 2
+      const y = (row + 0.32 + r() * 0.36) * cell - cell / 2
       const rot = Math.round((r() - 0.5) * 70)
       const flip = r() < 0.5 ? -1 : 1
       uses.push(`<use href="#d${k}" width="${size.toFixed(0)}" height="${size.toFixed(0)}" transform="translate(${x.toFixed(0)} ${y.toFixed(0)}) rotate(${rot}) scale(${flip} 1) translate(${(-size / 2).toFixed(0)} ${(-size / 2).toFixed(0)})"/>`)
