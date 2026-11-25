@@ -14,7 +14,7 @@ import { clock, CountUp, useNow, useShortScreen } from '../ds/ui'
 import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { Calc, Explain, Mcq, Scenario, Sort, type Status, Basket, Week } from '../lesson/Steps'
-import { Build, Fact, Match, Order, Pick, Trace } from '../lesson/KidSteps'
+import { Build, Fact, Match, Order, Pick, TapAll, Trace } from '../lesson/KidSteps'
 import { Memory, Puzzle } from '../lesson/Games'
 import { Arcade } from '../lesson/Arcade'
 import { useAuth } from '../lib/auth'
@@ -202,6 +202,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
             {item.step.kind === 'basket' && <Basket step={item.step} report={report} />}
             {item.step.kind === 'week' && <Week step={item.step} report={report} />}
             {item.step.kind === 'pick' && <Pick step={item.step} status={status} report={report} />}
+            {item.step.kind === 'tapall' && <TapAll step={item.step} status={status} report={report} />}
             {item.step.kind === 'order' && <Order step={item.step} status={status} report={report} />}
             {item.step.kind === 'match' && <Match step={item.step} status={status} report={report} />}
             {item.step.kind === 'build' && <Build step={item.step} status={status} report={report} />}

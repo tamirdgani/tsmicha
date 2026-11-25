@@ -23,7 +23,9 @@ export type WeekStep = { kind: 'week'; title: L; body: L; rate: number; rows: { 
 
 export type Shape = 'circle' | 'square' | 'triangle' | 'rect' | 'star' | 'heart'
 /** One answer card. Any mix of: an emoji, a big glyph (letter or digit), a drawn shape, a pile of emoji, a caption. */
-export type Tile = { e?: string; g?: string; shape?: Shape; color?: string; scale?: number; many?: { e: string; n: number }; t?: string }
+export type Tile = { e?: string; g?: string; shape?: Shape; color?: string; scale?: number; many?: { e: string; n: number }; t?: string
+  /** How the picture is drawn: `sil` a black shadow · `flip` mirrored · `peek` only the top half shows · `tilt` upside down. */
+  fx?: 'sil' | 'flip' | 'peek' | 'tilt' }
 /** What the child looks at above the answers. */
 export type Show =
   | { kind: 'pile'; e: string; n: number }
@@ -38,6 +40,8 @@ export type Show =
 export type PickStep = { kind: 'pick'; q: L; show?: Show; options: Tile[]; correct: number; why: L; challenge?: boolean }
 export type OrderStep = { kind: 'order'; q: L; items: Tile[]; why: L; challenge?: boolean }
 export type MatchStep = { kind: 'match'; q: L; pairs: [Tile, Tile][]; why: L; challenge?: boolean }
+/** Tap every card that fits (all the red things, every word that rhymes…). Right only when exactly those are chosen. */
+export type TapAllStep = { kind: 'tapall'; q: L; show?: Show; options: Tile[]; right: number[]; why: L; challenge?: boolean }
 /** Trace a letter or digit with a finger. Never graded: covering the shape is enough. */
 export type TraceStep = { kind: 'trace'; q: L; g: string }
 export type BuildStep = { kind: 'build'; q: L; e: string; w: string; extra: string[]; why: L; challenge?: boolean }
@@ -54,15 +58,15 @@ export type FactStep = { kind: 'fact'; e: string; text: L }
 export type ArcadeStep = { kind: 'arcade'; game: 'hoop' | 'goal' | 'bowl'; title: L; target: number }
 
 export type Step = ExplainStep | McqStep | PredictStep | SortStep | CalcStep | ScenarioStep | BasketStep | WeekStep
-  | PickStep | OrderStep | MatchStep | TraceStep | BuildStep | PuzzleStep | MemoryStep | FactStep | ArcadeStep
+  | PickStep | TapAllStep | OrderStep | MatchStep | TraceStep | BuildStep | PuzzleStep | MemoryStep | FactStep | ArcadeStep
 /** `teaser`: a question from the next part, shown when this part ends. */
 export type Part = { title: L; steps: Step[]; teaser?: L }
 /** `teaser`: a question from the next lesson, shown when the last part ends. */
 export type Lesson = { id: string; parts: Part[]; teaser?: L }
 
 /** Steps the learner can get wrong — these come back at the end of the part. */
-export type Question = McqStep | SortStep | PickStep | OrderStep | MatchStep | BuildStep
-export const isQuestion = (s: Step): s is Question => ['mcq', 'sort', 'pick', 'order', 'match', 'build'].includes(s.kind)
+export type Question = McqStep | SortStep | PickStep | TapAllStep | OrderStep | MatchStep | BuildStep
+export const isQuestion = (s: Step): s is Question => ['mcq', 'sort', 'pick', 'tapall', 'order', 'match', 'build'].includes(s.kind)
 /** Steps with a Check button: graded questions plus guesses. */
 export const needsCheck = (s: Step) => isQuestion(s) || s.kind === 'predict'
 export const isChallenge = (s: Step) => isQuestion(s) && !!s.challenge

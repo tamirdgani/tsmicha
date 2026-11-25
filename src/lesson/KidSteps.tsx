@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import type { BuildStep, FactStep, MatchStep, OrderStep, PickStep, Shape, Show, Tile, TraceStep } from '../curriculum/lessonTypes'
+import type { BuildStep, FactStep, MatchStep, OrderStep, PickStep, Shape, Show, TapAllStep, Tile, TraceStep } from '../curriculum/lessonTypes'
 import { Icon } from '../ds/Icon'
 import { useI18n } from '../i18n/I18n'
 import type { Report, Status } from './Steps'
@@ -37,15 +37,25 @@ function Pile({ e, n, size = 34 }: { e: string; n: number; size?: number }) {
   )
 }
 
+/** How a picture is drawn: a shadow, mirrored, peeking out from behind a wall, or upside down. */
+function fxStyle(fx: Tile['fx']): CSSProperties {
+  if (fx === 'sil') return { filter: 'var(--sil)' }
+  if (fx === 'flip') return { display: 'inline-block', transform: 'scaleX(-1)' }
+  if (fx === 'tilt') return { display: 'inline-block', transform: 'rotate(180deg)' }
+  if (fx === 'peek') return { display: 'inline-block', clipPath: 'inset(0 0 52% 0)' }
+  return {}
+}
+
 /** The content of a card. `big` is for the picture at the top of a question. */
 export function TileView({ tile, big }: { tile: Tile; big?: boolean }) {
   const k = big ? 1.6 : 1
+  const fx = fxStyle(tile.fx)
   return (
     <span className="flex flex-col items-center justify-center gap-1 pointer-events-none">
       {tile.shape && <ShapeSvg shape={tile.shape} color={tile.color} size={64 * k} />}
       {tile.many && <Pile e={tile.many.e} n={tile.many.n} size={big ? 44 : 30} />}
-      {tile.e && <span style={{ fontFamily: EMOJI_FONT, fontSize: 54 * k * (tile.scale ?? 1), lineHeight: 1.1 }}>{tile.e}</span>}
-      {tile.g && <span className="font-extrabold t-num" style={{ fontSize: 60 * k, lineHeight: 1, color: 'var(--ink)' }}>{tile.g}</span>}
+      {tile.e && <span style={{ fontFamily: EMOJI_FONT, fontSize: 54 * k * (tile.scale ?? 1), lineHeight: 1.1, ...fx }}>{tile.e}</span>}
+      {tile.g && <span className="font-extrabold t-num" style={{ fontSize: 60 * k, lineHeight: 1, color: 'var(--ink)', ...fx }}>{tile.g}</span>}
       {tile.t && <span className="font-semibold text-center" style={{ fontSize: big ? 22 : tile.e || tile.g ? 16 : 22, lineHeight: 1.25 }}>{tile.t}</span>}
     </span>
   )
@@ -213,6 +223,9 @@ export function Fact({ step, report }: { step: FactStep; report: Report }) {
 
 /* ─────────────────────────── Pick the right card ─────────────────────────── */
 
+const gridCols = (n: number, textOnly: boolean) => textOnly ? 'grid-cols-1 sm:grid-cols-2'
+  : n === 2 ? 'grid-cols-2' : n === 3 || n === 6 || n === 9 ? 'grid-cols-3' : n === 8 ? 'grid-cols-4' : n === 5 ? 'grid-cols-3 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'
+
 export function Pick({ step, status, report }: { step: PickStep; status: Status; report: Report }) {
   const { pick } = useI18n()
   const [sel, setSel] = useState<number | null>(null)
@@ -225,7 +238,7 @@ export function Pick({ step, status, report }: { step: PickStep; status: Status;
   })
   const n = step.options.length
   const textOnly = step.options.every((o) => o.t && !o.e && !o.g && !o.shape && !o.many)
-  const cols = textOnly ? 'grid-cols-1 sm:grid-cols-2' : n === 2 ? 'grid-cols-2' : n === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'
+  const cols = gridCols(n, textOnly)
   return (
     <div>
       <Question text={pick(step.q)} />
@@ -241,6 +254,48 @@ export function Pick({ step, status, report }: { step: PickStep; status: Status;
               style={{ ...cardStyle(s), cursor: locked ? 'default' : 'pointer' }}>
               <TileView tile={o} />
               <Mark s={s} />
+            </motion.button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────── Tap every one that fits ─────────────────────────── */
+
+export function TapAll({ step, status, report }: { step: TapAllStep; status: Status; report: Report }) {
+  const { pick, t } = useI18n()
+  const [sel, setSel] = useState<number[]>([])
+  const locked = status !== 'answering'
+  useEffect(() => {
+    report(sel.length > 0, sel.length === step.right.length && sel.every((i) => step.right.includes(i)))
+  }, [sel, step, report])
+  const toggle = (i: number) => {
+    if (locked) return
+    if (sel.includes(i)) { sfx.unplace(); setSel((s) => s.filter((x) => x !== i)) } else { sfx.place(sel.length); setSel((s) => [...s, i]) }
+  }
+  const n = step.options.length
+  const textOnly = step.options.every((o) => o.t && !o.e && !o.g && !o.shape && !o.many)
+  return (
+    <div>
+      <Question text={pick(step.q)} />
+      <p className="t-small ink-3 text-center mt-2 mb-0">{t('kid.tapall.hint')}</p>
+      {step.show && <ShowView show={step.show} />}
+      <div role="group" aria-label={pick(step.q)} className={`grid ${gridCols(n, textOnly)} gap-3 mt-5 sm:mt-6 max-w-2xl mx-auto`}>
+        {step.options.map((o, i) => {
+          const on = sel.includes(i), good = step.right.includes(i)
+          const s: CardState = locked ? (good ? 'right' : on ? 'wrong' : 'dim') : on ? 'selected' : 'idle'
+          return (
+            <motion.button key={i} {...rise(0.1 + i * 0.04)} role="checkbox" aria-checked={on} onClick={() => toggle(i)}
+              whileTap={locked ? undefined : { scale: 0.95 }}
+              animate={s === 'wrong' ? { x: [0, -8, 8, -5, 5, 0], opacity: 1, y: 0 } : s === 'right' && on ? { scale: [1, 1.06, 1], opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+              className={`relative grid place-items-center rounded-2xl p-3 ${textOnly ? 'min-h-20' : 'min-h-28 sm:min-h-32'}`}
+              style={{ ...cardStyle(s), cursor: locked ? 'default' : 'pointer' }}>
+              <TileView tile={o} />
+              {/* a missed card is shown as right, but without the bounce, so the child sees what else fitted */}
+              <Mark s={s} />
+              {!locked && on && <span className="absolute top-2 end-2 grid place-items-center w-7 h-7 rounded-full" style={{ background: 'var(--sky-strong)', color: '#fff' }}><Icon name="check" size={16} /></span>}
             </motion.button>
           )
         })}

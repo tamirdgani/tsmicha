@@ -35,6 +35,7 @@
 /* Legacy semantic names, now mapped onto the shadcn tokens in index.css.
    Neutral surfaces; green only for brand, progress and success. */
 :root {
+  --sil: brightness(0);
   --paper-line: rgb(31 111 197 / 0.09);
   /* dark icon/text on a pastel fill (map circles); pastel fills stay light in both themes */
   --on-pastel: #1f2a44;
@@ -81,6 +82,7 @@
 }
 
 :root[data-theme="dark"] {
+  --sil: brightness(0) invert(.9);
   --paper-line: rgb(156 202 255 / 0.07);
   --surface-2: oklch(0.18 0 0);
   --ink-2: oklch(0.8 0 0);
