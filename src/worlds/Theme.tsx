@@ -1,8 +1,8 @@
 /* The world around every screen: its doodles in the background, the world picker, and its cheers. */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'motion/react'
-import { ARTS, Emo, svgUrl } from './Art'
+import { ARTS, Emo } from './Art'
 import { currentWorld, setCurrentWorld } from './current'
 import { art, KITS, WORLD_IDS, type WorldId } from './kits'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -17,49 +17,62 @@ function seeded(seed: string) {
   return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296 }
 }
 
-type Doodle = { x: number; y: number; size: number; rot: number; flip: boolean; op: number; url: string }
+/** A drawing as a thin line doodle: every fill dropped, every outline black. */
+const lineArt = (m: string) => m.replace(/fill="(?!none)[^"]*"/g, 'fill="none"').replace(/stroke="[^"]*"/g, 'stroke="#000"').replace(/opacity="[^"]*"/g, '')
 
-/** The world's own drawings scattered behind every screen as faint silhouettes, in the world's tint:
-    every character and thing appears, at its own size and angle, spread evenly but never in a grid,
-    and no two neighbours are the same drawing. */
-function scatter(w: WorldId, wide: boolean): Doodle[] {
-  const r = seeded(`${w}:${wide}`)
+/** The world's own drawings doodled behind every screen, as thin lines in the world's tint.
+    Laid out over the whole screen at once (not a repeating tile): a jittered, staggered grid of small cells,
+    each with a different drawing at its own size and angle, and never the same drawing as its neighbours,
+    so the eye never finds a repeat. */
+function doodleSheet(w: WorldId, W: number, H: number): string {
+  const r = seeded(`${w}:${Math.round(W / 200)}:${Math.round(H / 200)}`)
   const kit = KITS[w]
-  const keys = [...kit.things.map((t) => t.k), ...kit.chars.map((c) => c.k), 'badge']
-  // a fresh shuffle each time the list runs out, so shapes come round as rarely as possible
-  let bag: string[] = []
-  const next = () => { if (!bag.length) bag = [...keys].sort(() => r() - 0.5); return bag.pop()! }
-  const cols = wide ? 7 : 4, rows = wide ? 5 : 7
-  const out: Doodle[] = []
+  const keys = [...kit.things.map((t) => t.k), ...kit.chars.map((c) => c.k), 'badge'].filter((k) => ARTS[w][k])
+  const defs = keys.map((k, i) => `<symbol id="d${i}" viewBox="0 0 100 100"><g fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${lineArt(ARTS[w][k])}</g></symbol>`).join('')
+  const cell = 74
+  const cols = Math.ceil(W / cell) + 1, rows = Math.ceil(H / cell) + 1
+  const grid: number[][] = []
+  let bag: number[] = []
+  const draw = () => { if (!bag.length) bag = keys.map((_, i) => i).sort(() => r() - 0.5); return bag.pop()! }
+  const uses: string[] = []
   for (let row = 0; row < rows; row++) {
+    grid[row] = []
     for (let col = 0; col < cols; col++) {
-      if (r() < 0.18) continue // a few gaps, so the eye never finds rows
-      const cw = 100 / cols, ch = 100 / rows
-      // stagger every other row by half a cell, then jitter inside the cell
-      const x = (col + (row % 2 ? 0.5 : 0) + 0.15 + r() * 0.7) * cw
-      const y = (row + 0.15 + r() * 0.7) * ch
-      const big = r() < 0.22
-      out.push({ x: x % 100, y, size: big ? 90 + r() * 40 : 40 + r() * 38, rot: (r() - 0.5) * 50, flip: r() < 0.5, op: big ? 0.035 : 0.045 + r() * 0.025, url: svgUrl(ARTS[w][next()]) })
+      // never the same drawing as the cell to the left, above, or diagonally above
+      const near = [grid[row][col - 1], grid[row - 1]?.[col], grid[row - 1]?.[col - 1], grid[row - 1]?.[col + 1]]
+      let k = draw(), guard = 0
+      while (near.includes(k) && guard++ < 6) { bag.unshift(k); k = draw() }
+      grid[row][col] = k
+      if (r() < 0.08) continue // an empty cell now and then breaks up the rows
+      const size = 24 + r() * 26
+      const x = (col + (row % 2 ? 0.5 : 0) + 0.2 + r() * 0.6) * cell - cell / 2
+      const y = (row + 0.2 + r() * 0.6) * cell - cell / 2
+      const rot = Math.round((r() - 0.5) * 70)
+      const flip = r() < 0.5 ? -1 : 1
+      uses.push(`<use href="#d${k}" width="${size.toFixed(0)}" height="${size.toFixed(0)}" transform="translate(${x.toFixed(0)} ${y.toFixed(0)}) rotate(${rot}) scale(${flip} 1) translate(${(-size / 2).toFixed(0)} ${(-size / 2).toFixed(0)})"/>`)
     }
   }
-  return out
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${defs}</defs>${uses.join('')}</svg>`
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+}
+
+function useScreen() {
+  const get = () => (typeof window === 'undefined' ? { W: 1280, H: 800 } : { W: Math.ceil(window.innerWidth / 200) * 200, H: Math.ceil(window.innerHeight / 200) * 200 })
+  const [s, set] = useState(get)
+  useEffect(() => {
+    let t = 0
+    const on = () => { window.clearTimeout(t); t = window.setTimeout(() => set((o) => { const n = get(); return n.W === o.W && n.H === o.H ? o : n }), 250) }
+    window.addEventListener('resize', on)
+    return () => { window.removeEventListener('resize', on); window.clearTimeout(t) }
+  }, [])
+  return s
 }
 
 export function WorldBackdrop({ world: w }: { world?: WorldId }) {
-  const [wide] = useState(() => typeof window === 'undefined' || window.innerWidth >= window.innerHeight)
-  const doodles = useMemo(() => (w ? scatter(w, wide) : []), [w, wide])
-  if (!w) return null
-  return (
-    <div aria-hidden="true" className="world-doodles">
-      {doodles.map((d, i) => (
-        <i key={i} style={{
-          left: `${d.x}%`, top: `${d.y}%`, width: d.size, height: d.size, opacity: `calc(${d.op} * var(--doodle-k, 1))`,
-          transform: `translate(-50%, -50%) rotate(${d.rot}deg) scaleX(${d.flip ? -1 : 1})`,
-          WebkitMaskImage: `url("${d.url}")`, maskImage: `url("${d.url}")`,
-        }} />
-      ))}
-    </div>
-  )
+  const { W, H } = useScreen()
+  const url = useMemo(() => (w ? doodleSheet(w, W, H) : null), [w, W, H])
+  if (!url) return null
+  return <div aria-hidden="true" className="world-doodles" style={{ WebkitMaskImage: `url("${url}")`, maskImage: `url("${url}")`, WebkitMaskSize: `${W}px ${H}px`, maskSize: `${W}px ${H}px` }} />
 }
 
 export const worldKit = () => { const w = currentWorld(); return w ? KITS[w] : undefined }
