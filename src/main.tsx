@@ -13,7 +13,6 @@ import { LessonRoute } from './screens/Lesson'
 import { useProfile } from './lib/profile'
 import { Sprout } from './ds/Sprout'
 import { BuddyProvider } from './ds/buddies'
-import { PaperGrid } from './ds/PaperGrid'
 import type { ReactNode } from 'react'
 import { installTapSound } from './lib/sfx'
 import { currentWorld, setCurrentWorld } from './worlds/current'
@@ -43,7 +42,6 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <I18nProvider>
       <AuthProvider>
-        <PaperGrid />
         <ChosenBuddy>
         <HashRouter>
           <Routes>
