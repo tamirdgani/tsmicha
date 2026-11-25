@@ -11,7 +11,7 @@ import { sfx } from '../lib/sfx'
 
 const rise = (d = 0) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { delay: d, duration: 0.35, ease: [0.22, 1, 0.36, 1] as const } })
 const shuffle = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]] } return b }
-import { Emo, EMOJI_FONT } from '../worlds/Art'
+import { Emo, EMOJI_FONT, RichText } from '../worlds/Art'
 
 /* ─────────────────────────── Drawing a tile ─────────────────────────── */
 
@@ -56,7 +56,7 @@ export function TileView({ tile, big }: { tile: Tile; big?: boolean }) {
       {tile.many && <Pile e={tile.many.e} n={tile.many.n} size={big ? 44 : 30} />}
       {tile.e && <Emo e={tile.e} size={54 * k * (tile.scale ?? 1)} style={fx} />}
       {tile.g && <span className="font-extrabold t-num" style={{ fontSize: 60 * k, lineHeight: 1, color: 'var(--ink)', ...fx }}>{tile.g}</span>}
-      {tile.t && <span className="font-semibold text-center" style={{ fontSize: big ? 22 : tile.e || tile.g ? 16 : 22, lineHeight: 1.25 }}>{tile.t}</span>}
+      {tile.t && <span className="font-semibold text-center" style={{ fontSize: big ? 22 : tile.e || tile.g ? 16 : 22, lineHeight: 1.25 }}><RichText text={tile.t} /></span>}
     </span>
   )
 }
@@ -149,7 +149,7 @@ export function ShowView({ show }: { show: Show }) {
           <span className="flex flex-wrap justify-center gap-1 max-w-[220px]" style={{ fontSize: 40 }}>
             {Array.from({ length: show.a }, (_, i) => {
               const gone = minus && i >= show.a - show.b
-              return <span key={i} className="relative" style={{ opacity: gone ? 0.35 : 1 }}><Emo e={show.e} size={40} />{gone && <span className="absolute inset-0 grid place-items-center" style={{ fontSize: 30 }}>✖️</span>}</span>
+              return <span key={i} className="relative" style={{ opacity: gone ? 0.35 : 1 }}><Emo e={show.e} size={40} />{gone && <span className="absolute inset-0 grid place-items-center"><Emo e="✖" size={22} /></span>}</span>
             })}
           </span>
           {!minus && <>
@@ -200,7 +200,7 @@ function Mark({ s }: { s: CardState }) {
 }
 
 function Question({ text }: { text: string }) {
-  return <motion.h2 {...rise()} className="t-h1 m-0 text-center" style={{ textWrap: 'balance' }}>{text}</motion.h2>
+  return <motion.h2 {...rise()} className="t-h1 m-0 text-center" style={{ textWrap: 'balance' }}><RichText text={text} /></motion.h2>
 }
 
 /* ─────────────────────────── Did you know? ─────────────────────────── */
@@ -215,7 +215,7 @@ export function Fact({ step, report }: { step: FactStep; report: Report }) {
         className="grid place-items-center rounded-full mt-5" style={{ width: 150, height: 150, background: 'var(--sun-soft)' }}>
         <Emo e={step.e} size={84} />
       </motion.div>
-      <motion.p {...rise(0.25)} className="t-h2 mt-5 mb-0 max-w-lg" style={{ textWrap: 'balance', lineHeight: 1.45 }}>{pick(step.text)}</motion.p>
+      <motion.p {...rise(0.25)} className="t-h2 mt-5 mb-0 max-w-lg" style={{ textWrap: 'balance', lineHeight: 1.45 }}><RichText text={pick(step.text)} /></motion.p>
       <motion.p {...rise(0.4)} className="t-small ink-2 mt-3 mb-0 flex items-center gap-1.5"><Icon name="book" size={14} />{t('fact.read')}</motion.p>
     </div>
   )

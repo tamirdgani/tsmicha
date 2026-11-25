@@ -1,3 +1,4 @@
+import { RichText } from '../worlds/Art'
 import { EmoLine } from '../worlds/Art'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -34,19 +35,19 @@ export function Explain({ step, report }: { step: ExplainStep; report: Report })
           <EmoLine text={step.scene} size={step.scene.includes('@') ? 76 : 52} />
         </motion.div>
       )}
-      <motion.h2 {...rise(0.05)} className="t-h1 mt-4 sm:mt-6 mb-0">{pick(step.title)}</motion.h2>
+      <motion.h2 {...rise(0.05)} className="t-h1 mt-4 sm:mt-6 mb-0"><RichText text={pick(step.title)} /></motion.h2>
       {list ? (
         <ul className="list-none p-0 m-0 mt-5 grid gap-3">
           {step.body.map((b, i) => (
             <motion.li key={i} {...rise(0.12 + i * 0.08)} className="card flex items-start gap-3 p-4" style={{ boxShadow: 'none' }}>
               <span className="grid place-items-center w-7 h-7 rounded-full shrink-0 t-small font-bold" style={{ background: 'var(--brand)', color: 'var(--on-brand)' }}>{i + 1}</span>
-              <span className="t-body" style={{ fontSize: 17 }}>{pick(b)}</span>
+              <span className="t-body" style={{ fontSize: 17 }}><RichText text={pick(b)} /></span>
             </motion.li>
           ))}
         </ul>
       ) : (
         step.body.map((b, i) => (
-          <motion.p key={i} {...rise(0.12 + i * 0.08)} className="mt-3 sm:mt-4 mb-0 ink-2 text-[17px] sm:text-[18px]" style={{ lineHeight: 1.6 }}>{pick(b)}</motion.p>
+          <motion.p key={i} {...rise(0.12 + i * 0.08)} className="mt-3 sm:mt-4 mb-0 ink-2 text-[17px] sm:text-[18px]" style={{ lineHeight: 1.6 }}><RichText text={pick(b)} /></motion.p>
         ))
       )}
     </div>
@@ -70,7 +71,7 @@ export function Mcq({ step, status, report }: { step: McqStep | PredictStep; sta
   return (
     <div>
       {/* Long questions (challenges, word problems) step down a size so the options stay in view. */}
-      <motion.h2 {...rise()} className={`${pick(step.q).length > 80 ? 't-h2' : 't-h1'} m-0`}>{pick(step.q)}</motion.h2>
+      <motion.h2 {...rise()} className={`${pick(step.q).length > 80 ? 't-h2' : 't-h1'} m-0`}><RichText text={pick(step.q)} /></motion.h2>
       <div role="radiogroup" className="grid gap-3 mt-6 [@media(max-height:760px)]:gap-2 [@media(max-height:760px)]:mt-4">
         <AnimatePresence initial={false}>
         {step.options.map((o, i) => {
@@ -93,7 +94,7 @@ export function Mcq({ step, status, report }: { step: McqStep | PredictStep; sta
                 style={{ border: `1.5px solid ${isSel || showRight ? border : 'var(--line-strong)'}`, color: isSel || showRight ? border : 'var(--ink-3)' }}>
                 {showRight ? <Icon name="check" size={16} /> : showWrong ? <Icon name="x" size={16} /> : num(i + 1)}
               </span>
-              <span className="flex-1 font-medium" style={{ fontSize: 17 }}>{pick(o)}</span>
+              <span className="flex-1 font-medium" style={{ fontSize: 17 }}><RichText text={pick(o)} /></span>
             </motion.button>
           )
         })}
@@ -141,7 +142,7 @@ export function Sort({ step, status, report }: { step: SortStep; status: Status;
         {right && <Icon name="check" size={14} style={{ color: 'var(--brand)' }} />}
         {wrong && <Icon name="x" size={14} style={{ color: 'var(--flame-strong)' }} />}
         <span>
-          {pick(step.items[i].text)}
+          <RichText text={pick(step.items[i].text)} />
           {wrong && <span className="sr-only">{t('lesson.sort.belongs', { b: pick(step.buckets[step.items[i].bucket]) })}</span>}
         </span>
       </motion.button>
@@ -150,14 +151,14 @@ export function Sort({ step, status, report }: { step: SortStep; status: Status;
 
   return (
     <div>
-      <motion.h2 {...rise()} className="t-h1 m-0">{pick(step.prompt)}</motion.h2>
+      <motion.h2 {...rise()} className="t-h1 m-0"><RichText text={pick(step.prompt)} /></motion.h2>
       {!locked && <p className="t-small ink-3 mt-2 mb-0">{t('lesson.sort.hint')}</p>}
 
       {/* The pool keeps a ghost slot for every placed item, so nothing jumps around. */}
       <div className="mt-3 sm:mt-5 flex flex-wrap gap-2">
         {!allPlaced && order.map((i) => placed[i] === undefined ? chip(i, false) : (
           <span key={`ghost-${i}`} aria-hidden="true" className="inline-flex items-center px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-lg font-medium"
-            style={{ fontSize: 15, border: '2px dashed var(--line)', color: 'transparent' }}>{pick(step.items[i].text)}</span>
+            style={{ fontSize: 15, border: '2px dashed var(--line)', color: 'transparent' }}><RichText text={pick(step.items[i].text)} /></span>
         ))}
       </div>
 
@@ -180,7 +181,7 @@ export function Sort({ step, status, report }: { step: SortStep; status: Status;
                 border: `2px dashed ${target || dragOver === bi ? 'var(--sky-strong)' : 'var(--line-strong)'}`,
                 cursor: target ? 'pointer' : 'default',
               }}>
-              <div className="t-small font-semibold ink-2 w-24 shrink-0 text-start sm:w-auto sm:text-center sm:pb-1 ps-1 sm:ps-0">{pick(b)}</div>
+              <div className="t-small font-semibold ink-2 w-24 shrink-0 text-start sm:w-auto sm:text-center sm:pb-1 ps-1 sm:ps-0"><RichText text={pick(b)} /></div>
               <div className="flex-1 flex flex-row flex-wrap sm:flex-col sm:items-stretch gap-2">{here.map((i) => chip(i, true))}</div>
             </div>
           )
@@ -219,8 +220,8 @@ function EarnHours({ step, report }: { step: CalcStep; report: Report }) {
   const tiles: [string, number][] = [[t('lesson.calc.perWeek'), week], [t('lesson.calc.perMonth'), month], [t('lesson.calc.perSummer'), summer]]
   return (
     <div>
-      <motion.h2 {...rise()} className="t-h1 m-0">{pick(step.title)}</motion.h2>
-      <motion.p {...rise(0.05)} className="mt-3 mb-0 ink-2 text-[18px] [@media(max-height:760px)]:text-[16px] [@media(max-height:760px)]:mt-2">{pick(step.body)}</motion.p>
+      <motion.h2 {...rise()} className="t-h1 m-0"><RichText text={pick(step.title)} /></motion.h2>
+      <motion.p {...rise(0.05)} className="mt-3 mb-0 ink-2 text-[18px] [@media(max-height:760px)]:text-[16px] [@media(max-height:760px)]:mt-2"><RichText text={pick(step.body)} /></motion.p>
       <motion.div {...rise(0.1)} className="card p-5 sm:p-6 mt-6 [@media(max-height:760px)]:p-4 [@media(max-height:760px)]:mt-3">
         {slider(t('lesson.calc.rate'), rate, ' ₪', 25, 80, 5, setRate)}
         {slider(t('lesson.calc.hours'), hours, '', 2, 20, 1, setHours)}
@@ -239,7 +240,7 @@ function EarnHours({ step, report }: { step: CalcStep; report: Report }) {
         {touched && (
           <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5 mb-0 p-4 [@media(max-height:760px)]:mt-3 [@media(max-height:760px)]:p-3 [@media(max-height:760px)]:text-[15px] rounded-xl flex gap-3 items-start" style={{ background: 'var(--sun-soft)' }}>
             <Icon name="sparkle" size={20} style={{ color: 'var(--sun-strong)', flexShrink: 0, marginTop: 2 }} />
-            <span className="font-medium">{pick(step.takeaway)}</span>
+            <span className="font-medium"><RichText text={pick(step.takeaway)} /></span>
           </motion.p>
         )}
       </AnimatePresence>
@@ -259,8 +260,8 @@ function SaveWeeks({ step, report }: { step: CalcStep; report: Report }) {
 
   return (
     <div>
-      <motion.h2 {...rise()} className="t-h1 m-0">{pick(step.title)}</motion.h2>
-      <motion.p {...rise(0.05)} className="mt-3 mb-0 ink-2 text-[18px] [@media(max-height:760px)]:text-[16px] [@media(max-height:760px)]:mt-2">{pick(step.body)}</motion.p>
+      <motion.h2 {...rise()} className="t-h1 m-0"><RichText text={pick(step.title)} /></motion.h2>
+      <motion.p {...rise(0.05)} className="mt-3 mb-0 ink-2 text-[18px] [@media(max-height:760px)]:text-[16px] [@media(max-height:760px)]:mt-2"><RichText text={pick(step.body)} /></motion.p>
 
       <motion.div {...rise(0.1)} className="card p-5 sm:p-6 mt-6 [@media(max-height:760px)]:p-4 [@media(max-height:760px)]:mt-3">
         <div className="flex items-baseline justify-between">
@@ -289,7 +290,7 @@ function SaveWeeks({ step, report }: { step: CalcStep; report: Report }) {
         {touched && (
           <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5 mb-0 p-4 [@media(max-height:760px)]:mt-3 [@media(max-height:760px)]:p-3 [@media(max-height:760px)]:text-[15px] rounded-xl flex gap-3 items-start" style={{ background: 'var(--sun-soft)' }}>
             <Icon name="sparkle" size={20} style={{ color: 'var(--sun-strong)', flexShrink: 0, marginTop: 2 }} />
-            <span className="font-medium">{pick(step.takeaway)}</span>
+            <span className="font-medium"><RichText text={pick(step.takeaway)} /></span>
           </motion.p>
         )}
       </AnimatePresence>
@@ -330,7 +331,7 @@ export function Scenario({ step, report, onChoose }: { step: ScenarioStep; repor
           )}
         </AnimatePresence>
       </motion.div>
-      <motion.p {...rise(0.05)} className="t-h2 mt-3 mb-0" style={{ lineHeight: 1.45 }}>{pick(step.story)}</motion.p>
+      <motion.p {...rise(0.05)} className="t-h2 mt-3 mb-0" style={{ lineHeight: 1.45 }}><RichText text={pick(step.story)} /></motion.p>
       <div className="grid gap-3 mt-6 [@media(max-height:760px)]:mt-4 [@media(max-height:760px)]:gap-2">
         <AnimatePresence initial={false}>
         {step.choices.map((c, i) => {
@@ -343,7 +344,7 @@ export function Scenario({ step, report, onChoose }: { step: ScenarioStep; repor
               <button onClick={() => choose(i)} disabled={chosen !== null && !isSel}
                 className="w-full flex items-center gap-3 p-4 [@media(max-height:760px)]:p-3 rounded-xl text-start"
                 style={{ font: 'inherit', color: 'var(--ink)', background: isSel ? 'var(--berry-soft)' : 'var(--surface)', border: `1.5px solid ${isSel ? 'var(--berry-strong)' : 'var(--line)'}`, boxShadow: isSel ? '0 0 0 3px color-mix(in oklab, var(--berry-strong) 22%, transparent)' : 'var(--shadow-card)', cursor: chosen === null ? 'pointer' : 'default' }}>
-                <span className="flex-1 font-medium" style={{ fontSize: 17 }}>{pick(c.text)}</span>
+                <span className="flex-1 font-medium" style={{ fontSize: 17 }}><RichText text={pick(c.text)} /></span>
                 <Icon name="chevron" size={18} className="ink-3" style={{ transform: dir === 'rtl' ? 'scaleX(-1)' : undefined }} />
               </button>
               <AnimatePresence>
@@ -353,7 +354,7 @@ export function Scenario({ step, report, onChoose }: { step: ScenarioStep; repor
                       <Icon name="star" size={20} style={{ color: 'var(--brand)', flexShrink: 0, marginTop: 2 }} />
                       <div>
                         <div className="t-small font-bold" style={{ color: 'var(--brand-ink)' }}>{t('lesson.scenario.better')}</div>
-                        <div className="mt-0.5">{pick(c.outcome)}</div>
+                        <div className="mt-0.5"><RichText text={pick(c.outcome)} /></div>
                       </div>
                     </div>
                   </motion.div>
@@ -364,7 +365,7 @@ export function Scenario({ step, report, onChoose }: { step: ScenarioStep; repor
                       <Icon name={c.best ? 'star' : 'flag'} size={20} style={{ color: c.best ? 'var(--brand)' : 'var(--sun-strong)', flexShrink: 0, marginTop: 2 }} />
                       <div>
                         <div className="t-small font-bold" style={{ color: c.best ? 'var(--brand-ink)' : 'var(--sun-text)' }}>{c.best ? t('lesson.scenario.best') : t('lesson.scenario.result')}</div>
-                        <div className="mt-0.5">{pick(c.outcome)}</div>
+                        <div className="mt-0.5"><RichText text={pick(c.outcome)} /></div>
                       </div>
                     </div>
                   </motion.div>
@@ -419,8 +420,8 @@ export function Basket({ step, report }: { step: BasketStep; report: Report }) {
 
   return (
     <div>
-      <motion.h2 {...rise()} className="t-h1 m-0">{pick(step.title)}</motion.h2>
-      <motion.p {...rise(0.05)} className="mt-2 mb-0 ink-2 text-[17px] [@media(max-height:760px)]:text-[15px]">{pick(step.body)}</motion.p>
+      <motion.h2 {...rise()} className="t-h1 m-0"><RichText text={pick(step.title)} /></motion.h2>
+      <motion.p {...rise(0.05)} className="mt-2 mb-0 ink-2 text-[17px] [@media(max-height:760px)]:text-[15px]"><RichText text={pick(step.body)} /></motion.p>
 
       {/* what's left of the budget */}
       <motion.div {...rise(0.1)} className="mt-4 [@media(max-height:760px)]:mt-3">
@@ -446,7 +447,7 @@ export function Basket({ step, report }: { step: BasketStep; report: Report }) {
               style={{ fontFamily: 'inherit', color: 'var(--ink)', background: on ? tag.bg : 'var(--surface)', border: `1.5px solid ${on ? tag.ink : 'var(--line)'}`,
                 boxShadow: on ? `0 0 0 3px color-mix(in oklab, ${tag.ink} 18%, transparent)` : 'var(--shadow-card)', transition: 'background .15s, border-color .15s, box-shadow .15s' }}>
               <span className="flex w-full items-center justify-between gap-2">
-                <span className="font-semibold text-[15px] leading-tight">{pick(it.text)}</span>
+                <span className="font-semibold text-[15px] leading-tight"><RichText text={pick(it.text)} /></span>
                 <span className="grid place-items-center size-5 rounded-md shrink-0" style={{ background: on ? tag.ink : 'transparent', border: on ? 'none' : '1.5px solid var(--ink-3)', color: 'var(--card)' }}>
                   {on && <Icon name="check" size={13} />}
                 </span>
@@ -532,8 +533,8 @@ export function Week({ step, report }: { step: WeekStep; report: Report }) {
 
   return (
     <div>
-      <motion.h2 {...rise()} className="t-h1 m-0">{pick(step.title)}</motion.h2>
-      <motion.p {...rise(0.05)} className="mt-2 mb-0 ink-2 text-[17px] [@media(max-height:760px)]:text-[15px]">{pick(step.body)}</motion.p>
+      <motion.h2 {...rise()} className="t-h1 m-0"><RichText text={pick(step.title)} /></motion.h2>
+      <motion.p {...rise(0.05)} className="mt-2 mb-0 ink-2 text-[17px] [@media(max-height:760px)]:text-[15px]"><RichText text={pick(step.body)} /></motion.p>
 
       {/* the week as one bar: each activity takes its share, the rest is free */}
       <motion.div {...rise(0.1)} className="mt-4 [@media(max-height:760px)]:mt-3">
@@ -558,7 +559,7 @@ export function Week({ step, report }: { step: WeekStep; report: Report }) {
             style={{ borderColor: 'var(--line)', background: 'var(--surface)', boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="size-2.5 rounded-full shrink-0" style={{ background: r.color }} />
-              <span className="t-small font-semibold truncate">{pick(r.label)}</span>
+              <span className="t-small font-semibold truncate"><RichText text={pick(r.label)} /></span>
             </div>
             <div className="flex items-center justify-between gap-1">
               <HoldButton label={t('lesson.week.less', { x: pick(r.label) })} icon="minus" disabled={hours[i] === 0} onStep={() => bump(i, -1)} />

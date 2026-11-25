@@ -1,3 +1,4 @@
+import { RichText } from '../worlds/Art'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { ArcadeStep } from '../curriculum/lessonTypes'
@@ -14,7 +15,7 @@ const W = 600, H = 420, BR = 26
 type Ball = { x: number; y: number; vx: number; vy: number; live: boolean; t: number; s: number }
 type Pin = { x: number; y: number; down: boolean; vx: number; vy: number; rot: number }
 
-const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
+import { artImage } from '../worlds/Art'
 
 export function Arcade({ step, report }: { step: ArcadeStep; report: Report }) {
   const { t, pick } = useI18n()
@@ -101,7 +102,7 @@ export function Arcade({ step, report }: { step: ArcadeStep; report: Report }) {
 
   return (
     <div>
-      <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="t-h1 m-0 text-center">{pick(step.title)}</motion.h2>
+      <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="t-h1 m-0 text-center"><RichText text={pick(step.title)} /></motion.h2>
       <p className="t-small ink-2 text-center mt-1 mb-0">{t(`arcade.hint.${step.game}`, { n: target })}</p>
       <div ref={wrap} className="mt-3 w-full flex justify-center relative">
         <canvas ref={cv} role="img" aria-label={t('arcade.aria', { s: score, n: target })} className="rounded-2xl touch-none"
@@ -297,9 +298,10 @@ function ball(c: CanvasRenderingContext2D, b: Ball, e: string, now: number, colo
     c.fillStyle = color; c.beginPath(); c.arc(b.x, b.y + bob, r, 0, 7); c.fill()
     c.fillStyle = '#1f2a44'; for (const [dx, dy] of [[-6, -6], [4, -9], [6, 2]]) { c.beginPath(); c.arc(b.x + dx * b.s, b.y + bob + dy * b.s, 3.2 * b.s, 0, 7); c.fill() }
   } else {
-    c.font = `${r * 2.1}px ${EMOJI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'
-    c.fillStyle = '#000' // an emoji takes the fill's alpha: keep it fully opaque
-    c.fillText(e, b.x, b.y + bob + 2)
+    // the ball is our own drawing (loaded once; until then a plain ball)
+    const img = artImage(e)
+    if (img && img.complete) c.drawImage(img, b.x - r * 1.08, b.y + bob - r * 1.08, r * 2.16, r * 2.16)
+    else { c.fillStyle = '#f77f00'; c.beginPath(); c.arc(b.x, b.y + bob, r, 0, 7); c.fill() }
   }
   if (!b.live) {
     // a little ring that says "grab me"

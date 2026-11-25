@@ -10,7 +10,7 @@ const big = (w: string) => (FEM.has(w) ? 'גדולה' : 'גדול')
 
 const PL: Record<string, string> = { אדום: 'אדומים', כחול: 'כחולים', צהוב: 'צהובים', ירוק: 'ירוקים', כתום: 'כתומים', סגול: 'סגולים', ורוד: 'ורודים', חום: 'חומים' }
 /** More things of each color, for "tap all the red things". */
-const COLOR_THINGS: Record<string, string[]> = {
+export const COLOR_THINGS: Record<string, string[]> = {
   אדום: ['🍎', '🍓', '🚒', '🍒', '🌹', '🍅', '🐞'], כחול: ['🫐', '🐳', '💙', '🧢', '🦋', '🚙'], צהוב: ['🍌', '🌻', '⭐', '🍋', '🐥', '🧀'],
   ירוק: ['🥒', '🐸', '🍀', '🥦', '🐢', '🍏'], כתום: ['🥕', '🍊', '🏀', '🦊', '🎃', '🦁'], סגול: ['🍇', '🍆', '💜', '☂️', '🔮'],
   ורוד: ['🐷', '🌸', '🎀', '🦩', '🩰', '🍬'], חום: ['🐻', '🌰', '🪵', '🍫', '🐴', '🥔'],
@@ -18,7 +18,7 @@ const COLOR_THINGS: Record<string, string[]> = {
 const col = (n: string) => COLORS.find((c) => c.n === n)!
 const dot = (c: string, t?: string): Tile => ({ shape: 'circle', color: c, t })
 /** Things everybody knows the color of — shown as a black shadow, so the child has to remember. */
-const KNOWN_COLOR: [string, string, string][] = [
+export const KNOWN_COLOR: [string, string, string][] = [
   ['🌿', 'דשא', 'ירוק'], ['🥕', 'גזר', 'כתום'], ['🍓', 'תות', 'אדום'], ['🍇', 'ענבים', 'סגול'], ['🐷', 'חזיר', 'ורוד'], ['🐻', 'דוב', 'חום'],
   ['🐸', 'צפרדע', 'ירוק'], ['🍋', 'לימון', 'צהוב'], ['🚒', 'כבאית', 'אדום'], ['🍫', 'שוקולד', 'חום'], ['🦩', 'פלמינגו', 'ורוד'],
   ['🍆', 'חציל', 'סגול'], ['🍊', 'תפוז', 'כתום'], ['🐳', 'לווייתן', 'כחול'], ['🍌', 'בננה', 'צהוב'], ['🥒', 'מלפפון', 'ירוק'],

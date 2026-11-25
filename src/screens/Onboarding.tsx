@@ -12,7 +12,7 @@ import type { StrKey } from '../i18n/strings'
 import { useAuth, type User } from '../lib/auth'
 import { focusUnits, goalXp, type AgeRange, type Goal, type Minutes, type Profile, type Situation } from '../lib/profile'
 import { sfx } from '../lib/sfx'
-import { Emo } from '../worlds/Art'
+import { Emo, RichText } from '../worlds/Art'
 import { setCurrentWorld } from '../worlds/current'
 
 type Step = 'name' | 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy' | 'plant'
@@ -424,7 +424,7 @@ function BuddyStep({ name, text, buddy, pick }: { name: string; text: string; bu
                 {buddy === shown && <span className="badge"><Icon name="check" size={12} />{t('ob.buddy.mine')}</span>}
               </div>
               <p className="ink-2 m-0 mt-0.5 t-small">{info.tagline}</p>
-              <span className="chip chip-sun mt-2" style={{ height: 28 }}>{info.power}</span>
+              <span className="chip chip-sun mt-2" style={{ height: 28 }}><RichText text={info.power} /></span>
               <p className="m-0 mt-3" style={{ fontSize: 17, lineHeight: 1.6 }}>
                 <span className="t-caption ink-3 block mb-0.5"><Icon name="book" size={12} /> {t('ob.buddy.read')}</span>
                 {info.story}

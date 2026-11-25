@@ -6,7 +6,9 @@ import { GEN_LOG } from '../src/curriculum/gen'
 import { isQuestion } from '../src/curriculum/lessonTypes'
 import { signature } from '../src/curriculum/bank/util'
 import { lessonsFor } from '../src/curriculum/lessons'
-import { ARTS } from '../src/worlds/Art'
+import { ARTS, graphemes, isPicto, norm } from '../src/worlds/Art'
+import { COMMON } from '../src/art/common'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { KITS, WORLD_IDS, type WorldId } from '../src/worlds/kits'
 
 const nodes = allNodes(COURSE)
@@ -43,6 +45,7 @@ for (const n of nodes) {
     const txt = JSON.stringify(s)
     if (/undefined|NaN|null/.test(txt)) problems.push(`undefined in ${at}: ${txt.slice(0, 160)}`)
     for (const m of txt.matchAll(/@(\w+)\/([\w-]+)/g)) if (!ARTS[m[1] as WorldId]?.[m[2]]) problems.push(`missing drawing @${m[1]}/${m[2]} in ${at}`)
+    for (const g of graphemes(txt)) if (isPicto(g) && !COMMON[norm(g)]) problems.push(`emoji with no drawing ${g} in ${at}`)
   }))
 }
 }
@@ -88,3 +91,12 @@ for (const w of WORLD_IDS) {
   const missing = [...KITS[w].chars.map((c) => c.k), ...KITS[w].things.map((t) => t.k), 'badge', 'pattern'].filter((k) => !ARTS[w][k])
   if (missing.length) console.log('    missing drawings:', missing.join(', '))
 }
+
+// nothing in the app may fall back to an emoji: every emoji written anywhere in src has our drawing
+const srcFiles: string[] = []
+const walk = (d: string) => { for (const f of readdirSync(d)) { const p = `${d}/${f}`; if (statSync(p).isDirectory()) { if (!p.includes('/art')) walk(p) } else if (/\.(ts|tsx)$/.test(f) && !p.endsWith('worlds/Art.tsx')) srcFiles.push(p) } }
+walk('src')
+const undrawn = new Map<string, string>()
+for (const f of srcFiles) for (const g of graphemes(readFileSync(f, 'utf8'))) if (isPicto(g) && !COMMON[norm(g)]) undrawn.set(norm(g), f)
+console.log(`\ndrawings: ${Object.keys(COMMON).length} common + ${Object.values(ARTS).reduce((a, w) => a + Object.keys(w).length, 0)} world · emoji in src without a drawing: ${undrawn.size}`)
+for (const [g, f] of [...undrawn].slice(0, 40)) console.log('   ', g, f)

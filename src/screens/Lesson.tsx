@@ -1,3 +1,4 @@
+import { RichText } from '../worlds/Art'
 import { Emo } from '../worlds/Art'
 import { worldCheer } from '../worlds/Theme'
 import { buttonVariants } from '@/components/ui/button'
@@ -177,7 +178,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
       <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain focus-visible:outline-2" data-lesson-main tabIndex={0} aria-label={t('lesson.area')}>
         <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-2 sm:pt-4 pb-4">
         <div className="flex items-center gap-2 t-small ink-3 mb-3 sm:mb-4 empty:hidden">
-          <span className="[@media(max-height:700px)]:hidden">{pick(part.title)}</span>
+          <span className="[@media(max-height:700px)]:hidden"><RichText text={pick(part.title)} /></span>
           {item.retry && <span className="badge badge-sky"><Icon name="refresh" size={12} />{t('lesson.retry')}</span>}
           {guess && <span className="badge badge-sky"><Icon name="sparkle" size={12} />{t('lesson.predict.badge')}</span>}
           {challenge && <span className="badge note-sun"><Icon name="trophy" size={12} />{t('lesson.challenge.badge')} · <bdi dir="ltr">+{num(CHALLENGE_XP)} XP</bdi></span>}
@@ -237,7 +238,7 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
                       {guess ? t(status === 'correct' ? 'lesson.predict.right' : 'lesson.predict.wrong') : status === 'correct' ? (challenge && !item.retry ? t('lesson.challenge.right') : praise) : t('lesson.notQuite')}
                       {status === 'wrong' && !guess && !item.retry && <span className="badge badge-sky" title={t('lesson.comeBack')}><Icon name="refresh" size={12} />{t('lesson.comeBack.short')}</span>}
                     </div>
-                    {why && <p className="t-small m-0 mt-1" style={{ color: 'var(--ink)' }}>{why}</p>}
+                    {why && <p className="t-small m-0 mt-1" style={{ color: 'var(--ink)' }}><RichText text={why} /></p>}
                   </div>
                 </motion.div>
               )}
@@ -395,7 +396,7 @@ function PartComplete({ lessonTitle, partIndex, result, questions, missed, secon
           <div className="shrink-0 -my-2"><Sprout size={52} stage={1} mood="wink" /></div>
           <div className="min-w-0">
             <div className="t-caption ink-3">{t(last ? 'lesson.teaser.lesson' : 'lesson.teaser.part')}</div>
-            <div className="font-semibold leading-snug">{pick(teaser)}</div>
+            <div className="font-semibold leading-snug"><RichText text={pick(teaser)} /></div>
             <div className="t-small font-semibold mt-0.5" style={{ color: 'var(--brand-ink)' }}>{t('lesson.teaser.dare')}</div>
           </div>
         </motion.div>

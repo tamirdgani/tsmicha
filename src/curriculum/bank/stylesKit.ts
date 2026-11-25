@@ -14,6 +14,8 @@ const num = (n: number): Tile => ({ g: String(n) })
 const nums = (a: number[]) => a.map(num)
 const ORD = ['ראשון', 'שני', 'שלישי', 'רביעי']
 /** Things from outside every world, for "what doesn't belong here?". */
+/** Things whose black shadow alone is too plain to tell apart (a box, a glow): kept out of shadow riddles. */
+const WEAK_SHADOW = new Set(['crater', 'camera', 'chest', 'map', 'lantern', 'candle', 'galaxy', 'flashlight', 'spotlight', 'book', 'truck', 'ambulance', 'tire', 'rock', 'river', 'mirror', 'scroll'])
 const OUTSIDERS = ['🍌', '🧦', '🥕', '☂️', '🎸', '🧁', '🪥', '🍉', '🧸', '🛁']
 
 export function kitStyles(K: Kit): Style[] {
@@ -27,6 +29,7 @@ export function kitStyles(K: Kit): Style[] {
   const colorWord = (c: Char) => (K.colorF ? COLOR_F[c.c] : c.c)
   const dot = (c: string): Tile => ({ shape: 'circle', color: COLOR_HEX[c], t: c })
   const things = K.things
+  const shadowable = things.filter((t) => !WEAK_SHADOW.has(t.k))
   const chars = K.chars
   /** Everything with a name, for letters and syllables. */
   const named = [...chars.map((c) => ({ k: c.k, w: c.name, syl: c.syl, tile: ct(c), isName: true })), ...things.map((t) => ({ k: t.k, w: t.w, syl: t.syl, tile: tt(t, true), isName: false }))]
@@ -199,11 +202,11 @@ export function kitStyles(K: Kit): Style[] {
 
     /* ───── riddles ───── */
     S('shadow', 'של מי הצל?', ['riddle', 'odd'], 't', (_sp, r) => {
-      const [t, ...rest] = some(r, things, 3)
+      const [t, ...rest] = some(r, shadowable, 3)
       return [`k-shadow|${t.k}`, pick(r, 'של מי הצל הזה?', tt(t, true), rest.map((x) => tt(x, true)), `זה הצל של ה${t.w}!`, { kind: 'tile', tile: { e: A(t.k), fx: 'sil' } })]
     }),
     S('peek', 'מי מציץ?', ['riddle'], 'h', (_sp, r) => {
-      const [t, ...rest] = some(r, things, 3)
+      const [t, ...rest] = some(r, shadowable, 3)
       return [`k-peek|${t.k}`, pick(r, 'רואים רק חצי! מי מציץ?', tt(t, true), rest.map((x) => tt(x, true)), `זה ${t.w}!`, { kind: 'tile', tile: { e: A(t.k), fx: 'peek' } })]
     }),
     S('upside', 'מה התהפך?', ['riddle', 'odd'], 'h', (_sp, r) => {
@@ -211,7 +214,7 @@ export function kitStyles(K: Kit): Style[] {
       return [`k-upside|${t.k}|${rest.map((x) => x.k).sort().join()}`, pick(r, `מי עומד הפוך?`, { e: A(t.k), fx: 'tilt' }, rest.map((x) => tt(x)), `ה${t.w} עומד${t.f ? 'ת' : ''} על הראש!`)]
     }),
     S('shadow-match', 'מחברים לצל', ['riddle', 'logic'], 'h', (_sp, r) => {
-      const set = some(r, things, 3)
+      const set = some(r, shadowable, 3)
       return [`k-shm|${set.map((t) => t.k).sort().join()}`, match('מחברים כל אחד לצל שלו', set.map((t) => [tt(t), { e: A(t.k), fx: 'sil' }]), 'הצורה של הצל היא כמו הצורה של הדבר.')]
     }),
     S('who-am-i', 'מי אני?', ['riddle', 'logic'], 't', (_sp, r) => {
@@ -289,6 +292,6 @@ export function kitStyles(K: Kit): Style[] {
 /** Memory pairs for a world game: a thing and its shadow, or a character and its color. */
 export function kitMemory(K: Kit, r: R, n: number): [Tile, Tile][] {
   const A = (k: string) => art(K.id, k)
-  if (r() < 0.5) return some(r, K.things, n).map((t) => [{ e: A(t.k) }, { e: A(t.k), fx: 'sil' }])
+  if (r() < 0.5) return some(r, K.things.filter((t) => !WEAK_SHADOW.has(t.k)), n).map((t) => [{ e: A(t.k) }, { e: A(t.k), fx: 'sil' }])
   return some(r, K.chars, n).map((c) => [{ e: A(c.k) }, { shape: 'circle', color: COLOR_HEX[c.c], t: c.c }])
 }
