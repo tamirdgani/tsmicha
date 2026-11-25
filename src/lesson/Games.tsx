@@ -13,7 +13,7 @@ import type { Report } from './Steps'
    Neither is graded — finishing is the reward. A parent can skip one (a small link) so a lesson never gets stuck. */
 
 const shuffle = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]] } return b }
-const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
+import { artImage, EMOJI_FONT, isArt } from '../worlds/Art'
 const PASTELS: [string, string][] = [['#ddebff', '#c9f2dc'], ['#fff1c9', '#ffe4d6'], ['#ebe3ff', '#ddebff'], ['#c9f2dc', '#fff1c9']]
 const INKS = ['#c0392b', '#1f6fb2', '#6a4fcf', '#1f7a52', '#b5471c']
 
@@ -68,6 +68,8 @@ function piecePath(r: number, c: number, h: number[][], v: number[][], rows: num
 
 /** The picture: a big letter (or digit) in color, its picture (or a pile of things to count) and its word. */
 function drawPicture(step: PuzzleStep, W: number, H: number) {
+  const im = isArt(step.e) ? artImage(step.e) : null
+  const img = im && im.complete ? im : null
   const cv = document.createElement('canvas'); cv.width = W * RES; cv.height = H * RES
   const x = cv.getContext('2d')!; x.scale(RES, RES)
   const [a, b] = PASTELS[step.g.charCodeAt(0) % PASTELS.length]
@@ -84,7 +86,12 @@ function drawPicture(step: PuzzleStep, W: number, H: number) {
   if (step.n) {
     const k = step.n, per = Math.ceil(Math.sqrt(k)), sz = Math.min(W * 0.38 / per, H * 0.6 / per) * 0.9
     x.font = `${sz}px ${EMOJI_FONT}`
-    for (let i = 0; i < k; i++) x.fillText(step.e, W * 0.08 + (i % per + 0.5) * (W * 0.38 / per), H * 0.12 + (Math.floor(i / per) + 0.5) * (H * 0.6 / per))
+    for (let i = 0; i < k; i++) {
+      const cx = W * 0.08 + (i % per + 0.5) * (W * 0.38 / per), cy = H * 0.12 + (Math.floor(i / per) + 0.5) * (H * 0.6 / per)
+      if (img) x.drawImage(img, cx - sz / 2, cy - sz / 2, sz, sz); else x.fillText(step.e, cx, cy)
+    }
+  } else if (img) {
+    const s = ls * 1.05; x.drawImage(img, W * 0.27 - s / 2, H * 0.44 - s / 2, s, s)
   } else {
     x.font = `${ls * 0.78}px ${EMOJI_FONT}`; x.fillText(step.e, W * 0.27, H * 0.44)
   }
@@ -124,7 +131,10 @@ export function Puzzle({ step, report }: { step: PuzzleStep; report: Report }) {
   const tx0 = side ? M : (WW - TW) / 2, ty0 = side ? (WH - TH) / 2 : M + BH + GAP
   const S = Math.min(1.2, w / WW)
 
-  const pic = useMemo(() => drawPicture(step, BW, BH), [step, BW, BH])
+  // our own drawings load as images first; redraw once the picture is in
+  const [loaded, setLoaded] = useState(0)
+  useEffect(() => { if (isArt(step.e)) artImage(step.e, () => setLoaded((n) => n + 1)) }, [step.e])
+  const pic = useMemo(() => drawPicture(step, BW, BH), [step, BW, BH, loaded]) // eslint-disable-line react-hooks/exhaustive-deps
   const ghost = useMemo(() => pic.toDataURL(), [pic])
   const [pieces, setPieces] = useState<Piece[]>([])
   const [held, setHeld] = useState<number | null>(null)

@@ -1,3 +1,4 @@
+import { EmoLine } from '../worlds/Art'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BasketStep, WeekStep, CalcStep, ExplainStep, McqStep, PredictStep, ScenarioStep, SortStep } from '../curriculum/lessonTypes'
@@ -30,7 +31,7 @@ export function Explain({ step, report }: { step: ExplainStep; report: Report })
       {step.scene && (
         <motion.div {...rise()} className="card flex items-center justify-center gap-4 sm:gap-6 px-4 py-5 sm:py-7" style={{ boxShadow: 'none', background: 'var(--brand-soft)', borderColor: 'transparent' }}>
           <Sprout size={110} stage={1} mood="cheer" />
-          <span style={{ fontFamily: '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif', fontSize: 'clamp(40px, 8vw, 60px)', lineHeight: 1.15, letterSpacing: 4 }}>{step.scene}</span>
+          <EmoLine text={step.scene} size={step.scene.includes('@') ? 76 : 52} />
         </motion.div>
       )}
       <motion.h2 {...rise(0.05)} className="t-h1 mt-4 sm:mt-6 mb-0">{pick(step.title)}</motion.h2>

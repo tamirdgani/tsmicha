@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './index.css'
+import './worlds/worlds.css'
 import { I18nProvider } from './i18n/I18n'
 import { AuthProvider, useAuth } from './lib/auth'
 import { DesignSystem } from './screens/DesignSystem'
@@ -15,6 +16,8 @@ import { BuddyProvider } from './ds/buddies'
 import { PaperGrid } from './ds/PaperGrid'
 import type { ReactNode } from 'react'
 import { installTapSound } from './lib/sfx'
+import { currentWorld, setCurrentWorld } from './worlds/current'
+import { WorldBackdrop } from './worlds/Theme'
 
 function Home() {
   const { user, ready } = useAuth()
@@ -29,7 +32,9 @@ function Home() {
 function ChosenBuddy({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const { profile } = useProfile(user?.id)
-  return <BuddyProvider id={profile?.buddy ?? 'robot'}>{children}</BuddyProvider>
+  // the world the child loves (onboarding) drives the questions, the pictures and the look of every screen
+  setCurrentWorld(profile?.goal)
+  return <BuddyProvider id={profile?.buddy ?? 'robot'}><WorldBackdrop world={currentWorld()} />{children}</BuddyProvider>
 }
 
 installTapSound()

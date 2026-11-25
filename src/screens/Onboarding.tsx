@@ -12,6 +12,8 @@ import type { StrKey } from '../i18n/strings'
 import { useAuth, type User } from '../lib/auth'
 import { focusUnits, goalXp, type AgeRange, type Goal, type Minutes, type Profile, type Situation } from '../lib/profile'
 import { sfx } from '../lib/sfx'
+import { Emo } from '../worlds/Art'
+import { setCurrentWorld } from '../worlds/current'
 
 type Step = 'name' | 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy' | 'plant'
 const ORDER: Step[] = ['name', 'welcome', 'age', 'goal', 'sit', 'time', 'buddy', 'plant']
@@ -19,8 +21,9 @@ const QUESTIONS: Step[] = ['age', 'goal', 'sit', 'time', 'buddy']
 
 const AGES: AgeRange[] = ['pre', 'k', 'g1', 'g2']
 const GOALS: { id: Goal; icon: IconName }[] = [
-  { id: 'space', icon: 'star' },
   { id: 'heroes', icon: 'shield' },
+  { id: 'magic', icon: 'sparkle' },
+  { id: 'space', icon: 'star' },
   { id: 'cars', icon: 'flag' },
   { id: 'animals', icon: 'heart' },
   { id: 'dinos', icon: 'sparkle' },
@@ -77,7 +80,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
       const n = Number(e.key)
       if (!n) return
       if (step === 'age' && AGES[n - 1]) { setAge(AGES[n - 1]); pickAndGo(t('ob.age.react')) }
-      if (step === 'goal' && GOALS[n - 1]) { setGoal(GOALS[n - 1].id); pickAndGo(t('ob.goal.react')) }
+      if (step === 'goal' && GOALS[n - 1]) { setGoal(GOALS[n - 1].id); setCurrentWorld(GOALS[n - 1].id); pickAndGo(t('ob.goal.react')) }
       if (step === 'sit' && SITS[n - 1]) toggleSit(SITS[n - 1].id)
       if (step === 'time' && TIMES[n - 1]) { setMinutes(TIMES[n - 1]); setReact(t('ob.time.react')) }
     }
@@ -162,8 +165,8 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
             {step === 'goal' && (
               <Options>
                 {GOALS.map((g, i) => (
-                  <Option key={g.id} n={i + 1} icon={g.icon} selected={goal === g.id} title={t(`ob.goal.${g.id}` as StrKey)} desc={t(`ob.goal.${g.id}.d` as StrKey)}
-                    onClick={() => { setGoal(g.id); pickAndGo(t('ob.goal.react')) }} />
+                  <Option key={g.id} n={i + 1} icon={g.icon} art={`@${g.id}/badge`} selected={goal === g.id} title={t(`ob.goal.${g.id}` as StrKey)} desc={t(`ob.goal.${g.id}.d` as StrKey)}
+                    onClick={() => { setGoal(g.id); setCurrentWorld(g.id); pickAndGo(t('ob.goal.react')) }} />
                 ))}
               </Options>
             )}
@@ -301,7 +304,7 @@ function Options({ children, multi }: { children: ReactNode; multi?: boolean }) 
   return <div role={multi ? 'group' : 'radiogroup'} className="grid sm:grid-cols-2 gap-2 sm:gap-3">{children}</div>
 }
 
-function Option({ n, title, desc, icon, selected, multi, onClick }: { n: number; title: string; desc?: string; icon?: IconName; selected: boolean; multi?: boolean; onClick: () => void }) {
+function Option({ n, title, desc, icon, art, selected, multi, onClick }: { n: number; title: string; desc?: string; icon?: IconName; art?: string; selected: boolean; multi?: boolean; onClick: () => void }) {
   const { num } = useI18n()
   return (
     <motion.button
@@ -316,7 +319,9 @@ function Option({ n, title, desc, icon, selected, multi, onClick }: { n: number;
         transition: 'background .18s, border-color .18s, box-shadow .18s',
       }}
     >
-      {icon ? (
+      {art ? (
+        <span className="grid place-items-center w-14 h-14 shrink-0"><Emo e={art} size={34} /></span>
+      ) : icon ? (
         <span className="grid place-items-center w-11 h-11 rounded-lg shrink-0" style={{ background: selected ? 'var(--brand)' : 'var(--bg-deep)', color: selected ? 'var(--on-brand)' : 'var(--ink-2)', transition: 'background .18s' }}>
           <Icon name={icon} size={22} />
         </span>

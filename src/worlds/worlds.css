@@ -1,0 +1,106 @@
+/* ───────── Worlds: the whole app dresses up in the world the child loves ─────────
+   Set by data-world on <html> (worlds/current.ts). Each world changes the brand color (buttons, progress,
+   right answers), the page color, the heading font and the doodles behind the screens.
+   Brand fills stay pastel with dark text on them (WCAG AA, checked by scripts/contrast.mjs). */
+
+:root { --font-head: var(--font-sans); --world-tint: transparent; --world-ink: var(--ink); }
+.t-display, .t-h1, .t-h2 { font-family: var(--font-head); }
+
+/* Superheroes: comic-book cream paper, hero blue, punchy red and yellow */
+:root[data-world="heroes"] {
+  --font-head: "Secular One", var(--font-sans);
+  --background: #fff8e6; --muted: #fbefd0; --secondary: #fbefd0; --accent: #fbefd0; --border: #f0dfb4; --input: #f0dfb4;
+  --surface-2: #fffbf0; --line-strong: #e9d29a;
+  --primary: #6db7ff; --primary-foreground: #08243f; --ring: #1d5fae;
+  --brand-hover: #3f9cf5; --brand-press: #2d84dc; --brand-soft: #e1f0ff; --brand-ink: #134a87;
+  --world-tint: #e5383b; --world-ink: #c2262a;
+}
+:root[data-theme="dark"][data-world="heroes"] {
+  --background: #17121f; --card: #221b2e; --muted: #2c2340; --secondary: #2c2340; --accent: #2c2340; --surface-2: #1d1727; --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --line-strong: oklch(1 0 0 / 18%);
+  --primary: #6db7ff; --brand-soft: #16304d; --brand-ink: #b9dcff; --brand-hover: #94caff; --ring: #6db7ff; --world-tint: #ff6b6e; --world-ink: #ff8f91;
+}
+
+/* Wizards and magic: lavender night sky, gold stars */
+:root[data-world="magic"] {
+  --font-head: "Suez One", var(--font-sans);
+  --background: #f5f0ff; --muted: #ebe2ff; --secondary: #ebe2ff; --accent: #ebe2ff; --border: #ddd0fa; --input: #ddd0fa;
+  --surface-2: #faf7ff; --line-strong: #cbb9f5;
+  --primary: #c3a8ff; --primary-foreground: #24104f; --ring: #6a4fcf;
+  --brand-hover: #b08dff; --brand-press: #9a72f5; --brand-soft: #efe6ff; --brand-ink: #4a2a9e;
+  --world-tint: #8b5cf6; --world-ink: #6a3fd8;
+}
+:root[data-theme="dark"][data-world="magic"] {
+  --background: #120e24; --card: #1d1736; --muted: #2a2147; --secondary: #2a2147; --accent: #2a2147; --surface-2: #181230; --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --line-strong: oklch(1 0 0 / 18%);
+  --primary: #c3a8ff; --brand-soft: #2c1f55; --brand-ink: #dccbff; --brand-hover: #d6c4ff; --ring: #c3a8ff; --world-tint: #ffd25e; --world-ink: #ffd970;
+}
+
+/* Space: pale sky by day, deep navy by night, comet blue */
+:root[data-world="space"] {
+  --font-head: "Fredoka", var(--font-sans);
+  --background: #eef3ff; --muted: #e0e8fb; --secondary: #e0e8fb; --accent: #e0e8fb; --border: #d2dcf4; --input: #d2dcf4;
+  --surface-2: #f6f8ff; --line-strong: #bccbed;
+  --primary: #7fd6ff; --primary-foreground: #04293d; --ring: #1f6fa3;
+  --brand-hover: #5cc8fa; --brand-press: #3fb3ea; --brand-soft: #def4ff; --brand-ink: #0e5277;
+  --world-tint: #1d70d8; --world-ink: #1a5bb5;
+}
+:root[data-theme="dark"][data-world="space"] {
+  --background: #0a0f26; --card: #131a3a; --muted: #1c2550; --secondary: #1c2550; --accent: #1c2550; --surface-2: #10173a; --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --line-strong: oklch(1 0 0 / 18%);
+  --primary: #7fd6ff; --brand-soft: #123552; --brand-ink: #bfe9ff; --brand-hover: #a6e3ff; --ring: #7fd6ff; --world-tint: #ffd25e; --world-ink: #ffd970;
+}
+
+/* Cars: light asphalt, racing orange, checkered flags */
+:root[data-world="cars"] {
+  --font-head: "Karantina", var(--font-sans);
+  --background: #f3f4f7; --muted: #e6e8ee; --secondary: #e6e8ee; --accent: #e6e8ee; --border: #d9dce5; --input: #d9dce5;
+  --surface-2: #f8f9fb; --line-strong: #c7cbd7;
+  --primary: #ffb066; --primary-foreground: #3a1800; --ring: #b5471c;
+  --brand-hover: #ff9c42; --brand-press: #f38726; --brand-soft: #ffeedd; --brand-ink: #8a3b06;
+  --world-tint: #2f2f3a; --world-ink: #c44a0c;
+}
+:root[data-theme="dark"][data-world="cars"] {
+  --background: #141518; --card: #1f2126; --muted: #2a2d34; --secondary: #2a2d34; --accent: #2a2d34; --surface-2: #1a1c20; --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --line-strong: oklch(1 0 0 / 18%);
+  --primary: #ffb066; --brand-soft: #3d2410; --brand-ink: #ffd2a8; --brand-hover: #ffc58f; --ring: #ffb066; --world-tint: #ffffff; --world-ink: #ffb066;
+}
+/* Karantina is narrow: give its headings a little more size */
+:root[data-world="cars"] .t-display, :root[data-world="cars"] .t-h1, :root[data-world="cars"] .t-h2 { font-size: 1.22em; letter-spacing: 0.01em; }
+
+/* Animals: meadow green and sunshine */
+:root[data-world="animals"] {
+  --font-head: "Varela Round", var(--font-sans);
+  --background: #f2faea; --muted: #e3f2d6; --secondary: #e3f2d6; --accent: #e3f2d6; --border: #d3e8c2; --input: #d3e8c2;
+  --surface-2: #f8fdf3; --line-strong: #bedaa7;
+  --primary: #9ad98a; --primary-foreground: #123a0b; --ring: #2e7a22;
+  --brand-hover: #84cc72; --brand-press: #6fbd5c; --brand-soft: #e6f7df; --brand-ink: #245d18;
+  --world-tint: #8d5524; --world-ink: #7a4515;
+}
+:root[data-theme="dark"][data-world="animals"] {
+  --background: #10170c; --card: #1a2414; --muted: #24321c; --secondary: #24321c; --accent: #24321c; --surface-2: #151e10; --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --line-strong: oklch(1 0 0 / 18%);
+  --primary: #9ad98a; --brand-soft: #1f3a17; --brand-ink: #c9f0bf; --brand-hover: #b5e6a8; --ring: #9ad98a; --world-tint: #d9b38c; --world-ink: #e0bb94;
+}
+
+/* Dinosaurs: warm sand, volcano orange, fern green */
+:root[data-world="dinos"] {
+  --font-head: "Fredoka", var(--font-sans);
+  --background: #fbf3e6; --muted: #f3e4cc; --secondary: #f3e4cc; --accent: #f3e4cc; --border: #ead7b8; --input: #ead7b8;
+  --surface-2: #fdf8ef; --line-strong: #dcc39b;
+  --primary: #8fd48a; --primary-foreground: #113a0f; --ring: #2e7a2b;
+  --brand-hover: #79c973; --brand-press: #62b95c; --brand-soft: #e5f6e1; --brand-ink: #235c20;
+  --world-tint: #b5471c; --world-ink: #a13d14;
+}
+:root[data-theme="dark"][data-world="dinos"] {
+  --background: #18130c; --card: #241d13; --muted: #30271a; --secondary: #30271a; --accent: #30271a; --surface-2: #1d170f; --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --line-strong: oklch(1 0 0 / 18%);
+  --primary: #8fd48a; --brand-soft: #1f3a1d; --brand-ink: #c6efc2; --brand-hover: #aee3a9; --ring: #8fd48a; --world-tint: #ff9466; --world-ink: #ffb999;
+}
+
+/* The world's doodles behind every screen, barely there */
+.world-doodles {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--world-tint); opacity: 0.055;
+  -webkit-mask-image: var(--world-pattern); mask-image: var(--world-pattern);
+  -webkit-mask-size: 150px; mask-size: 150px;
+}
+:root[data-theme="dark"] .world-doodles { opacity: 0.1; }
+
+/* A right answer: a burst in the world's style */
+@keyframes world-pop { 0% { transform: scale(.2) rotate(-25deg); opacity: 0 } 40% { transform: scale(1.12) rotate(6deg); opacity: 1 } 70% { transform: scale(.96) rotate(-2deg) } 100% { transform: scale(1) rotate(0); opacity: 1 } }
+.world-pop { animation: world-pop .55s var(--ease-spring) both; }

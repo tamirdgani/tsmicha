@@ -14,6 +14,9 @@ import { CountUp, Logo, Ring, Toast, clock, useNow } from '../ds/ui'
 import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { useAuth, type User } from '../lib/auth'
+import { Emo } from '../worlds/Art'
+import { art } from '../worlds/kits'
+import { WorldButton, worldKit } from '../worlds/Theme'
 import { focusUnits, goalXp, resetLearner, type Profile as LearnerProfile } from '../lib/profile'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { BADGES, PARTS_PER_LESSON, currentNode, lockOf, levelOf, nodeStates, sproutStage, useProgress, type NodeState, type Progress } from '../lib/progress'
@@ -165,6 +168,7 @@ function TopBar({ user, p, onProgress }: { user: User; p: Progress; onProgress: 
             <span className="t-caption font-bold t-num" style={{ fontSize: 13 }}>{num(lv.level)}</span>
           </Ring>
         </div>
+        <WorldButton />
         <UserMenu user={user} />
       </div>
     </header>
@@ -383,6 +387,7 @@ function UnitBanner({ page, forYou, states, onGo }: { page: number; forYou: bool
   const doneCount = unit ? unit.nodes.filter((n) => states.get(n.id) === 'done').length : 0
   const locked = !unit || states.get(unit.nodes[0].id) === 'locked'
   const flip = dir === 'rtl' ? 'scaleX(-1)' : undefined
+  const kit = worldKit()
   return (
     <div className="shrink-0 flex items-center gap-2 mt-2">
       <button className={cn(buttonVariants({ variant: 'ghost', size: 'icon-lg' }), 'shrink-0')} aria-label={t('map.prevUnit')} disabled={page === 0} style={{ opacity: page === 0 ? 0.3 : 1 }} onClick={() => onGo(page - 1)}>
@@ -400,6 +405,7 @@ function UnitBanner({ page, forYou, states, onGo }: { page: number; forYou: bool
             <h3 className="t-h2 m-0 truncate">{unit ? pick(unit.title) : t('map.nextCourses')}</h3>
             <p className="t-small m-0 mt-0.5 truncate hidden sm:block" style={{ opacity: 0.85 }}>{unit ? pick(unit.goal) : t('map.nextCourses.d')}</p>
           </div>
+          {unit && kit && <Emo e={art(kit.id, kit.chars[(unit.n - 1) % kit.chars.length].k)} size={32} className="shrink-0 hidden min-[380px]:inline-block" />}
           {unit && !locked && (
             <Ring value={doneCount / unit.nodes.length} size={48} stroke={5} color="var(--color-lime)">
               <span className="t-caption font-bold t-num" style={{ fontSize: 11 }}>{num(doneCount)}/{num(unit.nodes.length)}</span>
@@ -492,6 +498,7 @@ function UnitPath({ unit, states, parts, currentId, rest, onStart }: { rest: str
   }, [sel])
 
   const selIdx = unit.nodes.findIndex((n) => n.id === sel)
+  const kit = worldKit()
   return (
     <div ref={ref} className="absolute inset-0">
       {L && (
@@ -512,7 +519,10 @@ function UnitPath({ unit, states, parts, currentId, rest, onStart }: { rest: str
           {L.spare && (
             <motion.div className="absolute" style={{ left: L.spare.x, top: L.spare.y, x: '-50%', y: '-62%' }}
               initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: 'spring' }}>
-              <Sprout size={Math.min(72, L.ch * 0.85, L.cw * 0.75)} stage={1} mood="happy" />
+              <span className="flex items-end">
+                <Sprout size={Math.min(72, L.ch * 0.85, L.cw * 0.75)} stage={1} mood="happy" />
+                {kit && <Emo e={art(kit.id, kit.chars[(unit.n + 4) % kit.chars.length].k)} size={Math.min(46, L.ch * 0.5, L.cw * 0.42)} />}
+              </span>
             </motion.div>
           )}
           <AnimatePresence>

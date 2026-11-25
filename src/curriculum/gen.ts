@@ -14,6 +14,8 @@ import { isQuestion } from './lessonTypes'
 import { alike, ANALOGIES, COLORS, FACTS, FEELINGS, LETTER_NAME, LETTERS, RHYMES, SEASONS, SHAPES, WORDS_BY_LETTER, type Fact } from './kdata'
 import { STYLES, type Style, type Topic } from './bank'
 import { he, int, mix, one, picTile, rng, signature, some, type R } from './bank/util'
+import { kitMemory, kitStyles } from './bank/stylesKit'
+import { art, KITS, type Kit, type WorldId } from '../worlds/kits'
 
 /* ───────── choosing questions ───────── */
 
@@ -22,8 +24,8 @@ const LEVELS: Style['lv'][][] = [['e'], ['e', 'h'], ['h'], ['t']]
 const byTopic = new Map<Topic, Style[]>()
 for (const st of STYLES) for (const t of st.skills) byTopic.set(t, [...(byTopic.get(t) ?? []), st])
 
-type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number }
-let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0 }
+type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]> }
+let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map() }
 
 /** What was chosen where (for scripts/check-lessons.ts). */
 export const GEN_LOG: { node: string; style: string; topic: Topic; pass: number }[] = []
@@ -68,7 +70,11 @@ function ask(slot: Slot, c: Ctx): Step {
     return k ? { ...slot.spec, s: k } : slot.spec
   }
   const pool = (topics: Topic[]) => [...new Set(topics.flatMap((t) => byTopic.get(t) ?? []))]
+  // the child's own world comes first: its questions are told with the cast they chose
+  const kitPool = (topics: Topic[]) => [...new Set(topics.flatMap((t) => YEAR.kitByTopic.get(t) ?? []))].filter(fresh)
   const passes: Style[][] = [
+    kitPool([slot.topic]),
+    kitPool(kin),
     pool([slot.topic]).filter((st) => fresh(st) && levels.includes(st.lv)),
     pool([slot.topic]).filter(fresh),
     slot.topic === 'riddle' ? [] : pool(lessonTopics).filter(fresh),
@@ -155,8 +161,13 @@ function family(specs: Spec[]): { kind: 'letters'; set: string } | { kind: 'numb
 function puzzleGame(unit: number, specs: Spec[], r: R): PuzzleStep {
   const [cols, rows] = unit <= 3 ? [3, 2] : unit <= 8 ? [3, 3] : [4, 3]
   const f = family(specs)
+  const kit = YEAR.kit
+  if (kit && f.kind === 'letters') {
+    const cast = [...kit.chars.map((c) => ({ w: c.name, k: c.k })), ...kit.things.filter((t) => !t.w.includes(' ')).map((t) => ({ w: t.w, k: t.k }))].filter((x) => f.set.includes(x.w[0]))
+    if (cast.length) { const x = one(r, cast); return { kind: 'puzzle', title: he(`פאזל: ${x.w}`), g: x.w[0], word: x.w, e: art(kit.id, x.k), cols, rows } }
+  }
   if (f.kind === 'numbers') {
-    const n = int(r, 2, Math.min(9, f.max)), e = one(r, ['🍎', '⭐', '🐟', '🎈', '🐞', '🍓'])
+    const n = int(r, 2, Math.min(9, f.max)), e = kit ? art(kit.id, one(r, kit.things).k) : one(r, ['🍎', '⭐', '🐟', '🎈', '🐞', '🍓'])
     return { kind: 'puzzle', title: he(`פאזל: המספר ${n}`), g: String(n), e, n, cols, rows }
   }
   const pool = f.kind === 'letters' ? [...f.set].filter((l) => WORDS_BY_LETTER[l]) : [...LETTERS]
@@ -167,8 +178,10 @@ function puzzleGame(unit: number, specs: Spec[], r: R): PuzzleStep {
 function memoryGame(unit: number, specs: Spec[], r: R): MemoryStep {
   const n = unit <= 3 ? 3 : unit <= 8 ? 4 : 5
   const f = family(specs)
+  const kit = YEAR.kit
+  if (kit && f.kind !== 'letters' && r() < 0.6) return { kind: 'memory', title: he(`זיכרון: ${kit.title}`), pairs: kitMemory(kit, r, n) }
   if (f.kind === 'numbers') {
-    const e = one(r, ['🍎', '⭐', '🐟', '🎈', '🐞'])
+    const e = kit ? art(kit.id, one(r, kit.things).k) : one(r, ['🍎', '⭐', '🐟', '🎈', '🐞'])
     const ns = some(r, Array.from({ length: Math.min(10, f.max) }, (_, i) => i + 1), n)
     return { kind: 'memory', title: he('זיכרון: מספר וכמות'), pairs: ns.map((k) => [{ g: String(k) }, { many: { e, n: k } }]) }
   }
@@ -206,8 +219,11 @@ const CURVE = [[0, 1, 2, 3], [1, 3, 2, 3, 2], [2, 3, 2, 3, 3]]
 const RIDDLE_AT = [[1, 3], [2, 1]]
 
 /** Builds the whole year in path order, so no question repeats and styles rotate across lessons. */
-export function buildYear(nodes: PathNode[]): Record<string, Lesson> {
-  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0 }
+export function buildYear(nodes: PathNode[], world?: WorldId): Record<string, Lesson> {
+  const kit = world ? KITS[world] : undefined
+  const kitByTopic = new Map<Topic, Style[]>()
+  if (kit) for (const st of kitStyles(kit)) for (const t of st.skills) kitByTopic.set(t, [...(kitByTopic.get(t) ?? []), st])
+  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic }
   const out: Record<string, Lesson> = {}
   GEN_LOG.length = 0
   for (const n of nodes) { NODE = n.id; out[n.id] = buildLesson(n); YEAR.lesson++ }
@@ -228,7 +244,7 @@ function buildLesson(node: PathNode): Lesson {
     const steps: Step[] = []
     if (d === 0) steps.push(intro(node, specs[0], isMix))
     // parts 2 and 3 open with a "did you know?" — a breather, and something to wonder about
-    else steps.push(factFor(specs, usedFacts, r))
+    else steps.push(d === 1 && YEAR.kit ? kitFact(YEAR.kit, r) : factFor(specs, usedFacts, r))
     ctx.inPart = new Set()
     for (let i = 0; i < count; i++) {
       const sp = specs[turn++ % specs.length]
@@ -276,6 +292,21 @@ function intro(node: PathNode, sp: Spec, isMix: boolean): ExplainStep {
     return { kind: 'explain', title: node.title, body: [he(what), he('לא ממהרים. חושבים, ואז בוחרים.')], scene: node.kind === 'test' ? '🏆⭐🚀' : '🔁✨' }
   }
   const it = INTRO[sp.s] ?? { body: ['בוא נלמד משהו חדש!'], scene: '✨' }
+  const kit = YEAR.kit
+  if (kit) {
+    // two of the child's characters come along, a different pair each lesson
+    const i = YEAR.lesson % kit.chars.length, a = kit.chars[i], b = kit.chars[(i + 3) % kit.chars.length]
+    return { kind: 'explain', title: node.title, body: [he(kit.hello.replace('{a}', a.name).replace('{b}', b.name)), ...it.body.map(he)], scene: [art(kit.id, a.k), art(kit.id, b.k)].join(' ') }
+  }
   return { kind: 'explain', title: node.title, body: it.body.map(he), scene: it.scene }
+}
+
+/** A fact from the child's world: the one told least often this year. */
+function kitFact(kit: Kit, r: R): FactStep {
+  const seen = (t: string) => YEAR.facts.get(t) ?? 0
+  const m = Math.min(...kit.facts.map((f) => seen(f.t)))
+  const f = one(r, kit.facts.filter((x) => seen(x.t) === m))
+  YEAR.facts.set(f.t, seen(f.t) + 1)
+  return { kind: 'fact', e: f.e, text: he(f.t) }
 }
 

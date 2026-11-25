@@ -11,7 +11,7 @@ import { sfx } from '../lib/sfx'
 
 const rise = (d = 0) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { delay: d, duration: 0.35, ease: [0.22, 1, 0.36, 1] as const } })
 const shuffle = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]] } return b }
-const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
+import { Emo, EMOJI_FONT } from '../worlds/Art'
 
 /* ─────────────────────────── Drawing a tile ─────────────────────────── */
 
@@ -32,7 +32,7 @@ export function ShapeSvg({ shape, color = '#4da3ff', size = 64 }: { shape: Shape
 function Pile({ e, n, size = 34 }: { e: string; n: number; size?: number }) {
   return (
     <span className="flex flex-wrap justify-center content-center gap-1 max-w-[180px]" style={{ fontFamily: EMOJI_FONT, fontSize: n > 6 ? size * 0.75 : size, lineHeight: 1.1 }}>
-      {Array.from({ length: n }, (_, i) => <span key={i}>{e}</span>)}
+      {Array.from({ length: n }, (_, i) => <Emo key={i} e={e} size={n > 6 ? size * 0.75 : size} />)}
     </span>
   )
 }
@@ -54,7 +54,7 @@ export function TileView({ tile, big }: { tile: Tile; big?: boolean }) {
     <span className="flex flex-col items-center justify-center gap-1 pointer-events-none">
       {tile.shape && <ShapeSvg shape={tile.shape} color={tile.color} size={64 * k} />}
       {tile.many && <Pile e={tile.many.e} n={tile.many.n} size={big ? 44 : 30} />}
-      {tile.e && <span style={{ fontFamily: EMOJI_FONT, fontSize: 54 * k * (tile.scale ?? 1), lineHeight: 1.1, ...fx }}>{tile.e}</span>}
+      {tile.e && <Emo e={tile.e} size={54 * k * (tile.scale ?? 1)} style={fx} />}
       {tile.g && <span className="font-extrabold t-num" style={{ fontSize: 60 * k, lineHeight: 1, color: 'var(--ink)', ...fx }}>{tile.g}</span>}
       {tile.t && <span className="font-semibold text-center" style={{ fontSize: big ? 22 : tile.e || tile.g ? 16 : 22, lineHeight: 1.25 }}>{tile.t}</span>}
     </span>
@@ -70,7 +70,7 @@ export function ShowView({ show }: { show: Show }) {
       <motion.div {...rise(0.08)} className={box} style={boxStyle}>
         <span className="flex flex-wrap justify-center gap-2 max-w-[360px]" style={{ fontFamily: EMOJI_FONT, fontSize: show.n > 7 ? 42 : 52, lineHeight: 1.1 }}>
           {Array.from({ length: show.n }, (_, i) => (
-            <motion.span key={i} initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} transition={{ delay: 0.15 + i * 0.06, type: 'spring', stiffness: 500, damping: 18 }}>{show.e}</motion.span>
+            <motion.span key={i} initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} transition={{ delay: 0.15 + i * 0.06, type: 'spring', stiffness: 500, damping: 18 }}><Emo e={show.e} size={show.n > 7 ? 42 : 52} /></motion.span>
           ))}
         </span>
       </motion.div>
@@ -90,7 +90,7 @@ export function ShowView({ show }: { show: Show }) {
               {t.shape ? <ShapeSvg shape={t.shape} color={t.color} size={46} />
                 : t.many ? <Pile e={t.many.e} n={t.many.n} size={24} />
                 : t.g ? <span className="font-extrabold t-num" style={{ fontSize: 40, lineHeight: 1 }}>{t.g}</span>
-                : <span style={{ fontFamily: EMOJI_FONT, fontSize: 40 }}>{t.e}</span>}
+                : <Emo e={t.e ?? ''} size={40} style={fxStyle(t.fx)} />}
             </motion.span>
           ))}
           {show.ask && (
@@ -104,9 +104,9 @@ export function ShowView({ show }: { show: Show }) {
   if (show.kind === 'analogy') {
     const pair = (l: string, r: string | null, delay: number) => (
       <motion.span className="flex items-center gap-3 sm:gap-4" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
-        <span style={{ fontFamily: EMOJI_FONT, fontSize: 52, lineHeight: 1 }}>{l}</span>
+        <Emo e={l} size={52} />
         <Icon name="chevron" size={28} className="ink-2" style={{ transform: 'scaleX(-1)' }} />
-        {r ? <span style={{ fontFamily: EMOJI_FONT, fontSize: 52, lineHeight: 1 }}>{r}</span>
+        {r ? <Emo e={r} size={52} />
           : <motion.span className="grid place-items-center w-16 h-16 rounded-xl t-h1" style={{ border: '2.5px dashed var(--sky-strong)', color: 'var(--sky-strong)' }}
               animate={{ scale: [1, 1.08, 1] }} transition={{ repeat: Infinity, duration: 1.4 }}>?</motion.span>}
       </motion.span>
@@ -134,9 +134,9 @@ export function ShowView({ show }: { show: Show }) {
     return (
       <motion.div {...rise(0.08)} className={box} style={boxStyle}>
         <span className="relative block" style={{ width: 240, height: 230, fontFamily: EMOJI_FONT }}>
-          <span className="absolute" style={{ fontSize: 100, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: show.rel === 'inside' ? 1 : 2, lineHeight: 1 }}>{show.b}</span>
+          <span className="absolute" style={{ fontSize: 100, top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: show.rel === 'inside' ? 1 : 2, lineHeight: 1 }}><Emo e={show.b} size={100} /></span>
           <motion.span className="absolute" style={{ fontSize: 54, lineHeight: 1, zIndex: show.rel === 'inside' ? 2 : 3, ...pos[show.rel] }}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>{show.a}</motion.span>
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}><Emo e={show.a} size={54} /></motion.span>
         </span>
       </motion.div>
     )
@@ -149,12 +149,12 @@ export function ShowView({ show }: { show: Show }) {
           <span className="flex flex-wrap justify-center gap-1 max-w-[220px]" style={{ fontSize: 40 }}>
             {Array.from({ length: show.a }, (_, i) => {
               const gone = minus && i >= show.a - show.b
-              return <span key={i} className="relative" style={{ opacity: gone ? 0.35 : 1 }}>{show.e}{gone && <span className="absolute inset-0 grid place-items-center" style={{ fontSize: 30 }}>✖️</span>}</span>
+              return <span key={i} className="relative" style={{ opacity: gone ? 0.35 : 1 }}><Emo e={show.e} size={40} />{gone && <span className="absolute inset-0 grid place-items-center" style={{ fontSize: 30 }}>✖️</span>}</span>
             })}
           </span>
           {!minus && <>
             <span className="grid place-items-center w-11 h-11 rounded-full t-h2" style={{ background: 'var(--brand)', color: 'var(--on-brand)', fontFamily: 'inherit' }}>+</span>
-            <span className="flex flex-wrap justify-center gap-1 max-w-[220px]" style={{ fontSize: 40 }}>{Array.from({ length: show.b }, (_, i) => <span key={i}>{show.e}</span>)}</span>
+            <span className="flex flex-wrap justify-center gap-1 max-w-[220px]" style={{ fontSize: 40 }}>{Array.from({ length: show.b }, (_, i) => <Emo key={i} e={show.e} size={40} />)}</span>
           </>}
         </span>
       </motion.div>
@@ -164,7 +164,7 @@ export function ShowView({ show }: { show: Show }) {
   return (
     <motion.div {...rise(0.08)} className={box} style={boxStyle}>
       <span className="flex items-center gap-4">
-        {show.e && <span style={{ fontFamily: EMOJI_FONT, fontSize: 64 }}>{show.e}</span>}
+        {show.e && <Emo e={show.e} size={64} />}
         <span className="font-extrabold tracking-wide" style={{ fontSize: 'clamp(56px, 12vw, 84px)', lineHeight: 1 }}>
           {show.hide === undefined ? show.w : [...show.w].map((ch, i) => i === show.hide
             ? <span key={i} className="inline-block text-center" style={{ minWidth: '0.8em', color: 'var(--sky-strong)', borderBottom: '5px dashed var(--sky-strong)' }}>?</span>
@@ -213,7 +213,7 @@ export function Fact({ step, report }: { step: FactStep; report: Report }) {
       <motion.span {...rise()} className="chip chip-sun" style={{ height: 34, fontSize: 16 }}><Icon name="sparkle" size={16} />{t('fact.title')}</motion.span>
       <motion.div initial={{ scale: 0.3, rotate: -20, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 12, delay: 0.1 }}
         className="grid place-items-center rounded-full mt-5" style={{ width: 150, height: 150, background: 'var(--sun-soft)' }}>
-        <span style={{ fontFamily: EMOJI_FONT, fontSize: 84, lineHeight: 1 }} aria-hidden="true">{step.e}</span>
+        <Emo e={step.e} size={84} />
       </motion.div>
       <motion.p {...rise(0.25)} className="t-h2 mt-5 mb-0 max-w-lg" style={{ textWrap: 'balance', lineHeight: 1.45 }}>{pick(step.text)}</motion.p>
       <motion.p {...rise(0.4)} className="t-small ink-2 mt-3 mb-0 flex items-center gap-1.5"><Icon name="book" size={14} />{t('fact.read')}</motion.p>
@@ -548,7 +548,7 @@ export function Build({ step, status, report }: { step: BuildStep; status: Statu
     <div>
       <Question text={pick(step.q)} />
       <motion.div {...rise(0.08)} className="card mt-4 mx-auto grid place-items-center p-4" style={{ boxShadow: 'none', background: 'var(--surface-2)', maxWidth: 420 }}>
-        <span style={{ fontFamily: EMOJI_FONT, fontSize: 88, lineHeight: 1.1 }}>{step.e}</span>
+        <Emo e={step.e} size={88} />
       </motion.div>
       <div className="flex justify-center gap-2 sm:gap-3 mt-5">
         {letters.map((ch, j) => {

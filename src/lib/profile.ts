@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { BuddyId } from '../ds/buddies'
+import { setCurrentWorld } from '../worlds/current'
 
 /** The child's stage this year. */
 export type AgeRange = 'pre' | 'k' | 'g1' | 'g2'
 /** What the child loves — used to cheer them on in their own world. */
-export type Goal = 'space' | 'heroes' | 'cars' | 'animals' | 'dinos'
+export type Goal = 'heroes' | 'magic' | 'space' | 'cars' | 'animals' | 'dinos'
 /** What the child can already do. */
 export type Situation = 'count' | 'letters' | 'name' | 'colors' | 'none'
 export type Minutes = 5 | 10 | 15 | 20
@@ -65,5 +66,6 @@ export function resetLearner(uid: string) {
     localStorage.removeItem(key(uid))
     localStorage.removeItem(`kfitza.progress.${uid}`)
   } catch { /* private mode */ }
+  setCurrentWorld(null)
   window.dispatchEvent(new CustomEvent('kfitza-profile', { detail: { uid, profile: null } }))
 }

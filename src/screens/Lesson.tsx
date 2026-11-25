@@ -1,3 +1,5 @@
+import { Emo } from '../worlds/Art'
+import { worldCheer } from '../worlds/Theme'
 import { buttonVariants } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
@@ -137,7 +139,9 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  const praise = useMemo(() => t(PRAISE[(pos * 7 + partIndex) % PRAISE.length]), [pos, partIndex, t])
+  // in the child's world, half the cheers come from its cast ("כוח על!")
+  const cheer = useMemo(() => worldCheer(pos * 7 + partIndex), [pos, partIndex])
+  const praise = useMemo(() => (cheer && (pos + partIndex) % 2 === 0 ? cheer.text : t(PRAISE[(pos * 7 + partIndex) % PRAISE.length])), [cheer, pos, partIndex, t])
   const progress = (pos + (status === 'answering' ? 0 : 1)) / queue.length
 
   if (failed) return <LockedPart lessonId={lessonId} lock={failed.lock} score={failed.score} />
@@ -226,7 +230,8 @@ function LessonPlayer({ lessonId, partIndex, uid }: { lessonId: string; partInde
             <AnimatePresence mode="wait">
               {status !== 'answering' && (
                 <motion.div key={status} className="flex-1 flex items-start gap-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                  <div className="shrink-0 -my-2"><Sprout size={56} stage={1} mood={status === 'correct' ? 'cheer' : guess ? 'wink' : 'think'} /></div>
+                  <div className="shrink-0 -my-2 flex items-end"><Sprout size={56} stage={1} mood={status === 'correct' ? 'cheer' : guess ? 'wink' : 'think'} />
+                    {status === 'correct' && !guess && cheer && <Emo e={cheer.e} size={36} className="world-pop -ms-2" />}</div>
                   <div className="min-w-0" role="status">
                     <div className="t-h3 flex items-center gap-2 flex-wrap" style={{ color: guess ? 'var(--color-sky-ink)' : status === 'correct' ? 'var(--brand-ink)' : 'var(--flame-text)' }}>
                       {guess ? t(status === 'correct' ? 'lesson.predict.right' : 'lesson.predict.wrong') : status === 'correct' ? (challenge && !item.retry ? t('lesson.challenge.right') : praise) : t('lesson.notQuite')}
