@@ -93,13 +93,12 @@
 }
 
 /* The world's doodles behind every screen, barely there */
-.world-doodles {
-  position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: var(--world-tint); opacity: 0.055;
-  -webkit-mask-image: var(--world-pattern); mask-image: var(--world-pattern);
-  -webkit-mask-size: 150px; mask-size: 150px;
+.world-doodles { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.world-doodles > i {
+  position: absolute; display: block; background: var(--world-tint);
+  -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;
 }
-:root[data-theme="dark"] .world-doodles { opacity: 0.1; }
+:root[data-theme="dark"] .world-doodles { --doodle-k: 1.5; }
 
 /* A right answer: a burst in the world's style */
 @keyframes world-pop { 0% { transform: scale(.2) rotate(-25deg); opacity: 0 } 40% { transform: scale(1.12) rotate(6deg); opacity: 1 } 70% { transform: scale(.96) rotate(-2deg) } 100% { transform: scale(1) rotate(0); opacity: 1 } }

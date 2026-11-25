@@ -1,6 +1,6 @@
 /* The world around every screen: its doodles in the background, the world picker, and its cheers. */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { ARTS, Emo, svgUrl } from './Art'
 import { currentWorld, setCurrentWorld } from './current'
@@ -10,9 +10,56 @@ import { useAuth } from '../lib/auth'
 import { useProfile } from '../lib/profile'
 import { sfx } from '../lib/sfx'
 
+/** Seeded randomness, so a world's backdrop stays put between visits. */
+function seeded(seed: string) {
+  let h = 2166136261
+  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619)
+  return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296 }
+}
+
+type Doodle = { x: number; y: number; size: number; rot: number; flip: boolean; op: number; url: string }
+
+/** The world's own drawings scattered behind every screen as faint silhouettes, in the world's tint:
+    every character and thing appears, at its own size and angle, spread evenly but never in a grid,
+    and no two neighbours are the same drawing. */
+function scatter(w: WorldId, wide: boolean): Doodle[] {
+  const r = seeded(`${w}:${wide}`)
+  const kit = KITS[w]
+  const keys = [...kit.things.map((t) => t.k), ...kit.chars.map((c) => c.k), 'badge']
+  // a fresh shuffle each time the list runs out, so shapes come round as rarely as possible
+  let bag: string[] = []
+  const next = () => { if (!bag.length) bag = [...keys].sort(() => r() - 0.5); return bag.pop()! }
+  const cols = wide ? 7 : 4, rows = wide ? 5 : 7
+  const out: Doodle[] = []
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (r() < 0.18) continue // a few gaps, so the eye never finds rows
+      const cw = 100 / cols, ch = 100 / rows
+      // stagger every other row by half a cell, then jitter inside the cell
+      const x = (col + (row % 2 ? 0.5 : 0) + 0.15 + r() * 0.7) * cw
+      const y = (row + 0.15 + r() * 0.7) * ch
+      const big = r() < 0.22
+      out.push({ x: x % 100, y, size: big ? 90 + r() * 40 : 40 + r() * 38, rot: (r() - 0.5) * 50, flip: r() < 0.5, op: big ? 0.035 : 0.045 + r() * 0.025, url: svgUrl(ARTS[w][next()]) })
+    }
+  }
+  return out
+}
+
 export function WorldBackdrop({ world: w }: { world?: WorldId }) {
-  const pat = w ? ARTS[w].pattern : undefined
-  return <div aria-hidden="true" className="world-doodles" style={{ ['--world-pattern' as string]: pat ? `url("${svgUrl(pat)}")` : 'none', display: pat ? undefined : 'none' }} />
+  const [wide] = useState(() => typeof window === 'undefined' || window.innerWidth >= window.innerHeight)
+  const doodles = useMemo(() => (w ? scatter(w, wide) : []), [w, wide])
+  if (!w) return null
+  return (
+    <div aria-hidden="true" className="world-doodles">
+      {doodles.map((d, i) => (
+        <i key={i} style={{
+          left: `${d.x}%`, top: `${d.y}%`, width: d.size, height: d.size, opacity: `calc(${d.op} * var(--doodle-k, 1))`,
+          transform: `translate(-50%, -50%) rotate(${d.rot}deg) scaleX(${d.flip ? -1 : 1})`,
+          WebkitMaskImage: `url("${d.url}")`, maskImage: `url("${d.url}")`,
+        }} />
+      ))}
+    </div>
+  )
 }
 
 export const worldKit = () => { const w = currentWorld(); return w ? KITS[w] : undefined }
