@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, type MotionValue } from 'motion/react'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { pointer } from './pointer'
-import { SHAPES, Upgrades, useBuddy, type BuddyId } from './buddies'
+import { HERO, SHAPES, Upgrades, useBuddy, type BuddyId } from './buddies'
 import { sfx } from '../lib/sfx'
 
 /** Piko, the little robot who learns with the child. He upgrades as the child moves along:
@@ -19,7 +19,7 @@ export type SproutProps = {
   size?: number
   stage?: 0 | 1 | 2 | 3 | 4
   /** Which Piko to draw. Defaults to the one this learner chose (or the robot before they choose). */
-  kind?: BuddyId | 'robot'
+  kind?: BuddyId | 'robot' | 'hero'
   mood?: SproutMood
   /** Gentle idle motion (sway, blink, breathing). */
   animate?: boolean
@@ -87,6 +87,7 @@ export function useLook(ref: React.RefObject<Element | null>, enabled: boolean) 
 function SproutSvg({ size = 120, stage = 1, mood = 'happy', animate = true, interactive = true, className, title, kind: kindProp }: SproutProps) {
   const chosen = useBuddy()
   const kind = kindProp ?? chosen
+  const shape = kind === 'hero' ? HERO : kind === 'robot' ? SHAPES.astro : SHAPES[kind]
   const ref = useRef<SVGSVGElement>(null)
   const live = animate && interactive && size >= 40
   const { lookX, lookY, swing } = useLook(ref, live)
@@ -136,14 +137,14 @@ function SproutSvg({ size = 120, stage = 1, mood = 'happy', animate = true, inte
         {kind !== 'robot' ? (
           <g style={{ transformOrigin: '60px 118px', animation: animate ? 'breathe 3.6s ease-in-out infinite' : undefined }}>
             <motion.g style={{ originX: '60px', originY: '118px', rotate: live ? headTilt : 0 }}>
-              {SHAPES[kind].body}
-              <g transform={`translate(0 ${SHAPES[kind].eyeY - 94})`}>
+              {shape.body}
+              <g transform={`translate(0 ${shape.eyeY - 94})`}>
                 <motion.g style={{ x: live ? faceX : 0, y: live ? faceY : 0 }}>
-                  <Face mood={face} animate={animate} pupilX={live ? pupilX : undefined} pupilY={live ? pupilY : undefined} wide={hover && !tapped} mouthDy={SHAPES[kind].mouthDy ?? 0} />
+                  <Face mood={face} animate={animate} pupilX={live ? pupilX : undefined} pupilY={live ? pupilY : undefined} wide={hover && !tapped} mouthDy={shape.mouthDy ?? 0} />
                 </motion.g>
               </g>
-              {SHAPES[kind].front}
-              <Upgrades stage={stage} top={SHAPES[kind].top} />
+              {shape.front}
+              <Upgrades stage={stage} top={shape.top} />
             </motion.g>
           </g>
         ) : (<>

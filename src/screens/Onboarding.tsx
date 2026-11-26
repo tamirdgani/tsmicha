@@ -211,7 +211,7 @@ function SproutSays({ text, mood, big }: { text: string; mood: SproutMood; big?:
   return (
     <div className={`flex items-end gap-3 sm:gap-4 ${big ? 'mt-6 sm:mt-12' : 'mt-2 sm:mt-6'}`}>
       <motion.div className="shrink-0" layout initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 18 }}>
-        <Sprout size={big ? (short ? 100 : 140) : short ? 68 : 96} stage={1} mood={mood} />
+        <Sprout size={big ? (short ? 100 : 140) : short ? 68 : 96} stage={1} mood={mood} kind="hero" />
       </motion.div>
       <div className="relative card px-4 py-3 sm:px-5 sm:py-4 mb-4 sm:mb-6 flex-1" style={{ borderRadius: 22, borderEndStartRadius: 6 }}>
         <p className={`m-0 font-semibold ${big ? 't-h2' : 't-h3'}`} aria-live="polite">
@@ -258,7 +258,7 @@ function Welcome({ text, name, setName }: { text: string; name: string; setName:
         <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45" style={{ background: 'var(--surface)', borderRight: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }} />
       </div>
       <motion.div className="mt-4" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 15, delay: 0.1 }}>
-        <Sprout size={short ? 120 : 170} stage={1} mood="happy" />
+        <Sprout size={short ? 120 : 170} stage={1} mood="happy" kind="hero" />
       </motion.div>
       <ol className="list-none p-0 m-0 mt-4 sm:mt-6 flex flex-wrap justify-center gap-2">
         {PREVIEW.map((p, i) => (
@@ -287,7 +287,7 @@ function NameStep({ text, name, setName, onDone }: { text: string; name: string;
         <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45" style={{ background: 'var(--surface)', borderRight: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }} />
       </div>
       <motion.div className="mt-4" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 15, delay: 0.1 }}>
-        <Sprout size={short ? 110 : 150} stage={1} mood={name.trim() ? 'cheer' : 'happy'} />
+        <Sprout size={short ? 110 : 150} stage={1} mood={name.trim() ? 'cheer' : 'happy'} kind="hero" />
       </motion.div>
       <label className="w-full max-w-sm mt-5 text-start">
         <span className="t-small ink-2 font-medium">{t('ob.name.label')}</span>

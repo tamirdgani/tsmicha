@@ -72,7 +72,7 @@ export function Login() {
               </motion.div>
               <div className="absolute bottom-0 end-8 sm:end-12" onMouseEnter={() => !busy && setMood('wink')} onMouseLeave={() => !busy && setMood('happy')}>
                 <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.35, type: 'spring', stiffness: 200, damping: 16 }}>
-                  <Sprout size={short ? 120 : 170} stage={1} mood={mood} title="Sprout" />
+                  <Sprout size={short ? 120 : 170} stage={1} mood={mood} kind="hero" title="פיקו" />
                 </motion.div>
               </div>
               <FloatChip className="bottom-10 start-6 sm:start-8" delay={1.0} tone="sun" icon="xp" text="+20 XP" />

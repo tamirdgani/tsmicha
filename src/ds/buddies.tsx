@@ -195,6 +195,46 @@ export const SHAPES: Record<BuddyId, BuddyShape> = {
 }
 
 /** Upgrades as the child moves along: a sparkle, then two, then a crown on top. */
+/** The Piko of the welcome screens: a little robot superhero (cape, mask, a bolt on the chest, rocket boots).
+ *  Original design; the face is the shared one, looking out through the mask. */
+export const HERO: BuddyShape = {
+  eyeY: 52, mouthDy: -1, top: 6,
+  body: (
+    <>
+      {/* the cape, flapping behind */}
+      <g style={{ transformOrigin: '60px 70px', animation: 'sway 2.6s ease-in-out infinite' }}>
+        <path d="M34 66 C22 84 16 98 12 114 C30 108 44 116 60 110 C76 116 90 108 108 114 C104 98 98 84 86 66 Z" fill="#E5383B" />
+        <path d="M44 70 C38 88 36 100 34 112 C42 110 50 112 56 110 C54 96 52 84 50 70 Z" fill="#B8262A" opacity=".55" />
+      </g>
+      {/* rocket boots' flames */}
+      <g style={{ transformOrigin: '60px 112px', animation: 'breathe 0.45s ease-in-out infinite' }}>
+        <path d="M46 108 Q49 120 52 108 Z" fill="#FFC83D" /><path d="M68 108 Q71 120 74 108 Z" fill="#FFC83D" />
+        <path d="M47.5 108 Q49 115 50.5 108 Z" fill="#FF7A45" /><path d="M69.5 108 Q71 115 72.5 108 Z" fill="#FF7A45" />
+      </g>
+      {/* left arm down, right fist up */}
+      <path d="M38 80 L27 96" stroke="#2F6FE4" strokeWidth="9" strokeLinecap="round" />
+      <circle cx="26" cy="98" r="6" fill="#FFC83D" />
+      <path d="M80 80 L102 60" stroke="#2F6FE4" strokeWidth="9" strokeLinecap="round" />
+      <circle cx="104" cy="57" r="7" fill="#FFC83D" />
+      {/* body, belt and the bolt */}
+      <rect x="38" y="68" width="44" height="42" rx="16" fill="#3F7DFF" />
+      <rect x="38" y="98" width="44" height="6" fill="#FFC83D" />
+      <rect x="44" y="104" width="12" height="8" rx="3" fill="#1B2A52" /><rect x="64" y="104" width="12" height="8" rx="3" fill="#1B2A52" />
+      <path d="M64 78 L53 89 L60 89 L56 97 L69 85 L62 85 Z" fill="#FFC83D" stroke="#946200" strokeWidth="1" strokeLinejoin="round" />
+      {/* helmet with a fin, ear pods and the face plate */}
+      <path d="M53 20 L60 4 L67 20 Z" fill="#FFC83D" />
+      <circle cx="29" cy="48" r="6" fill="#FFC83D" /><circle cx="29" cy="48" r="2.5" fill="#2F6FE4" />
+      <circle cx="91" cy="48" r="6" fill="#FFC83D" /><circle cx="91" cy="48" r="2.5" fill="#2F6FE4" />
+      <circle cx="60" cy="48" r="30" fill="#3F7DFF" />
+      <ellipse cx="60" cy="54" rx="23" ry="18" fill="#EAF3FF" />
+      {/* the mask: the eyes look out through it */}
+      <rect x="33" y="44" width="54" height="16" rx="8" fill="#1B2A52" />
+      <ellipse cx="49" cy="52" rx="7.5" ry="6.5" fill="#fff" /><ellipse cx="71" cy="52" rx="7.5" ry="6.5" fill="#fff" />
+      <ellipse cx="47" cy="31" rx="7" ry="3.5" fill="#fff" opacity=".35" transform="rotate(-25 47 31)" />
+    </>
+  ),
+}
+
 export function Upgrades({ stage, top }: { stage: number; top: number }) {
   return (
     <g pointerEvents="none">
