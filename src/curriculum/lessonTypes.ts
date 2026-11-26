@@ -59,8 +59,8 @@ export type MemoryStep = { kind: 'memory'; title: L; pairs: [Tile, Tile][] }
 /** "Did you know?" — a short surprising fact for the parent to read aloud. Not graded. */
 export type FactStep = { kind: 'fact'; e: string; text: L }
 
-/** A ball game for a breather: shoot hoops, kick past the keeper, knock down pins. Not graded. */
-export type ArcadeStep = { kind: 'arcade'; game: 'hoop' | 'goal' | 'bowl'; title: L; target: number }
+/** A real break: shoot hoops, kick past the keeper, knock down pins or throw darts for `seconds` (about 1½ minutes). Not graded. */
+export type ArcadeStep = { kind: 'arcade'; game: 'hoop' | 'goal' | 'bowl' | 'dart'; title: L; seconds?: number }
 
 export type Step = ExplainStep | McqStep | PredictStep | SortStep | CalcStep | ScenarioStep | BasketStep | WeekStep
   | PickStep | TapAllStep | OrderStep | MatchStep | TraceStep | BuildStep | PuzzleStep | MemoryStep | FactStep | ArcadeStep

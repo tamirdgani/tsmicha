@@ -263,9 +263,10 @@ function memoryGame(unit: number, specs: Spec[], r: R): MemoryStep {
 }
 
 const ARCADE: ArcadeStep[] = [
-  { kind: 'arcade', game: 'hoop', title: he('הפסקה: קליעה לסל!'), target: 3 },
-  { kind: 'arcade', game: 'goal', title: he('הפסקה: בעיטה לשער!'), target: 3 },
-  { kind: 'arcade', game: 'bowl', title: he('הפסקה: באולינג!'), target: 2 },
+  { kind: 'arcade', game: 'hoop', title: he('הפסקה: קליעה לסל!'), seconds: 90 },
+  { kind: 'arcade', game: 'goal', title: he('הפסקה: בעיטה לשער!'), seconds: 90 },
+  { kind: 'arcade', game: 'bowl', title: he('הפסקה: באולינג!'), seconds: 90 },
+  { kind: 'arcade', game: 'dart', title: he('הפסקה: חיצים למטרה!'), seconds: 90 },
 ]
 const arcadeGame = (i: number): ArcadeStep => ({ ...ARCADE[i] })
 
@@ -336,7 +337,7 @@ function buildLesson(node: PathNode): Lesson {
     if (d === 0 && node.kind === 'lesson') {
       const unit = Number(node.id.match(/^u(\d+)/)?.[1] ?? 1)
       const k = Number(node.id.match(/-l(\d+)$/)?.[1] ?? 0)
-      if (k % 2 === 0) steps.push(arcadeGame((unit + k / 2) % 3))
+      if (k % 2 === 0) steps.push(arcadeGame((unit + k / 2) % ARCADE.length))
     }
     // The challenge is the last question of part 3; earlier questions aren't flagged.
     const lastQ = d === 2 ? steps.map((s, i) => (isQuestion(s) ? i : -1)).filter((i) => i >= 0).at(-1) : -1

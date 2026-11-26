@@ -10,6 +10,7 @@ import { Login } from './screens/Login'
 import { PathMap } from './screens/PathMap'
 import { Onboarding } from './screens/Onboarding'
 import { LessonRoute } from './screens/Lesson'
+import { Arcade } from './lesson/Arcade'
 import { useProfile } from './lib/profile'
 import { Sprout } from './ds/Sprout'
 import { BuddyProvider } from './ds/buddies'
@@ -34,6 +35,12 @@ function MoveIn() {
   }, [ready, done, data, user])
   if (done && !user) return <Navigate to="/" replace />
   return <div className="min-h-dvh grid place-items-center"><Sprout size={96} stage={0} mood="calm" /></div>
+}
+
+/** Dev only: a break game on its own, to try it without playing a lesson part first. */
+function PlayPreview() {
+  const { game } = useParams()
+  return <div className="max-w-3xl mx-auto p-4"><Arcade key={game} step={{ kind: 'arcade', game: game as 'dart', title: { he: game ?? '', en: game ?? '' }, seconds: 90 }} report={() => {}} /></div>
 }
 
 function Home() {
@@ -69,6 +76,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/design-system" element={<DesignSystem />} />
             <Route path="/lesson/:id" element={<LessonRoute />} />
             <Route path="/move/:data" element={<MoveIn />} />
+            {import.meta.env.DEV && <Route path="/play/:game" element={<PlayPreview />} />}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </HashRouter>
