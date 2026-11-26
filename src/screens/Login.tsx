@@ -9,6 +9,7 @@ import { LangThemeToggles, Logo, Spinner, useShortScreen } from '../ds/ui'
 import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { DEMO, useAuth } from '../lib/auth'
+import { hasCarried } from '../lib/cloud'
 
 const rise = (d: number) => ({
   initial: { opacity: 0, y: 14 },
@@ -87,6 +88,11 @@ export function Login() {
               </button>
               {error && <p role="alert" className="t-small mt-3" style={{ color: 'var(--danger)' }}>{t('login.error')}</p>}
               <p className="t-caption ink-3 mt-4 font-normal">{t('login.terms')}</p>
+              {!DEMO && hasCarried() && (
+                <p role="status" className="note-sun t-caption mt-3 font-normal rounded-lg px-3 py-2">
+                  <strong>{t('move.title')}</strong> {t('move.body')}
+                </p>
+              )}
               {DEMO && (
                 <p className="note-sun t-caption mt-3 font-normal rounded-lg px-3 py-2">
                   {t('login.demo')}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { BuddyId } from '../ds/buddies'
 import { setCurrentWorld } from '../worlds/current'
 import { setCurrentStage } from '../curriculum/stage'
+import { clearCloud, scheduleSync } from './cloud'
 
 /** The child's stage this year. */
 export type AgeRange = 'pre' | 'k' | 'g1' | 'g2'
@@ -55,6 +56,7 @@ export function useProfile(uid: string | undefined) {
   const save = useCallback((p: Profile) => {
     if (!uid) return
     try { localStorage.setItem(key(uid), JSON.stringify(p)) } catch { /* private mode */ }
+    scheduleSync(uid)
     setState({ uid, profile: p })
     window.dispatchEvent(new CustomEvent('kfitza-profile', { detail: { uid, profile: p } }))
   }, [uid])
@@ -67,6 +69,7 @@ export function resetLearner(uid: string) {
     localStorage.removeItem(key(uid))
     localStorage.removeItem(`kfitza.progress.${uid}`)
   } catch { /* private mode */ }
+  void clearCloud(uid)
   setCurrentWorld(null)
   setCurrentStage(null)
   window.dispatchEvent(new CustomEvent('kfitza-profile', { detail: { uid, profile: null } }))

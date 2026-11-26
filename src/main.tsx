@@ -1,6 +1,6 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import './index.css'
 import './worlds/worlds.css'
 import { I18nProvider } from './i18n/I18n'
@@ -17,7 +17,24 @@ import type { ReactNode } from 'react'
 import { installTapSound } from './lib/sfx'
 import { currentWorld, setCurrentWorld } from './worlds/current'
 import { setCurrentStage } from './curriculum/stage'
+import { carryFromLink, pullCloud } from './lib/cloud'
 import { WorldBackdrop } from './worlds/Theme'
+
+/** Arriving from the demo's "move my progress" link: keep it for the first sign-in, then go home. */
+function MoveIn() {
+  const { data } = useParams()
+  const { user, ready } = useAuth()
+  const [done, setDone] = useState(false)
+  useEffect(() => {
+    if (!ready || done || !data) return
+    carryFromLink(data)
+    setDone(true)
+    // already signed in: merge it into the cloud copy now
+    if (user) void pullCloud(user.id).then(() => location.replace(location.pathname))
+  }, [ready, done, data, user])
+  if (done && !user) return <Navigate to="/" replace />
+  return <div className="min-h-dvh grid place-items-center"><Sprout size={96} stage={0} mood="calm" /></div>
+}
 
 function Home() {
   const { user, ready } = useAuth()
@@ -51,6 +68,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<Home />} />
             <Route path="/design-system" element={<DesignSystem />} />
             <Route path="/lesson/:id" element={<LessonRoute />} />
+            <Route path="/move/:data" element={<MoveIn />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </HashRouter>

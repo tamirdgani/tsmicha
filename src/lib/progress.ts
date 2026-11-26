@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FIN_LIT, allNodes, type PathNode } from '../curriculum/course'
+import { scheduleSync } from './cloud'
 
 export type Progress = {
   done: string[]                       // completed node ids, in order
@@ -54,6 +55,7 @@ export function loadProgress(uid: string): Progress {
 function saveProgress(uid: string, p: Progress) {
   if (isPreview()) return
   try { localStorage.setItem(key(uid), JSON.stringify(p)) } catch { /* private mode */ }
+  scheduleSync(uid)
 }
 
 export function useProgress(uid: string | undefined) {

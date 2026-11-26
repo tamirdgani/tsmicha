@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { LESSONS } from '../curriculum/lessons'
-import { FIN_LIT, NEXT_COURSES, allNodes, type NodeKind, type PathNode, type Unit } from '../curriculum/course'
+import { FIN_LIT, NEXT_COURSES, NEXT_STAGE_NAME, allNodes, type NodeKind, type PathNode, type Unit } from '../curriculum/course'
 import { Icon, type IconName } from '../ds/Icon'
 import { Sprout } from '../ds/Sprout'
 import { CountUp, Logo, Ring, Toast, clock, useNow } from '../ds/ui'
@@ -18,6 +18,9 @@ import { Emo } from '../worlds/Art'
 import { art } from '../worlds/kits'
 import { WorldButton, worldKit } from '../worlds/Theme'
 import { focusUnits, goalXp, resetLearner, type Profile as LearnerProfile } from '../lib/profile'
+import { moveLink } from '../lib/cloud'
+import { currentStage } from '../curriculum/stage'
+import { DEMO, SITE_URL } from '../lib/supabase'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { BADGES, PARTS_PER_LESSON, currentNode, lockOf, levelOf, nodeStates, sproutStage, useProgress, type NodeState, type Progress } from '../lib/progress'
 import { useSound } from '../lib/sfx'
@@ -202,6 +205,9 @@ function UserMenu({ user }: { user: User }) {
         <DropdownMenuItem onSelect={() => setSound(!sound)}><Icon name={sound ? 'mute' : 'volume'} size={16} />{t(sound ? 'sound.off' : 'sound.on')}</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => navigate('/design-system')}><Icon name="sparkle" size={16} />{t('menu.ds')}</DropdownMenuItem>
         <DropdownMenuSeparator />
+        {DEMO && SITE_URL && (
+          <DropdownMenuItem onSelect={() => { const l = moveLink(user.id); window.open(SITE_URL + (l ?? ''), '_blank', 'noopener') }}><Icon name="globe" size={16} />{t('menu.move')}</DropdownMenuItem>
+        )}
         <DropdownMenuItem onSelect={() => setResetOpen(true)}><Icon name="refresh" size={16} />{t('menu.reset')}</DropdownMenuItem>
         <DropdownMenuItem onSelect={signOut}><Icon name="logout" size={16} />{t('menu.signout')}</DropdownMenuItem>
       </DropdownMenuContent>
@@ -361,7 +367,7 @@ function UnitPager({ p, page, onGo }: { p: Progress; page: number; onGo: (i: num
     <div className="shrink-0">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="t-h3 m-0 truncate">{pick(FIN_LIT.title)}</h2>
-        <span className="t-small ink-2 shrink-0">{t('map.hoursLeft', { h: num(Math.round(leftMin / 60)) })}</span>
+        <span className="t-small ink-2 shrink-0">{t('map.hoursLeft', { h: num(Math.round(leftMin / 60)), next: pick(NEXT_STAGE_NAME[currentStage()]) })}</span>
       </div>
       <div className="flex gap-1 mt-1.5" role="tablist" aria-label={t('map.course')}>
         {FIN_LIT.units.map((u, i) => {

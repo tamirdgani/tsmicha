@@ -1,4 +1,5 @@
-/* Unit 1 — Kindergarten (גן חובה): everything a child needs to walk into first grade ready.
+/* The years of the path, one per stage (pre-K, kindergarten, first and second grade).
+   This file holds the pre-K year; seeds.ts holds the others.
    12 chapters × (8 lessons + midpoint check + review + chapter test).
    Lessons are short (about 10 minutes, three parts) and built from exercise generators,
    so every node on the path is playable. Unit 2 (first grade) follows the same shape. */
@@ -213,7 +214,7 @@ const SEEDS_PRE: UnitSeed[] = [
     ],
   },
   {
-    title: { he: 'מוכנים לבית הספר!', en: 'Ready for school!' },
+    title: { he: 'עולים לגן חובה!', en: 'On to kindergarten!' },
     goal: { he: 'רגשות, חברים, זמן וכללים', en: 'Feelings, friends, time and rules' },
     lessons: [
       ['מה אני מרגיש?', 'How do I feel?', [{ s: 'feelings' }]],
@@ -223,7 +224,7 @@ const SEEDS_PRE: UnitSeed[] = [
       ['עונות השנה', 'The seasons', [{ s: 'seasons' }]],
       ['הבוקר שלי', 'My morning', [{ s: 'story' }, { s: 'days' }]],
       ['כללים בכיתה', 'Classroom rules', [{ s: 'social', hard: true }, { s: 'feelings' }]],
-      ['מוכנים לכיתה א׳!', 'Ready for first grade!', [{ s: 'count', max: 10 }, { s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN + PE_TAV }, { s: 'add', max: 10 }, { s: 'social' }, { s: 'logic' }]],
+      ['מוכנים לגן חובה!', 'Ready for kindergarten!', [{ s: 'count', max: 10 }, { s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN + PE_TAV }, { s: 'add', max: 10 }, { s: 'social' }, { s: 'logic' }]],
     ],
   },
 ]
@@ -264,12 +265,15 @@ function buildUnit(seed: UnitSeed, i: number, all: UnitSeed[]): Unit {
 
 const META: Record<Stage, { title: L; tagline: L; seeds: UnitSeed[] }> = {
   pre: { title: { he: 'גן טרום חובה', en: 'Pre-K' }, tagline: { he: 'צבעים, צורות, מספרים ואותיות ראשונות', en: 'Colors, shapes, numbers and first letters' }, seeds: SEEDS_PRE },
-  k: { title: { he: 'גן חובה', en: 'Kindergarten' }, tagline: { he: 'מגיעים מוכנים לכיתה א׳', en: 'Arrive ready for first grade' }, seeds: SEEDS_K },
+  k: { title: { he: 'גן חובה', en: 'Kindergarten' }, tagline: { he: 'כל האלף־בית, קריאה ראשונה וחשבון עד 20', en: 'The whole alef-bet, first reading and math to 20' }, seeds: SEEDS_K },
   g1: { title: { he: 'כיתה א׳', en: 'First grade' }, tagline: { he: 'קוראים עם ניקוד, מחשבים עד 100', en: 'Reading with niqqud, math to 100' }, seeds: SEEDS_G1 },
   g2: { title: { he: 'כיתה ב׳', en: 'Second grade' }, tagline: { he: 'כפל, חילוק, עד 1000 והבנת הנקרא', en: 'Times, sharing, to 1000 and reading comprehension' }, seeds: SEEDS_G2 },
 }
 const built = new Map<Stage, Course>()
 /** The year of one stage. Its "units" are shown as chapters (פרקים). */
+/** What finishing this year gets you ready for ("ready for first grade"). */
+export const NEXT_STAGE_NAME: Record<Stage, L> = { pre: { he: 'גן חובה', en: 'kindergarten' }, k: { he: 'כיתה א׳', en: 'first grade' }, g1: { he: 'כיתה ב׳', en: 'second grade' }, g2: { he: 'כיתה ג׳', en: 'third grade' } }
+
 export function courseFor(stage: Stage): Course {
   let c = built.get(stage)
   if (!c) {

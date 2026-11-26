@@ -1,12 +1,8 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { carryDemo, pullCloud } from './cloud'
+import { DEMO, supabase } from './supabase'
 
-const URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
-
-/** null when the project has no Supabase keys yet — the app then runs in demo mode. */
-export const supabase: SupabaseClient | null = URL && KEY ? createClient(URL, KEY) : null
-export const DEMO = !supabase
+export { DEMO, supabase }
 
 export type User = { id: string; name: string; firstName: string; avatar?: string; email?: string }
 
@@ -36,13 +32,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setReady(true)
       return
     }
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session ? fromSupabase(data.session.user) : null)
+    // a signed-in parent: bring the child's progress from the cloud before the first screen draws
+    const arrive = async (u: Parameters<typeof fromSupabase>[0] | null) => {
+      if (u) await pullCloud(u.id)
+      setUser(u ? fromSupabase(u) : null)
       setReady(true)
-    })
+    }
+    let current: string | null = null
+    supabase.auth.getSession().then(({ data }) => { current = data.session?.user.id ?? null; void arrive(data.session?.user ?? null) })
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session ? fromSupabase(session.user) : null)
+      const id = session?.user.id ?? null
+      if (id === current) return // token refreshes: same parent, nothing to reload
+      current = id
+      void arrive(session?.user ?? null)
     })
+    // back from Google: drop the ?code= from the address once it has been used
+    if (new URLSearchParams(location.search).has('code')) history.replaceState(null, '', location.pathname + location.hash)
     return () => sub.subscription.unsubscribe()
   }, [])
 
@@ -51,7 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ready,
     async signInWithGoogle() {
       if (supabase) {
-        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
+        carryDemo()
+        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } })
         if (error) throw error
         return
       }
