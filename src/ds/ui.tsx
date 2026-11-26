@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useI18n } from '../i18n/I18n'
 import { Icon } from './Icon'
 
-export function Logo({ size = 32 }: { size?: number }) {
+export function Logo({ size = 32, textClass }: { size?: number; textClass?: string }) {
   const { t } = useI18n()
   return (
     <span className="inline-flex items-center gap-2.5 select-none">
@@ -17,7 +17,7 @@ export function Logo({ size = 32 }: { size?: number }) {
         <circle cx="39" cy="36" r="3.6" fill="#10361C" />
         <path d="M27 43 Q32 47 37 43" stroke="#10361C" strokeWidth="2.6" strokeLinecap="round" fill="none" />
       </svg>
-      <span className="font-extrabold tracking-tight" style={{ fontSize: size * 0.72 }}>{t('brand')}</span>
+      <span className={`font-extrabold tracking-tight ${textClass ?? ''}`} style={{ fontSize: size * 0.72 }}>{t('brand')}</span>
     </span>
   )
 }

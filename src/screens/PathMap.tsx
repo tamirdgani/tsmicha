@@ -149,28 +149,31 @@ function TopBar({ user, p, onProgress }: { user: User; p: Progress; onProgress: 
   const { t, num } = useI18n()
   const lv = levelOf(p.xp)
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-md" style={{ background: 'color-mix(in srgb, var(--bg) 86%, transparent)', borderBottom: '1px solid var(--line)' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-8 h-14 sm:h-16 flex items-center gap-2 sm:gap-3">
-        <Logo size={28} />
+    <header className="sticky top-0 z-30 backdrop-blur-md" style={{ background: 'color-mix(in srgb, var(--bg) 82%, transparent)', boxShadow: '0 1px 0 var(--line), 0 10px 24px -18px rgb(0 0 0 / 0.35)' }}>
+      <div className="max-w-6xl mx-auto px-3 sm:px-8 h-16 flex items-center gap-1.5 sm:gap-2.5">
+        <Logo size={30} textClass="hidden min-[420px]:inline" />
         <div className="flex-1" />
-        <div className="chip chip-flame" title={t('top.streak')} aria-label={`${t('top.streak')}: ${p.streak}`}>
-          <Icon name="flame" size={18} style={{ color: p.streak ? 'var(--flame-strong)' : 'var(--ink-3)' }} />
-          <span className="t-num">{num(p.streak)}</span>
+        <div className="hud" title={t('top.streak')} aria-label={`${t('top.streak')}: ${p.streak}`}>
+          <span className={cn('hud-ico', p.streak ? 'hud-flame' : 'hud-cold')}><Icon name="flame" size={17} /></span>
+          <span>{num(p.streak)}</span>
+          <span className="hud-label hidden sm:inline">{t('top.days')}</span>
         </div>
-        <div className="chip chip-sun" title={t('top.xp')} aria-label={`${t('top.xp')}: ${p.xp}`}>
-          <Icon name="xp" size={18} style={{ color: 'var(--color-sun)' }} />
+        <div className="hud" title={t('top.xp')} aria-label={`${t('top.xp')}: ${p.xp}`}>
+          <span className="hud-ico hud-sun"><Icon name="xp" size={17} /></span>
           <CountUp to={p.xp} />
+          <span className="hud-label hidden sm:inline">XP</span>
         </div>
-        <button className="lg:hidden grid place-items-center border-0 bg-transparent cursor-pointer p-0" aria-label={t('map.progress')} onClick={onProgress}>
-          <Ring value={p.todayXp / p.dailyGoal} size={38} stroke={4} color={p.todayXp >= p.dailyGoal ? 'var(--brand)' : 'var(--sun-strong)'}>
-            <Icon name={p.todayXp >= p.dailyGoal ? 'check' : 'target'} size={16} style={{ color: p.todayXp >= p.dailyGoal ? 'var(--brand)' : 'var(--color-sun-ink)' }} />
+        <button className="hud lg:hidden" style={{ paddingInlineEnd: 4 }} aria-label={t('map.progress')} onClick={onProgress}>
+          <Ring value={p.todayXp / p.dailyGoal} size={30} stroke={4} color={p.todayXp >= p.dailyGoal ? 'var(--brand)' : 'var(--color-sun)'}>
+            <Icon name={p.todayXp >= p.dailyGoal ? 'check' : 'target'} size={14} style={{ color: p.todayXp >= p.dailyGoal ? 'var(--brand)' : 'var(--sun-strong)' }} />
           </Ring>
         </button>
-        <div className="hidden lg:flex items-center" title={`${t('top.level')} ${lv.level}`}>
-          <Ring value={lv.into / lv.need} size={40} stroke={4}>
-            <span className="t-caption font-bold t-num" style={{ fontSize: 13 }}>{num(lv.level)}</span>
-          </Ring>
+        <div className="hud hidden lg:inline-flex" title={`${t('top.level')} ${lv.level}`} aria-label={`${t('top.level')} ${lv.level}`}>
+          <span className="hud-ico hud-leaf">{num(lv.level)}</span>
+          <span className="hud-label">{t('top.level')}</span>
+          <span className="hud-bar"><i style={{ width: `${Math.round(100 * Math.min(1, lv.into / lv.need))}%` }} /></span>
         </div>
+        <span className="w-px h-7 mx-0.5 hidden sm:block" style={{ background: 'var(--line)' }} />
         <WorldButton />
         <UserMenu user={user} />
       </div>
@@ -188,8 +191,8 @@ function UserMenu({ user }: { user: User }) {
   return (
     <>
     <DropdownMenu>
-      <DropdownMenuTrigger className="rounded-full p-0.5 cursor-pointer border-0 bg-transparent outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
-        <Avatar className="size-9">
+      <DropdownMenuTrigger className="hud-round outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+        <Avatar className="size-[34px]">
           {user.avatar && <AvatarImage src={user.avatar} alt="" referrerPolicy="no-referrer" />}
           <AvatarFallback className="font-semibold" style={{ background: 'var(--brand-soft)', color: 'var(--brand-ink)' }}>{initials}</AvatarFallback>
         </Avatar>

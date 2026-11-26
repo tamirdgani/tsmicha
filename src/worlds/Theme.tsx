@@ -109,7 +109,7 @@ export function WorldButton() {
   return (
     <>
       <button onClick={() => setOpen(true)} aria-label={`העולם שלי: ${w ? KITS[w].title : 'בחירת עולם'}`} title="העולם שלי"
-        className="grid place-items-center w-10 h-10 rounded-full border-0 cursor-pointer p-0" style={{ background: 'var(--brand-soft)' }}>
+        className="hud-round" style={{ background: 'var(--brand-soft)' }}>
         {w ? <Emo e={art(w, 'badge')} size={22} /> : <Emo e="🌍" size={22} />}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>

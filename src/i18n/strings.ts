@@ -26,6 +26,7 @@ export const STRINGS = {
     'login.bubble': 'היי! אני פיקו. נצמח ביחד?',
 
     'top.streak': 'רצף ימים',
+    'top.days': 'ימים',
     'top.xp': 'נקודות XP',
     'top.level': 'רמה',
     'menu.lang': 'English',
@@ -360,6 +361,7 @@ export const STRINGS = {
     'login.bubble': 'Hi! I’m Piko. Shall we grow together?',
 
     'top.streak': 'Day streak',
+    'top.days': 'days',
     'top.xp': 'XP points',
     'top.level': 'Level',
     'menu.lang': 'עברית',
