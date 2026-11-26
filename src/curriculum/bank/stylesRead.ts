@@ -353,4 +353,76 @@ export const READING_STYLES: Style[] = [
   }),
 ]
 
-export const READ_SCHOOL_STYLES: Style[] = [...NIKUD_STYLES, ...FINAL_STYLES, ...WORDS_STYLES, ...SENTENCE_STYLES, ...GRAMMAR_STYLES, ...READING_STYLES]
+/* ───────── more kinds of stories: something lost, a whole day, a feeling and its reason ───────── */
+type Lost = { w: string; f: boolean; e: string }
+const LOST: Lost[] = [{ w: 'כדור', f: false, e: '⚽' }, { w: 'בובה', f: true, e: '🪆' }, { w: 'כובע', f: false, e: '🧢' }, { w: 'מפתח', f: false, e: '🔑' }, { w: 'מחברת', f: true, e: '📓' }, { w: 'דובי', f: false, e: '🧸' }]
+const LOOKED = ['מתחת למיטה', 'מתחת לשולחן', 'מאחורי הספה', 'בתוך הארון']
+const FOUND_IN = ['בתיק', 'בגינה', 'באמבטיה', 'בארגז הצעצועים', 'במכונית של אבא']
+function lostStory(r: R) {
+  const h = hero(r), x = one(r, LOST), [l1, l2] = some(r, LOOKED, 2), at = one(r, FOUND_IN)
+  const it = x.f ? 'אותה' : 'אותו', was = x.f ? 'הייתה' : 'היה'
+  const text = `${h.n} ${v(h, 'חיפש', 'חיפשה')} את ה${x.w} ${v(h, 'שלו', 'שלה')}. ${v(h, 'הוא חיפש', 'היא חיפשה')} ${l1} ו${l2}, אבל ה${x.w} לא ${was} שם. בסוף ${v(h, 'הוא מצא', 'היא מצאה')} ${it} ${at}, ו${v(h, 'הוא שמח', 'היא שמחה')} מאוד.`
+  return { h, x, l1, l2, at, text, key: `${h.n}|${x.w}|${l1}|${l2}|${at}` }
+}
+type Plot = { cause: [string, string]; feel: 'sad' | 'happy'; fix: [string, string] }
+/** [what happened (he, she)], how they felt, [what came next (he, she)]. */
+const PLOTS: Plot[] = [
+  { cause: ['המגדל שהוא בנה מקוביות נפל', 'המגדל שהיא בנתה מקוביות נפל'], feel: 'sad', fix: ['חבר עזר לו לבנות מגדל חדש', 'חברה עזרה לה לבנות מגדל חדש'] },
+  { cause: ['הבלון שלו עף לשמיים', 'הבלון שלה עף לשמיים'], feel: 'sad', fix: ['סבא נתן לו בלון חדש וקשר אותו ליד', 'סבא נתן לה בלון חדש וקשר אותו ליד'] },
+  { cause: ['התחיל גשם באמצע הפיקניק', 'התחיל גשם באמצע הפיקניק'], feel: 'sad', fix: ['כולם נכנסו הביתה ושיחקו משחק קופסה', 'כולם נכנסו הביתה ושיחקו משחק קופסה'] },
+  { cause: ['הוא קיבל אופניים חדשים ליום ההולדת', 'היא קיבלה אופניים חדשים ליום ההולדת'], feel: 'happy', fix: ['הוא אמר תודה ויצא לרכוב', 'היא אמרה תודה ויצאה לרכוב'] },
+  { cause: ['הכלב שלו חזר הביתה אחרי שהלך לאיבוד', 'הכלב שלה חזר הביתה אחרי שהלך לאיבוד'], feel: 'happy', fix: ['הוא חיבק אותו חזק', 'היא חיבקה אותו חזק'] },
+  { cause: ['החבר הכי טוב שלו עבר לגור בעיר אחרת', 'החברה הכי טובה שלה עברה לגור בעיר אחרת'], feel: 'sad', fix: ['הם דיברו בטלפון וקבעו להיפגש', 'הן דיברו בטלפון וקבעו להיפגש'] },
+]
+const FEEL: Record<Plot['feel'], [string, string, string]> = { sad: ['😢', 'עצוב', 'עצובה'], happy: ['😀', 'שמח', 'שמחה'] }
+const OTHER_FEEL: [string, string, string][] = [['😠', 'כועס', 'כועסת'], ['😨', 'מפחד', 'מפחדת']]
+function plotStory(r: R) {
+  const h = hero(r), i = int(r, 0, PLOTS.length - 1), p = PLOTS[i], g = h.f ? 1 : 0
+  const fe = FEEL[p.feel]
+  const text = `${h.n} ${v(h, 'היה', 'הייתה')} ${fe[g + 1]} כי ${p.cause[g]}. אחר כך ${p.fix[g]}.`
+  return { h, i, p, g, fe, text, key: `${h.n}|${i}` }
+}
+const WHEN = [{ e: '🌅', t: 'בבוקר' }, { e: '☀️', t: 'בצהריים' }, { e: '🌙', t: 'בערב' }]
+const DAY_ACTS: [string, string][] = [['אכל דייסה', 'אכלה דייסה'], ['הלך לגן', 'הלכה לגן'], ['שיחק בכדור', 'שיחקה בכדור'], ['קרא ספר', 'קראה ספר'], ['צייר פרח', 'ציירה פרח'], ['שתה חלב', 'שתתה חלב'], ['ביקר את סבתא', 'ביקרה את סבתא'], ['בנה מגדל', 'בנתה מגדל']]
+function dayStory(r: R) {
+  const h = hero(r), acts = some(r, DAY_ACTS, 3), g = h.f ? 1 : 0
+  const text = acts.map((a, k) => `${WHEN[k].t} ${k === 0 ? h.n : v(h, 'הוא', 'היא')} ${a[g]}.`).join(' ')
+  return { h, acts, g, text, key: `${h.n}|${acts.map((a) => a[0]).join()}` }
+}
+export const STORY_STYLES: Style[] = [
+  style('rc-lost-what', 'מה חיפשו?', ['reading'], 'e', (_sp, r) => {
+    const t = lostStory(r)
+    return [`rclw|${t.key}`, pick(r, `מה ${v(t.h, 'חיפש', 'חיפשה')} ${t.h.n}?`, { e: t.x.e }, some(r, LOST.filter((y) => y !== t.x), 2).map((y) => ({ e: y.e })), `כתוב: "${v(t.h, 'חיפש', 'חיפשה')} את ה${t.x.w}".`, txt(t.text))]
+  }),
+  style('rc-lost-where', 'איפה מצאו?', ['reading'], 'h', (_sp, r) => {
+    const t = lostStory(r)
+    return [`rclr|${t.key}`, pick(r, `איפה ${v(t.h, 'מצא', 'מצאה')} ${t.h.n} את ה${t.x.w}?`, { t: t.at }, [{ t: t.l1 }, { t: one(r, FOUND_IN.filter((y) => y !== t.at)) }], `קודם ${v(t.h, 'חיפש', 'חיפשה')} ${t.l1}, אבל ${v(t.h, 'מצא', 'מצאה')} ${t.at}.`, txt(t.text))]
+  }),
+  style('rc-lost-not', 'איפה לא היה?', ['reading'], 't', (_sp, r) => {
+    const t = lostStory(r)
+    return [`rcln|${t.key}`, pick(r, `באיזה מקום ${v(t.h, 'הוא חיפש', 'היא חיפשה')}, וה${t.x.w} לא ${t.x.f ? 'הייתה' : 'היה'} שם?`, { t: t.l2 }, [{ t: t.at }, { t: one(r, LOOKED.filter((y) => y !== t.l1 && y !== t.l2)) }], `${v(t.h, 'חיפש', 'חיפשה')} ${t.l1} ו${t.l2}, ושם לא ${v(t.h, 'מצא', 'מצאה')}.`, txt(t.text))]
+  }),
+  style('rc-why', 'למה?', ['reading'], 't', (_sp, r) => {
+    const t = plotStory(r), others = some(r, PLOTS.filter((x) => x !== t.p), 2)
+    return [`rcy|${t.key}`, pick(r, `למה ${t.h.n} ${v(t.h, 'היה', 'הייתה')} ${t.fe[t.g + 1]}?`, { t: t.p.cause[t.g] }, others.map((x) => ({ t: x.cause[t.g] })), `כתוב: "${t.fe[t.g + 1]} כי ${t.p.cause[t.g]}". המילה "כי" אומרת לנו למה.`, txt(t.text))]
+  }),
+  style('rc-feel', 'איך הרגישו?', ['reading', 'feelings'], 'h', (_sp, r) => {
+    const t = plotStory(r), wrong = [t.p.feel === 'sad' ? FEEL.happy : FEEL.sad, one(r, OTHER_FEEL)]
+    const face = (f: [string, string, string]) => ({ e: f[0], t: f[t.g + 1] })
+    return [`rcf2|${t.key}`, pick(r, `איך ${v(t.h, 'הרגיש', 'הרגישה')} ${t.h.n}?`, face(t.fe), wrong.map(face), `כתוב: "${v(t.h, 'היה', 'הייתה')} ${t.fe[t.g + 1]}".`, txt(t.text))]
+  }),
+  style('rc-then', 'מה קרה אחר כך?', ['reading', 'story'], 't', (_sp, r) => {
+    const t = plotStory(r), others = some(r, PLOTS.filter((x) => x !== t.p), 2)
+    return [`rct|${t.key}`, pick(r, 'מה קרה אחר כך?', { t: t.p.fix[t.g] }, others.map((x) => ({ t: x.fix[t.g] })), `כתוב: "אחר כך ${t.p.fix[t.g]}".`, txt(t.text))]
+  }),
+  style('rc-when', 'מתי?', ['reading', 'days'], 'h', (_sp, r) => {
+    const t = dayStory(r), k = int(r, 0, 2)
+    return [`rcwh|${t.key}|${k}`, pick(r, `מתי ${t.h.n} ${t.acts[k][t.g]}?`, WHEN[k], WHEN.filter((_, j) => j !== k), `כתוב: "${WHEN[k].t} ${t.h.n} ${t.acts[k][t.g]}".`, txt(t.text))]
+  }),
+  style('rc-day-what', 'מה עשו?', ['reading'], 't', (_sp, r) => {
+    const t = dayStory(r), k = int(r, 0, 2), other = one(r, DAY_ACTS.filter((a) => !t.acts.includes(a)))
+    return [`rcdw|${t.key}|${k}`, pick(r, `מה ${v(t.h, 'עשה', 'עשתה')} ${t.h.n} ${WHEN[k].t}?`, { t: t.acts[k][t.g] }, [...t.acts.filter((_, j) => j !== k).slice(0, 1), other].map((a) => ({ t: a[t.g] })), `כתוב: "${WHEN[k].t} ${t.h.n} ${t.acts[k][t.g]}".`, txt(t.text))]
+  }),
+]
+
+export const READ_SCHOOL_STYLES: Style[] = [...NIKUD_STYLES, ...FINAL_STYLES, ...WORDS_STYLES, ...SENTENCE_STYLES, ...GRAMMAR_STYLES, ...READING_STYLES, ...STORY_STYLES]

@@ -17,6 +17,8 @@ import { he, int, mix, one, picTile, rng, signature, some, type R } from './bank
 import { kitMemory, kitStyles } from './bank/stylesKit'
 import { art, KITS, type Kit, type WorldId } from '../worlds/kits'
 import { setKitCtx } from './bank/ctx'
+import { MORE_FACTS } from './facts2'
+import { WORLD_FACTS } from '../worlds/facts'
 import type { Stage } from './stage'
 
 /* ───────── choosing questions ───────── */
@@ -29,8 +31,8 @@ let LEVELS = LEVELS_PRE
 const byTopic = new Map<Topic, Style[]>()
 for (const st of STYLES) for (const t of st.skills) byTopic.set(t, [...(byTopic.get(t) ?? []), st])
 
-type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage; how: Set<string> }
-let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k', how: new Set() }
+type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage; how: Set<string>; unit: string; unitFacts: Set<string> }
+let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k', how: new Set(), unit: '', unitFacts: new Set() }
 
 /** What was chosen where (for scripts/check-lessons.ts). */
 export const GEN_LOG: { node: string; style: string; topic: Topic; pass: number }[] = []
@@ -332,7 +334,7 @@ export function buildYear(nodes: PathNode[], world?: WorldId, stage: Stage = 'k'
   CURVE = stage === 'pre' ? CURVE_PRE : CURVE_SCHOOL
   const kitByTopic = new Map<Topic, Style[]>()
   if (kit) for (const st of kitStyles(kit)) for (const t of st.skills) kitByTopic.set(t, [...(kitByTopic.get(t) ?? []), st])
-  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage, how: new Set() }
+  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage, how: new Set(), unit: '', unitFacts: new Set() }
   const out: Record<string, Lesson> = {}
   GEN_LOG.length = 0
   for (const n of nodes) { NODE = n.id; out[n.id] = buildLesson(n); YEAR.lesson++ }
@@ -342,6 +344,9 @@ export function buildYear(nodes: PathNode[], world?: WorldId, stage: Stage = 'k'
 
 function buildLesson(node: PathNode): Lesson {
   const r = rng(node.id)
+  // a new chapter: its facts start fresh (no fact is told twice within one chapter)
+  const unitId = node.id.match(/^u\d+/)?.[0] ?? ''
+  if (unitId !== YEAR.unit) { YEAR.unit = unitId; YEAR.unitFacts = new Set() }
   const base = node.specs.length ? node.specs : [{ s: 'count' as Skill }]
   // the chapter challenge is harder than a lesson: every skill at its hard end, thinking questions throughout
   const specs = node.kind === 'test' ? base.map((x) => ({ ...x, hard: true })) : base
@@ -406,11 +411,14 @@ function factFor(specs: Spec[], used: Set<string>, r: R): FactStep {
   // the fact told least often this year goes first, so the same one comes back as rarely as possible
   const seen = (f: Fact) => YEAR.facts.get(f.t) ?? 0
   const freshest = (a: Fact[]) => { const m = Math.min(...a.map(seen)); return a.filter((f) => seen(f) === m) }
-  const topical = specs.flatMap((s) => FACTS[s.s] ?? []).filter((f) => !used.has(f.t))
-  const general = FACTS.general.filter((x) => !used.has(x.t))
+  const notYet = (f: Fact) => !used.has(f.t) && !YEAR.unitFacts.has(f.t)
+  const topical = specs.flatMap((s) => [...(FACTS[s.s] ?? []), ...(MORE_FACTS[s.s] ?? [])]).filter(notYet)
+  const generalAll = [...FACTS.general, ...(MORE_FACTS.general ?? [])]
+  const general = generalAll.filter(notYet).length ? generalAll.filter(notYet) : generalAll.filter((x) => !used.has(x.t))
   const pool = topical.length && Math.min(...topical.map(seen)) <= Math.min(...general.map(seen)) ? topical : general
   const f = one(r, freshest(pool))
   used.add(f.t)
+  YEAR.unitFacts.add(f.t)
   YEAR.facts.set(f.t, seen(f) + 1)
   return { kind: 'fact', e: f.e, text: he(f.t) }
 }
@@ -424,7 +432,22 @@ function intro(node: PathNode, sp: Spec, isMix: boolean): ExplainStep {
   // the last lesson of a chapter celebrates what was learned, it doesn't promise new letters
   if (/-l8$/.test(node.id)) it.body = ['היום חוגגים את סוף הפרק!', 'מתרגלים את כל מה שלמדנו, והשאלות קצת יותר קשות.']
   else if (sp.s === 'bignum') it.body = (sp.max ?? 100) <= 20 ? ['מ־11 עד 20 יש עשר אחד, ועוד כמה אחדות.', 'במספר 14 יש עשר אחד ו־4 אחדות.'] : (sp.max ?? 100) <= 100 ? ['במספר דו־ספרתי יש עשרות ואחדות.', 'במספר 47 יש 4 עשרות ו־7 אחדות.'] : ['במספר תלת־ספרתי יש מאות, עשרות ואחדות.', 'במספר 365 יש 3 מאות, 6 עשרות ו־5 אחדות.']
-  else if (sp.s === 'nikud') {
+  else if (sp.s === 'grammar') {
+    // each grammar lesson opens with its own rule (a mixed lesson rotates between them)
+    const kinds = [...(sp.set ?? 'pog')], k = kinds[YEAR.lesson % kinds.length]
+    it.body = k === 'p' ? ['אחד, והרבה: כלב, כלבים. ילדה, ילדות.', 'ויש מילים מיוחדות שמשנות צורה: בית, בתים. איש, אנשים!']
+      : k === 'o' ? ['הפכים הם מילים הפוכות: גדול וקטן, יום ולילה, חם וקר.', 'נמצא עוד הפכים ביחד?']
+      : k === 'g' ? ['בעברית מדברים אחרת על בן ועל בת: הילד שמח, הילדה שמחה.', 'מקשיבים לסוף המילה!']
+      : k === 't' ? ['אתמול, עכשיו ומחר: אתמול שיחקתי, עכשיו אני משחק, מחר אשחק.', 'המילה משתנה לפי הזמן.']
+      : ['יש מילים שאומרות כמעט אותו דבר: גדול וענק, שמח ועליז.', 'נחפש מילים חברות?']
+  } else if (sp.s === 'reading' || sp.s === 'sentence' || sp.s === 'words') {
+    const v = YEAR.lesson % 3
+    it.body = sp.s === 'reading'
+      ? [['היום קוראים סיפור קצר.', 'קוראים לאט, ואז עונים. אפשר לחזור ולקרוא שוב!'], ['בכל סיפור מחפשים: מי? איפה? מה קרה?', 'המילה "כי" אומרת לנו למה.'], ['קוראים סיפור, ושואלים: איך הרגישו? ומה קרה אחר כך?', 'סיפור טוב קוראים עד הסוף.']][v]
+      : sp.s === 'sentence'
+        ? [['כמה מילים ביחד עושות משפט.', 'קוראים את כל המשפט, ואז עונים.'], ['במשפט יש מי, ומה הוא עושה: נועה אוכלת תפוח.', 'מוצאים את המילה שחסרה!'], ['משפט נגמר בנקודה, ושאלה נגמרת בסימן שאלה.', 'קוראים עד הנקודה, ואז עונים.']][v]
+        : [['עכשיו קוראים מילים ארוכות!', 'קוראים אות אחרי אות, מימין לשמאל, עד הסוף.'], ['מילה ארוכה מחלקים לחלקים קטנים: בַּ־נָ־נָה.', 'קוראים כל חלק, ואז ביחד.'], ['יש מילים שנראות דומות: כלב וכלבה, ספר וספרים.', 'מסתכלים טוב על כל אות!']][v]
+  } else if (sp.s === 'nikud') {
     const v = (sp.set ?? 'a').at(-1)
     it.body = v === 'a' ? ['הניקוד הוא סימנים קטנים ליד האות, שאומרים איך לקרוא אותה.', 'קמץ ( ָ ) ופתח ( ַ ) נשמעים אותו דבר: אַ. בָּ, מַ, דָּ.']
       : v === 'i' ? ['היום מכירים את החיריק: נקודה אחת מתחת לאות.', 'חיריק נשמע אִי: בִּי, מִי, פִּיל.']
@@ -444,8 +467,12 @@ function intro(node: PathNode, sp: Spec, isMix: boolean): ExplainStep {
 /** A fact from the child's world: the one told least often this year. */
 function kitFact(kit: Kit, r: R): FactStep {
   const seen = (t: string) => YEAR.facts.get(t) ?? 0
-  const m = Math.min(...kit.facts.map((f) => seen(f.t)))
-  const f = one(r, kit.facts.filter((x) => seen(x.t) === m))
+  const all = [...kit.facts, ...(WORLD_FACTS[kit.id] ?? [])]
+  const fresh = all.filter((x) => !YEAR.unitFacts.has(x.t))
+  const pool = fresh.length ? fresh : all
+  const m = Math.min(...pool.map((f) => seen(f.t)))
+  const f = one(r, pool.filter((x) => seen(x.t) === m))
+  YEAR.unitFacts.add(f.t)
   YEAR.facts.set(f.t, seen(f.t) + 1)
   return { kind: 'fact', e: f.e, text: he(f.t) }
 }
