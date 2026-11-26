@@ -13,11 +13,13 @@ const M = '−' // a real minus sign
 const num = (n: number): Tile => ({ g: String(n) })
 const expr = (text: string): Show => ({ kind: 'expr', text })
 const top = (sp: Spec) => sp.max ?? 10
+const stepsOf = (n: number) => (n === 1 ? 'צעד אחד' : `${n} צעדים`)
 
 /** Wrong answers a child would really give: one off, ten off, digits swapped, the other operation. */
 export function wrongs(r: R, ans: number, n: number, extra: number[] = [], hi = Infinity): number[] {
   const swap = ans >= 10 && ans % 10 ? Number(String(ans).split('').reverse().join('')) : -1
-  const pool = [...extra, ans + 1, ans - 1, ans + 10, ans - 10, swap, ans + 2, ans - 2, ans + 100, ans - 100]
+  // ten off is a real mistake only with two-digit numbers; for small sums it would be a giveaway
+  const pool = [...extra, ans + 1, ans - 1, ...(ans >= 20 ? [ans + 10, ans - 10] : [ans + 3, ans - 3]), swap, ans + 2, ans - 2, ...(ans >= 200 ? [ans + 100, ans - 100] : [])]
     .filter((x) => Number.isInteger(x) && x >= 0 && x <= hi && x !== ans && (ans < 30 ? Math.abs(x - ans) <= 10 : true))
   const out = [...new Set(pool)]
   const first = out.filter((x) => extra.includes(x))
@@ -34,22 +36,33 @@ export function howPlus(a: number, b: number): string {
   if (s < 100 || (a < 100 && b < 100)) {
     const ta = a - (a % 10), tb = b - (b % 10), oa = a % 10, ob = b % 10
     if (!tb) return `מוסיפים את האחדות: ${oa} + ${ob} = ${oa + ob}. ${ta} + ${oa + ob} = ${s}.`
+    if (!oa && !ob) return `עשרות עם עשרות: ${ta} + ${tb} = ${s}.`
     return `עשרות עם עשרות: ${ta} + ${tb} = ${ta + tb}. אחדות עם אחדות: ${oa} + ${ob} = ${oa + ob}. ביחד: ${ta + tb} + ${oa + ob} = ${s}.`
   }
   const h = (x: number) => x - (x % 100), t = (x: number) => (x % 100) - (x % 10), o = (x: number) => x % 10
   return `מאות: ${h(a)} + ${h(b)} = ${h(a) + h(b)}. עשרות: ${t(a)} + ${t(b)} = ${t(a) + t(b)}. אחדות: ${o(a)} + ${o(b)} = ${o(a) + o(b)}. ביחד: ${s}.`
 }
+/** For a hop on the number line: start where you stand and count the steps. */
+export function howHop(a: number, b: number, up: boolean): string {
+  const to = up ? a + b : a - b
+  if (b <= 5 && to <= 100) return `מתחילים מ־${a} וסופרים ${stepsOf(b)} ${up ? 'קדימה' : 'אחורה'}: ${up ? seqUp(a, b) : seqDown(a, b)}. מגיעים ל־${to}.`
+  return up ? howPlus(a, b) : howMinus(a, b)
+}
 export function howMinus(a: number, b: number): string {
   const d = a - b
-  if (a <= 10) return b <= 5 ? `מתחילים מ־${a} וסופרים ${b} אחורה: ${seqDown(a, b)}. נשארו ${d}. בודקים: ${d} + ${b} = ${a}.` : `${a} ${M} ${b} = ${d}, כי ${d} + ${b} = ${a}.`
+  const left = d === 1 ? 'נשאר 1' : `נשארו ${d}`
+  if (!b) return `לא מורידים כלום, אז ${left}.`
+  if (a <= 10) return b <= 5 ? `מתחילים מ־${a} וסופרים ${b} אחורה: ${seqDown(a, b)}. ${left}. בודקים: ${d} + ${b} = ${a}.` : `${a} ${M} ${b} = ${d}, כי ${d} + ${b} = ${a}.`
   if (a <= 20 && b < 10) {
     const toTen = a - 10
+    if (a === 20) return `מ־20 מורידים מעשר אחד: 10 ${M} ${b} = ${10 - b}, ונשאר עוד עשר: ${d}.`
     if (b > toTen && toTen > 0) return `יורדים קודם ל־10: ${a} ${M} ${toTen} = 10. נשאר להוריד עוד ${b - toTen}: 10 ${M} ${b - toTen} = ${d}.`
     return `מורידים מהאחדות: ${a % 10} ${M} ${b} = ${(a % 10) - b}, והעשר נשאר: ${d}.`
   }
   if (b < 100) {
     const tb = b - (b % 10), ob = b % 10
-    if (!tb) return `${a} ${M} ${ob} = ${d}. בודקים: ${d} + ${ob} = ${a}.`
+    if (!tb) return `בודקים בחיבור: ${d} + ${ob} = ${a}.`
+    if (!ob) return `מורידים את העשרות: ${a} ${M} ${tb} = ${d}.`
     return `מורידים קודם את העשרות: ${a} ${M} ${tb} = ${a - tb}. אחר כך את האחדות: ${a - tb} ${M} ${ob} = ${d}.`
   }
   const hb = b - (b % 100), rest = b - hb
@@ -82,7 +95,7 @@ export function subPair(sp: Spec, r: R): [number, number] { const [x, y] = addPa
 
 /* ───────── adding ───────── */
 const story = (r: R, kind: '+' | '-', a: number, b: number) => {
-  const h = hero(r), s = stuff(r), h2 = hero(r, h.n)
+  const h = hero(r), s = stuff(r, a + b > 100), h2 = hero(r, h.n)
   if (kind === '+') return one(r, [
     `ל${h.n} היו ${a} ${s.pl}. ${h2.n} ${v(h2, 'נתן', 'נתנה')} ${v(h, 'לו', 'לה')} עוד ${b}. כמה ${s.pl} יש ל${h.n} עכשיו?`,
     `${h.n} ${v(h, 'מצא', 'מצאה')} ${a} ${s.pl} בבוקר ועוד ${b} בצהריים. כמה ${s.pl} ${v(h, 'מצא', 'מצאה')} בסך הכל?`,
@@ -107,7 +120,7 @@ export const PLUS_STYLES: Style[] = [
   style('pl-missing', 'מה חסר בתרגיל?', ['plus'], 't', (sp, r) => {
     const [a, b] = addPair(sp, r), s = a + b, left = r() < 0.5
     return [`plm|${a}+${b}|${left}`, pick(r, 'איזה מספר חסר?', num(left ? a : b), wrongs(r, left ? a : b, 3, [s]).map(num),
-      `${s} ${M} ${left ? b : a} = ${left ? a : b}. בודקים: ${a} + ${b} = ${s}.`, expr(left ? `? + ${b} = ${s}` : `${a} + ? = ${s}`))]
+      (left ? a : b) <= 5 ? `סופרים מ־${left ? b : a} עד ${s}: ${seqUp(left ? b : a, left ? a : b)}. זה ${stepsOf(left ? a : b)}, כי ${a} + ${b} = ${s}.` : `${a} + ${b} = ${s}, אז חסר ${left ? a : b}.`, expr(left ? `? + ${b} = ${s}` : `${a} + ? = ${s}`))]
   }),
   style('pl-story', 'סיפור חיבור', ['plus', 'wordprob'], 'h', (sp, r) => {
     const [a, b] = addPair(sp, r), s = a + b
@@ -121,7 +134,7 @@ export const PLUS_STYLES: Style[] = [
   }),
   style('pl-true', 'נכון או לא?', ['plus'], 'h', (sp, r) => {
     const [a, b] = addPair(sp, r), s = a + b, right = r() < 0.45, shown = right ? s : one(r, wrongs(r, s, 2))
-    return [`plt|${a}+${b}`, pick(r, 'בודקים: התרגיל נכון?', right ? YES : NO, [right ? NO : YES], right ? `נכון! ${howPlus(a, b)}` : `לא נכון. ${a} + ${b} = ${s}, לא ${shown}. ${howPlus(a, b)}`, expr(`${a} + ${b} = ${shown}`))]
+    return [`plt|${a}+${b}`, pick(r, 'בודקים: התרגיל נכון?', right ? YES : NO, [right ? NO : YES], right ? `נכון! ${howPlus(a, b)}` : `לא נכון, התשובה היא ${s} ולא ${shown}. ${howPlus(a, b)}`, expr(`${a} + ${b} = ${shown}`))]
   }),
   style('pl-tap', 'מסמנים תרגילים שווים', ['plus'], 't', (sp, r) => {
     const [a, b] = addPair(sp, r), s = a + b
@@ -154,14 +167,15 @@ export const PLUS_STYLES: Style[] = [
     const max = top(sp)
     if (max < 15) return null
     const lim = max <= 20 ? 9 : max <= 100 ? 30 : 300
-    const a = int(r, 2, lim), b = int(r, 2, lim), c = 10 - (a % 10) || int(r, 2, 9)
+    const a = int(r, 2, lim), b = int(r, 2, lim), c = 10 - (a % 10)
+    if (c === 10) return null
     const s = a + b + c
     if (s > max) return null
     return [`pl3|${a}+${b}+${c}`, pick(r, 'כמה זה? טיפ: מחפשים שני מספרים שעושים עשר', num(s), wrongs(r, s, 3).map(num), `${a} + ${c} = ${a + c}, ועוד ${b}: ${s}.`, expr(`${a} + ${b} + ${c} = ?`))]
   }),
   style('pl-hop', 'קפיצה קדימה', ['plus', 'bignum'], 'h', (sp, r) => {
     const [a, b] = addPair(sp, r), h = hero(r)
-    return [`plh|${a}+${b}`, pick(r, `${h.n} ${v(h, 'עומד', 'עומדת')} על המספר ${a} ${v(h, 'וקופץ', 'וקופצת')} ${b} צעדים קדימה. לאיזה מספר ${v(h, 'הוא מגיע', 'היא מגיעה')}?`, num(a + b), wrongs(r, a + b, 3).map(num), howPlus(a, b), h.e ? { kind: 'tile', tile: { e: h.e } } : undefined)]
+    return [`plh|${a}+${b}`, pick(r, `${h.n} ${v(h, 'עומד', 'עומדת')} על המספר ${a} ${v(h, 'וקופץ', 'וקופצת')} ${stepsOf(b)} קדימה. לאיזה מספר ${v(h, 'הוא מגיע', 'היא מגיעה')}?`, num(a + b), wrongs(r, a + b, 3).map(num), howHop(a, b, true), h.e ? { kind: 'tile', tile: { e: h.e } } : undefined)]
   }),
 ]
 
@@ -182,20 +196,20 @@ export const MINUS_STYLES: Style[] = [
   }),
   style('mi-story', 'סיפור חיסור', ['minus', 'wordprob'], 'h', (sp, r) => {
     const [a, b] = subPair(sp, r), d = a - b
-    return [`mis|${a}-${b}`, pick(r, story(r, '-', a, b), num(d), wrongs(r, d, 3, [a + b]).map(num), `נשארו פחות, אז מחסרים: ${a} ${M} ${b}. ${howMinus(a, b)}`)]
+    return [`mis|${a}-${b}`, pick(r, story(r, '-', a, b), num(d), wrongs(r, d, 3, [a + b]).map(num), `מחסרים: ${a} ${M} ${b}. ${howMinus(a, b)}`)]
   }),
   style('mi-true', 'נכון או לא?', ['minus'], 'h', (sp, r) => {
     const [a, b] = subPair(sp, r), d = a - b, right = r() < 0.45, shown = right ? d : one(r, wrongs(r, d, 2))
-    return [`mit|${a}-${b}`, pick(r, 'בודקים: התרגיל נכון?', right ? YES : NO, [right ? NO : YES], right ? `נכון! ${howMinus(a, b)}` : `לא נכון. ${a} ${M} ${b} = ${d}. ${howMinus(a, b)}`, expr(`${a} ${M} ${b} = ${shown}`))]
+    return [`mit|${a}-${b}`, pick(r, 'בודקים: התרגיל נכון?', right ? YES : NO, [right ? NO : YES], right ? `נכון! ${howMinus(a, b)}` : `לא נכון, התשובה היא ${d}. ${howMinus(a, b)}`, expr(`${a} ${M} ${b} = ${shown}`))]
   }),
-  style('mi-check', 'בודקים בחיבור', ['minus', 'plus'], 't', (sp, r) => {
+  style('mi-check', 'בודקים בחיבור', ['minus'], 't', (sp, r) => {
     const [a, b] = subPair(sp, r), d = a - b
     if (!d) return null
     const { options, correct } = choices(r, { t: `${d} + ${b} = ${a}` }, [{ t: `${a} + ${b} = ${a + b}` }, { t: `${d} + ${a} = ${d + a}` }])
     return [`mic|${a}-${b}`, { kind: 'pick', q: he(`${a} ${M} ${b} = ${d}. איזה תרגיל חיבור בודק שזה נכון?`), show: expr(`${a} ${M} ${b} = ${d}`), options, correct, why: he(`מה שנשאר ועוד מה שהורדנו חוזר להתחלה: ${d} + ${b} = ${a}.`) }]
   }),
   style('mi-diff', 'בכמה יותר?', ['minus', 'wordprob'], 't', (sp, r) => {
-    const [a, b] = subPair(sp, r), d = a - b, h1 = hero(r), h2 = hero(r, h1.n), s = stuff(r)
+    const [a, b] = subPair(sp, r), d = a - b, h1 = hero(r), h2 = hero(r, h1.n), s = stuff(r, top(sp) > 100)
     if (!d) return null
     return [`mid|${a}-${b}`, pick(r, `ל${h1.n} יש ${a} ${s.pl} ול${h2.n} יש ${b}. בכמה ${s.pl} יש ל${h1.n} יותר?`, num(d), wrongs(r, d, 3, [a + b]).map(num), `משווים: ${a} ${M} ${b} = ${d}. ${howMinus(a, b)}`)]
   }),
@@ -207,9 +221,9 @@ export const MINUS_STYLES: Style[] = [
   }),
   style('mi-hop', 'קפיצה אחורה', ['minus', 'bignum'], 'h', (sp, r) => {
     const [a, b] = subPair(sp, r), h = hero(r)
-    return [`mih|${a}-${b}`, pick(r, `${h.n} ${v(h, 'עומד', 'עומדת')} על המספר ${a} ${v(h, 'וקופץ', 'וקופצת')} ${b} צעדים אחורה. לאיזה מספר ${v(h, 'הוא מגיע', 'היא מגיעה')}?`, num(a - b), wrongs(r, a - b, 3, [a + b]).map(num), howMinus(a, b), h.e ? { kind: 'tile', tile: { e: h.e } } : undefined)]
+    return [`mih|${a}-${b}`, pick(r, `${h.n} ${v(h, 'עומד', 'עומדת')} על המספר ${a} ${v(h, 'וקופץ', 'וקופצת')} ${stepsOf(b)} אחורה. לאיזה מספר ${v(h, 'הוא מגיע', 'היא מגיעה')}?`, num(a - b), wrongs(r, a - b, 3, [a + b]).map(num), howHop(a, b, false), h.e ? { kind: 'tile', tile: { e: h.e } } : undefined)]
   }),
-  style('mi-sign', 'פלוס או מינוס?', ['minus', 'plus'], 't', (sp, r) => {
+  style('mi-sign', 'פלוס או מינוס?', ['minus'], 't', (sp, r) => {
     const [a, b] = subPair(sp, r), plus = r() < 0.5, res = plus ? a + b : a - b
     if (!b || res > Math.max(20, top(sp))) return null
     return [`mig|${a}|${b}|${plus}`, pick(r, 'איזה סימן חסר?', { g: plus ? '+' : M }, [{ g: plus ? M : '+' }], plus ? `${a} + ${b} = ${res}: יצא יותר, אז חיברנו.` : `${a} ${M} ${b} = ${res}: יצא פחות, אז חיסרנו.`, expr(`${a} ? ${b} = ${res}`))]
@@ -218,11 +232,16 @@ export const MINUS_STYLES: Style[] = [
 
 /* ───────── times and sharing ───────── */
 /** Times-table factors: never past 10 × 10, even when a word-problem lesson allows bigger numbers. */
-const tPair = (sp: Spec, r: R): [number, number] => { const m = Math.min(10, Math.max(3, top(sp))); return [int(r, 2, m), int(r, 2, m)] }
+const tPair = (sp: Spec, r: R): [number, number] => {
+  const m = Math.min(10, Math.max(3, top(sp)))
+  const fs = sp.set?.split(',').map(Number).filter((x) => x >= 1 && x <= 10)
+  if (fs?.length) { const f = one(r, fs), o = int(r, 2, 10); return r() < 0.5 ? [f, o] : [o, f] }
+  return [int(r, 2, m), int(r, 2, m)]
+}
 export const howTimes = (a: number, b: number) => `${a} × ${b} זה ${a} פעמים ${b}: ${Array.from({ length: a }, (_, i) => b * (i + 1)).join(', ')}. יוצא ${a * b}.`
 export const TIMES_STYLES: Style[] = [
   style('tm-groups', 'קבוצות שוות', ['times'], 'e', (sp, r) => {
-    const a = int(r, 2, 4), b = int(r, 2, Math.min(5, top(sp))), s = stuff(r)
+    const a = int(r, 2, 4), b = int(r, 2, Math.min(5, top(sp))), s = stuff(r, top(sp) > 100)
     return [`tm|${a}x${b}`, pick(r, `${a} קבוצות, ובכל קבוצה ${b}. כמה יש בסך הכל?`, num(a * b), wrongs(r, a * b, 3, [a + b]).map(num), howTimes(a, b), { kind: 'row', items: Array.from({ length: a }, () => ({ many: { e: s.e, n: b } })) })]
   }),
   style('tm-expr', 'כמה זה?', ['times'], 'e', (sp, r) => {
@@ -230,7 +249,9 @@ export const TIMES_STYLES: Style[] = [
     return [`tm|${a}x${b}`, pick(r, 'כמה זה?', num(a * b), wrongs(r, a * b, 3, [a + b, a * b + a, a * b - b]).map(num), howTimes(a, b), expr(`${a} × ${b} = ?`))]
   }),
   style('tm-add', 'כפל כחיבור', ['times'], 'h', (sp, r) => {
-    const a = int(r, 3, 5), b = int(r, 2, top(sp))
+    // the lesson's own table: 6 + 6 + 6 + 6 in a "times 6 and 7" lesson
+    const [x, y] = tPair(sp, r), a = Math.min(x, y), b = Math.max(x, y)
+    if (a > 5 || a < 2) return null
     const { options, correct } = choices(r, { t: `${a} × ${b}` }, [{ t: `${b} × ${b}` }, { t: `${a} + ${b}` }].filter((x) => x.t !== `${a} × ${b}`))
     return [`tma|${a}x${b}`, { kind: 'pick', q: he('איזה תרגיל כפל זה?'), show: expr(Array(a).fill(b).join(' + ')), options, correct, why: he(`חיברנו ${a} פעמים ${b}: זה ${a} × ${b} = ${a * b}.`) }]
   }),
@@ -238,8 +259,8 @@ export const TIMES_STYLES: Style[] = [
     const [a, b] = tPair(sp, r)
     return [`tmm|${a}x${b}`, pick(r, 'איזה מספר חסר?', num(b), wrongs(r, b, 3, [a * b - a]).map(num), `${a} × ${b} = ${a * b}. סופרים בקפיצות של ${a}: ${Array.from({ length: b }, (_, i) => a * (i + 1)).join(', ')}.`, expr(`${a} × ? = ${a * b}`))]
   }),
-  style('tm-story', 'סיפור כפל', ['times', 'wordprob'], 'h', (sp, r) => {
-    const [a, b] = tPair(sp, r), s = stuff(r), h = hero(r)
+  style('tm-story', 'סיפור כפל', ['times'], 'h', (sp, r) => {
+    const [a, b] = tPair(sp, r), s = stuff(r, top(sp) > 100), h = hero(r)
     return [`tms|${a}x${b}`, pick(r, `${h.n} ${v(h, 'סידר', 'סידרה')} ${a} שורות של ${s.pl}, ובכל שורה ${b}. כמה ${s.pl} יש?`, num(a * b), wrongs(r, a * b, 3, [a + b]).map(num), howTimes(a, b))]
   }),
   style('tm-swap', 'מחליפים סדר', ['times'], 't', (sp, r) => {
@@ -260,7 +281,7 @@ export const TIMES_STYLES: Style[] = [
 ]
 export const DIVIDE_STYLES: Style[] = [
   style('dv-share', 'מחלקים שווה בשווה', ['divide'], 'e', (sp, r) => {
-    const k = int(r, 2, 4), each = int(r, 2, Math.min(5, top(sp))), s = stuff(r)
+    const k = int(r, 2, 4), each = int(r, 2, Math.min(5, top(sp))), s = stuff(r, top(sp) > 100)
     return [`dv|${k * each}:${k}`, pick(r, `יש ${k * each} ${s.pl} ו־${k} ילדים. כל ילד מקבל אותו מספר. כמה כל אחד מקבל?`, num(each), wrongs(r, each, 3, [k]).map(num), `${k * each} : ${k} = ${each}, כי ${k} × ${each} = ${k * each}.`, { kind: 'pile', e: s.e, n: k * each })]
   }),
   style('dv-expr', 'כמה זה?', ['divide'], 'h', (sp, r) => {
@@ -271,9 +292,9 @@ export const DIVIDE_STYLES: Style[] = [
     const [a, b] = tPair(sp, r)
     return [`dvm|${a * b}:${a}`, pick(r, 'איזה מספר חסר?', num(a), wrongs(r, a, 3, [a * b]).map(num), `${a * b} : ${a} = ${b}, כי ${a} × ${b} = ${a * b}.`, expr(`${a * b} : ? = ${b}`))]
   }),
-  style('dv-story', 'סיפור חילוק', ['divide', 'wordprob'], 'h', (sp, r) => {
-    const [a, b] = tPair(sp, r), s = stuff(r)
-    return [`dvs|${a * b}:${a}`, pick(r, `יש ${a * b} ${s.pl}. שמים אותם בקופסאות, ${a} בכל קופסה. כמה קופסאות צריך?`, num(b), wrongs(r, b, 3, [a]).map(num), `${a * b} : ${a} = ${b}, כי ${b} קופסאות של ${a} זה ${a * b}.`)]
+  style('dv-story', 'סיפור חילוק', ['divide'], 'h', (sp, r) => {
+    const [a, b] = tPair(sp, r), s = stuff(r, top(sp) > 100)
+    return [`dvs|${a * b}:${a}`, pick(r, `יש ${a * b} ${s.pl}. מסדרים בקופסאות, ${a} בכל קופסה. כמה קופסאות צריך?`, num(b), wrongs(r, b, 3, [a]).map(num), `${a * b} : ${a} = ${b}, כי ${b} קופסאות של ${a} זה ${a * b}.`)]
   }),
   style('dv-check', 'בודקים בכפל', ['divide', 'times'], 't', (sp, r) => {
     const [a, b] = tPair(sp, r)
@@ -289,7 +310,8 @@ export const DIVIDE_STYLES: Style[] = [
 
 /* ───────── big numbers: place value, comparing, order ───────── */
 const bnum = (sp: Spec, r: R) => { const m = top(sp); return m <= 20 ? int(r, 11, m) : m <= 100 ? int(r, 21, m - 1) : int(r, 101, m - 1) }
-const parts = (n: number) => n >= 100 ? `${Math.floor(n / 100)} מאות, ${Math.floor((n % 100) / 10)} עשרות ו־${n % 10} אחדות` : `${Math.floor(n / 10)} עשרות ו־${n % 10} אחדות`
+const unitsOf = (k: number, one: string, many: string) => (k === 1 ? one : `${k} ${many}`)
+const parts = (n: number) => { const h = Math.floor(n / 100), t = Math.floor((n % 100) / 10), o = n % 10, T = unitsOf(t, 'עשרת אחת', 'עשרות'), O = unitsOf(o, 'אחדת אחת', 'אחדות'); return n >= 100 ? `${unitsOf(h, 'מאה אחת', 'מאות')}, ${T} ו־${O}` : `${T} ו־${O}` }
 export const BIG_STYLES: Style[] = [
   style('bn-after', 'מה בא אחרי?', ['bignum'], 'e', (sp, r) => {
     const n = bnum(sp, r) - 1
@@ -329,7 +351,7 @@ export const BIG_STYLES: Style[] = [
     const all = [...new Set([n, sw, n - 9, sw + 1].filter((x) => x > 0 && x <= top(sp)))]
     if (all.length < 3) return null
     const mx = Math.max(...all)
-    return [`bnm|${all.sort().join()}`, pick(r, 'איזה מספר הכי גדול? מסתכלים קודם על העשרות!', num(mx), all.filter((x) => x !== mx).map(num), `${mx} הכי גדול: ${parts(mx)}.`)]
+    return [`bnm|${all.sort().join()}`, pick(r, `איזה מספר הכי גדול? מסתכלים קודם על ${mx >= 100 ? 'המאות' : 'העשרות'}!`, num(mx), all.filter((x) => x !== mx).map(num), `${mx} הכי גדול: ${parts(mx)}.`)]
   }),
   style('bn-tap', 'מסמנים גדולים מ...', ['bignum'], 't', (sp, r) => {
     const n = bnum(sp, r), set = new Set<number>()
@@ -391,24 +413,26 @@ export const SKIP_STYLES: Style[] = [
 const hours = (h: number) => ((h - 1) % 12) + 1
 export const WORD_STYLES: Style[] = [
   style('wp-two', 'שני שלבים', ['wordprob'], 't', (sp, r) => {
-    const max = Math.max(10, top(sp)), h = hero(r), s = stuff(r)
+    const max = Math.max(10, top(sp)), h = hero(r), s = stuff(r, top(sp) > 100)
     const a = int(r, Math.ceil(max / 4), Math.floor(max / 2)), b = int(r, 1, Math.floor(max / 3)), c = int(r, 1, a + b - 1)
     const ans = a + b - c
     return [`wp2|${a}+${b}-${c}`, pick(r, `ל${h.n} היו ${a} ${s.pl}. ${v(h, 'הוא קיבל', 'היא קיבלה')} עוד ${b}, ואחר כך ${v(h, 'נתן', 'נתנה')} ${c} לחברים. כמה ${s.pl} יש ${v(h, 'לו', 'לה')} עכשיו?`, num(ans), wrongs(r, ans, 3, [a + b, a + b + c]).map(num),
-      `קודם קיבל: ${a} + ${b} = ${a + b}. אחר כך נתן: ${a + b} ${M} ${c} = ${ans}.`, h.e ? { kind: 'tile', tile: { e: h.e } } : undefined)]
+      `קודם ${v(h, 'קיבל', 'קיבלה')}: ${a} + ${b} = ${a + b}. אחר כך ${v(h, 'נתן', 'נתנה')}: ${a + b} ${M} ${c} = ${ans}.`, h.e ? { kind: 'tile', tile: { e: h.e } } : undefined)]
   }),
   style('wp-money', 'כסף', ['wordprob'], 'h', (sp, r) => {
     const max = Math.max(10, Math.min(100, top(sp))), h = hero(r)
-    const has = int(r, Math.ceil(max / 2), max), price = int(r, 1, has - 1)
-    const item = one(r, ['גלידה', 'ספר', 'כדור', 'מחברת', 'בלון', 'עפיפון'])
+    // real prices: a balloon costs a few shekels, a book a few dozen
+    const [item, lo, hi] = one(r, ([['גלידה', 6, 15], ['ספר', 20, 60], ['כדור', 15, 40], ['מחברת', 3, 10], ['בלון', 2, 8], ['עפיפון', 15, 40]] as [string, number, number][]).filter(([, l]) => l + 2 <= max))
+    const price = int(r, lo, Math.min(hi, max - 2)), has = int(r, price + 2, Math.max(price + 2, Math.min(max, price * 3)))
     return [`wpm|${has}-${price}`, pick(r, `ל${h.n} יש ${has} שקלים. ${v(h, 'הוא קנה', 'היא קנתה')} ${item} ב־${price} שקלים. כמה שקלים נשארו ${v(h, 'לו', 'לה')}?`, num(has - price), wrongs(r, has - price, 3, [has + price]).map(num), `${howMinus(has, price)}`, { kind: 'tile', tile: { e: '🪙' } })]
   }),
   style('wp-time', 'מה השעה?', ['wordprob'], 't', (sp, r) => {
+    if (top(sp) < 100 && !sp.only?.includes('wp-time')) return null // going past 12 o'clock is for later
     const now = int(r, 1, 11), add = int(r, 2, 5), at = hours(now + add)
     return [`wpt|${now}+${add}`, pick(r, `עכשיו השעה ${now}. בעוד ${add} שעות יתחיל המשחק. באיזו שעה יתחיל המשחק?`, num(at), wrongs(r, at, 3, [hours(now + add + 1), hours(now - add + 12)]).map(num), now + add > 12 ? `${now} + ${add} = ${now + add}. בשעון אחרי 12 מתחילים שוב מ־1, אז השעה ${at}.` : `${now} + ${add} = ${at}.`, { kind: 'tile', tile: { e: '⏰' } })]
   }),
   style('wp-more', 'יותר ממנו', ['wordprob'], 't', (sp, r) => {
-    const max = Math.max(10, top(sp)), h1 = hero(r), h2 = hero(r, h1.n), s = stuff(r)
+    const max = Math.max(10, top(sp)), h1 = hero(r), h2 = hero(r, h1.n), s = stuff(r, top(sp) > 100)
     const a = int(r, 2, Math.floor(max / 2)), b = int(r, 2, max - a)
     return [`wpo|${a}+${b}`, pick(r, `ל${h1.n} יש ${a} ${s.pl}. ל${h2.n} יש ${b} ${s.pl} יותר מ${h1.n}. כמה ${s.pl} יש ל${h2.n}?`, num(a + b), wrongs(r, a + b, 3, [b, Math.abs(a - b)]).map(num), `ל${h2.n} יש כמו ל${h1.n}, ועוד ${b}: ${a} + ${b} = ${a + b}.`)]
   }),
@@ -417,13 +441,13 @@ export const WORD_STYLES: Style[] = [
     if (sis < 1) return null
     return [`wpa|${age}|${d}|${older}`, pick(r, `${h.n} ${v(h, 'בן', 'בת')} ${age}. האחות של ${h.n} ${older ? 'גדולה' : 'קטנה'} ${v(h, 'ממנו', 'ממנה')} ב־${d} שנים. בת כמה האחות?`, num(sis), wrongs(r, sis, 3, [older ? age - d : age + d].filter((x) => x > 0)).map(num), `${older ? 'גדולה' : 'קטנה'} ב־${d}: ${age} ${older ? '+' : M} ${d} = ${sis}.`)]
   }),
-  style('wp-legs', 'כמה רגליים?', ['wordprob', 'times'], 't', (sp, r) => {
+  style('wp-legs', 'כמה רגליים?', ['times'], 't', (sp, r) => {
     if (top(sp) < 20) return null
-    const c = int(r, 1, 4), d = int(r, 1, 3), ans = c * 2 + d * 4
+    const c = int(r, 2, 5), d = int(r, 2, 4), ans = c * 2 + d * 4
     return [`wpl|${c}|${d}`, pick(r, `בחצר יש ${c} תרנגולות ו־${d} כלבים. כמה רגליים יש לכולם ביחד?`, num(ans), wrongs(r, ans, 3, [c + d, (c + d) * 4]).map(num), `לתרנגולת 2 רגליים: ${c} × 2 = ${c * 2}. לכלב 4: ${d} × 4 = ${d * 4}. ביחד ${ans}.`, { kind: 'row', items: [{ many: { e: '🐔', n: c } }, { many: { e: '🐶', n: d } }] })]
   }),
-  style('wp-which', 'מחברים או מחסרים?', ['wordprob', 'plus', 'minus'], 't', (sp, r) => {
-    const max = Math.max(10, top(sp)), h = hero(r), s = stuff(r), plus = r() < 0.5
+  style('wp-which', 'מחברים או מחסרים?', ['wordprob'], 't', (sp, r) => {
+    const max = Math.max(10, top(sp)), h = hero(r), s = stuff(r, top(sp) > 100), plus = r() < 0.5
     const a = int(r, Math.ceil(max / 3), max - 2), b = int(r, 1, plus ? Math.max(1, max - a) : a - 1)
     const q = plus ? `ל${h.n} היו ${a} ${s.pl}, ${v(h, 'והוא קיבל', 'והיא קיבלה')} עוד ${b}. איזה תרגיל עוזר לדעת כמה יש ${v(h, 'לו', 'לה')}?` : `ל${h.n} היו ${a} ${s.pl}. ${b} הלכו לאיבוד. איזה תרגיל עוזר לדעת כמה נשארו?`
     const { options, correct } = choices(r, { t: plus ? `${a} + ${b}` : `${a} ${M} ${b}` }, [{ t: plus ? `${a} ${M} ${b}` : `${a} + ${b}` }])

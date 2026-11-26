@@ -19,7 +19,8 @@ export type Skill =
   | 'nikud' | 'finals' | 'words' | 'sentence' | 'grammar' | 'reading'
 
 /** `max`/`min`: number range · `set`: letters or digits to work on · `hard`: harder variant. */
-export type Spec = { s: Skill; max?: number; min?: number; set?: string; hard?: boolean }
+/** `only`: style ids that teach exactly this lesson's point; they come first, and may come back within the lesson. */
+export type Spec = { s: Skill; max?: number; min?: number; set?: string; hard?: boolean; only?: string[] }
 
 export type PathNode = {
   id: string

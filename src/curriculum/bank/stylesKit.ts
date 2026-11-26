@@ -32,9 +32,11 @@ export function kitStyles(K: Kit): Style[] {
   const shadowable = things.filter((t) => !WEAK_SHADOW.has(t.k))
   const chars = K.chars
   /** Everything with a name, for letters and syllables. */
-  const named = [...chars.map((c) => ({ k: c.k, w: c.name, syl: c.syl, tile: ct(c), isName: true })), ...things.map((t) => ({ k: t.k, w: t.w, syl: t.syl, tile: tt(t, true), isName: false }))]
+  // words with ׳ (ג׳ירפה) start with a different sound than their letter: kept out of letter and sound questions
+  const named = [...chars.map((c) => ({ k: c.k, w: c.name, syl: c.syl, tile: ct(c), isName: true })), ...things.map((t) => ({ k: t.k, w: t.w, syl: t.syl, tile: tt(t, true), isName: false }))].filter((x) => !x.w.includes('׳'))
+  /** A character's colour word, feminine for a feminine character ("גלית כחולה"). */
+  const cw = (c: { f?: boolean }, color: string) => (c.f ? COLOR_F[color] ?? color : color)
   const theWord = (x: { w: string; isName: boolean }) => (x.isName ? `השם ${x.w}` : `המילה "${x.w}"`)
-  const byKey = (k: string): Tile => { const c = chars.find((x) => x.k === k); if (c) return ct(c); return tt(things.find((x) => x.k === k)!, true) }
   /** Things that can sit above or below another (one-word names read well in "מעל ה…"). */
   const placeable = things.filter((t) => !t.w.includes(' '))
   const castIsDifferent = K.id !== 'animals' // in the animal world the "things" are animals too
@@ -44,15 +46,15 @@ export function kitStyles(K: Kit): Style[] {
   return [
     /* ───── counting ───── */
     S('count', 'כמה יש?', ['count'], 'e', (sp, r) => {
-      const t = one(r, things), max = top(sp), n = int(r, Math.max(1, sp.min ?? 1), max)
+      const t = one(r, things), max = Math.max(2, top(sp)), n = int(r, Math.max(2, sp.min ?? 2), max)
       return [`k-count|${t.k}|${n}`, pick(r, `כמה ${t.pl} יש?`, num(n), nums(near(r, n, 2, Math.max(max, 3), 1)), `סופרים: ${range(1, n).join(', ')}. יש ${n} ${t.pl}!`, { kind: 'pile', e: A(t.k), n })]
     }),
     S('count-crew', 'כמה מהם באו?', ['count'], 'e', (sp, r) => {
       const n = int(r, 2, Math.min(top(sp), chars.length))
-      return [`k-crew|${n}`, pick(r, `כמה ${K.crew} באו לשחק?`, num(n), nums(near(r, n, 2, Math.max(top(sp), 3), 1)), `סופרים אחד־אחד: יש ${n}.`, { kind: 'row', items: some(r, chars, n).map((c) => ct(c, false)) })]
+      return [`k-crew|${n}`, pick(r, `כמה ${K.crew.replace(/^ה/, '')} באו לשחק?`, num(n), nums(near(r, n, 2, Math.max(top(sp), 3), 1)), `סופרים אחד־אחד: יש ${n}.`, { kind: 'row', items: some(r, chars, n).map((c) => ct(c, false)) })]
     }),
     S('count-only', 'סופרים רק אותם', ['count'], 't', (sp, r) => {
-      const [a, b] = some(r, things, 2), max = Math.max(4, top(sp))
+      const [a, b] = some(r, things, 2), max = Math.max(3, top(sp))
       const na = int(r, 2, Math.min(max, 6)), nb = int(r, 1, 3)
       const wrong = [na + nb, ...near(r, na, 2, na + nb + 1, 1).filter((k) => k !== na + nb)].slice(0, 2)
       return [`k-only|${a.k}|${b.k}|${na}`, pick(r, `כמה ${a.pl} יש? סופרים רק אותם!`, num(na), nums(wrong), `יש ${na} ${a.pl}. את ה${b.pl} לא סופרים.`, { kind: 'row', items: mix(r, [...Array(na).fill(a), ...Array(nb).fill(b)]).map((t) => tt(t)) })]
@@ -75,24 +77,24 @@ export function kitStyles(K: Kit): Style[] {
     }),
     S('more', 'איפה יותר?', ['moreless'], 'e', (sp, r) => {
       const t = one(r, things), max = Math.max(3, top(sp))
-      const [a, b] = some(r, range(1, max), 2).sort((x, y) => y - x)
+      const [a, b] = some(r, range(2, max), 2).sort((x, y) => y - x)
       return [`k-more|${t.k}|${a}|${b}`, pick(r, `איפה יש יותר ${t.pl}?`, pile(t, a), [pile(t, b)], `${a} זה יותר מ־${b}.`)]
     }),
     S('less', 'איפה פחות?', ['moreless'], 'h', (sp, r) => {
-      const t = one(r, things), max = Math.max(4, top(sp))
+      const t = one(r, things), max = Math.max(3, top(sp))
       const [a, b, c] = some(r, range(1, max), 3).sort((x, y) => x - y)
       return [`k-less|${t.k}|${a}|${b}|${c}`, pick(r, `איפה יש הכי מעט ${t.pl}?`, pile(t, a), [pile(t, b), pile(t, c)], `${a} זה הכי מעט.`)]
     }),
     S('same', 'אותו מספר', ['moreless', 'count'], 't', (sp, r) => {
-      const [t, u] = some(r, things, 2), max = Math.max(4, top(sp)), n = int(r, 2, max)
+      const [t, u] = some(r, things, 2), max = Math.max(3, top(sp)), n = int(r, 2, max)
       return [`k-same|${t.k}|${u.k}|${n}`, pick(r, `איפה יש אותו מספר ${u.pl} כמו ה${t.pl} כאן?`, pile(u, n), near(r, n, 2, max + 1, 1).map((k) => pile(u, k)), `גם כאן וגם שם יש ${n}.`, { kind: 'pile', e: A(t.k), n })]
     }),
     S('numorder', 'מהמעט להרבה', ['numorder'], 'h', (sp, r) => {
-      const t = one(r, things), ns = some(r, range(1, Math.max(4, top(sp))), 3).sort((a, b) => a - b)
+      const t = one(r, things), ns = some(r, range(1, Math.max(3, top(sp))), 3).sort((a, b) => a - b)
       return [`k-numorder|${t.k}|${ns.join()}`, order(`מסדרים את ה${t.pl}: מהכי מעט להכי הרבה`, ns.map((k) => pile(t, k)), `${ns.join(', ')}: כל פעם יותר.`)]
     }),
     S('next', 'מה בא אחרי?', ['numorder', 'count'], 'e', (sp, r) => {
-      const t = one(r, things), max = Math.max(4, top(sp)), n = int(r, 1, max - 2)
+      const t = one(r, things), max = Math.max(3, top(sp)), n = int(r, 1, max - 2)
       return [`k-next|${t.k}|${n}`, pick(r, `${n}, ${n + 1}… כמה ${t.pl} יהיו בקבוצה הבאה?`, num(n + 2), nums(near(r, n + 2, 2, max + 1, 1)), `כל קבוצה גדלה באחד: ${n}, ${n + 1}, ${n + 2}.`, { kind: 'row', items: [pile(t, n), pile(t, n + 1)], ask: true })]
     }),
 
@@ -102,26 +104,26 @@ export function kitStyles(K: Kit): Style[] {
       return [`k-add|${t.k}|${a}|${s - a}`, pick(r, `כמה ${t.pl} יש ביחד?`, num(s), nums(near(r, s, 2, max + 1, 1)), `${a} ועוד ${s - a} זה ${s}.`, { kind: 'sum', e: A(t.k), a, b: s - a, op: '+' })]
     }),
     S('add-story', 'סיפור חיבור', ['add'], 'h', (sp, r) => {
-      const c = one(r, chars), t = one(r, things), max = Math.max(3, top(sp)), s = int(r, 2, max), a = int(r, 1, s - 1), p = he3(c)
+      const c = one(r, chars), t = one(r, things), max = Math.max(3, top(sp)), s = int(r, 4, max), a = int(r, 2, s - 2), p = he3(c)
       return [`k-addst|${c.k}|${t.k}|${a}|${s - a}`, pick(r, `ל${c.name} יש ${a} ${t.pl}. ${p.s} ${p.got} עוד ${s - a}. כמה יש ${p.to} עכשיו?`, num(s), nums(near(r, s, 2, max + 1, 1)), `${a} ועוד ${s - a} זה ${s}.`, { kind: 'sum', e: A(t.k), a, b: s - a, op: '+' })]
     }),
     S('sub', 'כמה נשארו?', ['sub'], 'e', (sp, r) => {
-      const t = one(r, things), max = Math.max(3, top(sp)), a = int(r, 2, max), b = int(r, 1, a - 1)
+      const t = one(r, things), max = Math.max(3, top(sp)), a = int(r, 4, max), b = int(r, 2, a - 2)
       return [`k-sub|${t.k}|${a}|${b}`, pick(r, `היו ${a} ${t.pl}, ו־${b} ${t.f ? 'מהן' : 'מהם'} ${K.gone[t.f ? 1 : 0]}. כמה נשארו?`, num(a - b), nums(near(r, a - b, 2, max, 0)), `${a} פחות ${b} זה ${a - b}.`, { kind: 'sum', e: A(t.k), a, b, op: '-' })]
     }),
     S('sub-story', 'סיפור חיסור', ['sub'], 'h', (sp, r) => {
-      const c = one(r, chars), t = one(r, things), max = Math.max(3, top(sp)), a = int(r, 2, max), b = int(r, 1, a - 1), p = he3(c)
+      const c = one(r, chars), t = one(r, things), max = Math.max(3, top(sp)), a = int(r, 4, max), b = int(r, 2, a - 2), p = he3(c)
       return [`k-subst|${c.k}|${t.k}|${a}|${b}`, pick(r, `ל${c.name} היו ${a} ${t.pl}. ${p.s} ${p.gave} ${b} לחבר. כמה נשארו ${p.to}?`, num(a - b), nums(near(r, a - b, 2, max, 0)), `${a} פחות ${b} זה ${a - b}. וגם החבר שמח!`, { kind: 'sum', e: A(t.k), a, b, op: '-' })]
     }),
 
     /* ───── colors ───── */
     S('color-who', 'למי יש את הצבע?', ['colors'], 'e', (_sp, r) => {
       const [c, ...rest] = some(r, chars, 3)
-      return [`k-cwho|${c.k}`, pick(r, K.colorQ.replace('{c}', colorWord(c)), ct(c), rest.map((x) => ct(x)), `${c.name}: ${c.c}!`)]
+      return [`k-cwho|${c.k}`, pick(r, K.colorQ.replace('{c}', colorWord(c)), ct(c), rest.map((x) => ct(x)), `${c.name}: ${cw(c, c.c)}!`)]
     }),
     S('color-of', 'באיזה צבע?', ['colors'], 'e', (_sp, r) => {
       const c = one(r, chars), others = some(r, [...new Set(chars.map((y) => y.c))].filter((x) => x !== c.c), 2)
-      return [`k-cof|${c.k}`, pick(r, K.colorOf.replace('{n}', c.name), dot(c.c), others.map(dot), `${c.name}: ${c.c}!`, { kind: 'tile', tile: ct(c) })]
+      return [`k-cof|${c.k}`, pick(r, K.colorOf.replace('{n}', c.name), dot(c.c), others.map(dot), `${c.name}: ${cw(c, c.c)}!`, { kind: 'tile', tile: ct(c) })]
     }),
     S('color-match', 'מחברים לצבע', ['colors'], 'h', (_sp, r) => {
       const set = some(r, chars, 3)
@@ -129,11 +131,11 @@ export function kitStyles(K: Kit): Style[] {
     }),
     S('color-tf', 'נכון או לא?', ['colors', 'riddle'], 'e', (_sp, r) => {
       const c = one(r, chars), truth = r() < 0.5, claim = truth ? c.c : one(r, chars.filter((x) => x.c !== c.c)).c
-      return [`k-ctf|${c.k}|${claim}`, pick(r, `נכון או לא נכון: ${c.name} בצבע ${claim}.`, truth ? YES : NO, [truth ? NO : YES], truth ? `נכון! ${c.name} ${c.c}.` : `לא נכון. ${c.name} ${c.c}, לא ${claim}.`, { kind: 'tile', tile: ct(c) })]
+      return [`k-ctf|${c.k}|${claim}`, pick(r, `נכון או לא נכון: ${c.name} בצבע ${claim}.`, truth ? YES : NO, [truth ? NO : YES], truth ? `נכון! ${c.name} ${cw(c, c.c)}.` : `לא נכון. ${c.name} ${cw(c, c.c)}, לא ${cw(c, claim)}.`, { kind: 'tile', tile: ct(c) })]
     }),
     S('color-shadow', 'מי מסתתר בצל?', ['colors', 'riddle'], 't', (_sp, r) => {
       const [c, ...rest] = some(r, chars, 3)
-      return [`k-csh|${c.k}`, pick(r, `${c.name} הסתתר בצל. באיזה צבע ${c.name}?`.replace('הסתתר', c.f ? 'הסתתרה' : 'הסתתר'), dot(c.c), rest.map((x) => dot(x.c)), `${c.name} ${c.c}!`, { kind: 'tile', tile: { e: A(c.k), fx: 'sil' } })]
+      return [`k-csh|${c.k}`, pick(r, `${c.name} הסתתר בצל. באיזה צבע ${c.name}?`.replace('הסתתר', c.f ? 'הסתתרה' : 'הסתתר'), dot(c.c), rest.map((x) => dot(x.c)), `${c.name} ${cw(c, c.c)}!`, { kind: 'tile', tile: { e: A(c.k), fx: 'sil' } })]
     }),
 
     /* ───── sizes ───── */
@@ -148,7 +150,7 @@ export function kitStyles(K: Kit): Style[] {
     }),
     S('size-order', 'מסדרים לפי גודל', ['size'], 'h', (_sp, r) => {
       const c = one(r, chars)
-      return [`k-sizeord|${c.k}`, order(`מסדרים את ${c.name}: מהקטן לגדול`, [0.45, 0.7, 0.95, 1.18].map((s) => ({ e: A(c.k), scale: s })), 'קטן, בינוני, גדול, ענק!')]
+      return [`k-sizeord|${c.k}`, order(`מסדרים את התמונות של ${c.name}: מהקטנה לגדולה`, [0.45, 0.7, 0.95, 1.18].map((s) => ({ e: A(c.k), scale: s })), 'קטן, בינוני, גדול, ענק!')]
     }),
     S('size-mid', 'מי באמצע?', ['size'], 't', (_sp, r) => {
       const t = one(r, things)
@@ -180,7 +182,7 @@ export function kitStyles(K: Kit): Style[] {
     S('odd-cast', 'מי לא מהחבורה?', ['odd', 'sortcat'], 'h', (_sp, r) => {
       if (!castIsDifferent) return null
       const set = some(r, chars, 3), t = one(r, things)
-      return [`k-oddc|${t.k}|${set.map((c) => c.k).sort().join()}`, pick(r, `מי לא ${K.one}?`, tt(t), set.map((c) => ct(c, false)), `כולם ${K.crew}, ו${t.f ? 'זאת' : 'זה'} ${t.w}.`)]
+      return [`k-oddc|${t.k}|${set.map((c) => c.k).sort().join()}`, pick(r, `מי לא ${K.one}?`, tt(t), set.map((c) => ct(c, false)), `כולם ${K.crew.replace(/^ה/, '')}, ו${t.f ? 'זאת' : 'זה'} ${t.w}.`)]
     }),
     S('tap-cast', 'מסמנים את כל החבורה', ['sortcat', 'odd'], 'h', (_sp, r) => {
       if (!castIsDifferent) return null
@@ -207,7 +209,7 @@ export function kitStyles(K: Kit): Style[] {
     }),
     S('peek', 'מי מציץ?', ['riddle'], 'h', (_sp, r) => {
       const [t, ...rest] = some(r, shadowable, 3)
-      return [`k-peek|${t.k}`, pick(r, 'רואים רק חצי! מי מציץ?', tt(t, true), rest.map((x) => tt(x, true)), `זה ${t.w}!`, { kind: 'tile', tile: { e: A(t.k), fx: 'peek' } })]
+      return [`k-peek|${t.k}`, pick(r, 'רואים רק חצי! מי מציץ?', tt(t, true), rest.map((x) => tt(x, true)), `${t.f ? 'זאת' : 'זה'} ${t.w}!`, { kind: 'tile', tile: { e: A(t.k), fx: 'peek' } })]
     }),
     S('upside', 'מה התהפך?', ['riddle', 'odd'], 'h', (_sp, r) => {
       const [t, ...rest] = some(r, things, 4)
@@ -222,11 +224,6 @@ export function kitStyles(K: Kit): Style[] {
       if (rest.some((x) => x.clue === c.clue)) return null
       return [`k-who|${c.k}`, pick(r, `${c.clue}, ואני ${c.f ? COLOR_F[c.c] : c.c}. מי אני?`, ct(c), rest.map((x) => ct(x)), `אני ${c.name}!`)]
     }),
-    S('pairs', 'מה הולך ביחד?', ['logic'], 'h', (_sp, r) => {
-      const [a, b, why] = one(r, K.pairs)
-      const others = some(r, things.filter((t) => t.k !== a && t.k !== b && !K.pairs.some((p) => (p[0] === a && p[1] === t.k) || (p[1] === a && p[0] === t.k))), 2)
-      return [`k-pairs|${a}|${b}`, pick(r, 'מה הולך הכי טוב עם זה?', byKey(b), others.map((t) => tt(t, true)), why, { kind: 'tile', tile: byKey(a) })]
-    }),
 
     /* ───── letters and sounds ───── */
     S('first', 'באיזו אות מתחיל?', ['lettersound'], 'e', (sp, r) => {
@@ -235,7 +232,7 @@ export function kitStyles(K: Kit): Style[] {
       if (!pool.length) return null
       const x = one(r, pool), l = x.w[0]
       const wrong = some(r, (set.length >= 3 ? set : [...LETTERS]).filter((y) => !alike(y, l)), 2)
-      return [`k-first|${x.k}`, pick(r, `באיזו אות ${x.isName ? 'מתחיל' : 'מתחילה'} ${theWord(x)}?`, { g: l }, wrong.map((g) => ({ g })), `${x.w} מתחיל ב־${l} (${LETTER_NAME[l]}).`, { kind: 'tile', tile: x.tile })]
+      return [`k-first|${x.k}`, pick(r, `באיזו אות ${x.isName ? 'מתחיל' : 'מתחילה'} ${theWord(x)}?`, { g: l }, wrong.map((g) => ({ g })), `${theWord(x)} ${x.isName ? 'מתחיל' : 'מתחילה'} ב־${l} (${LETTER_NAME[l]}).`, { kind: 'tile', tile: x.tile })]
     }),
     S('letter-who', 'מה מתחיל באות?', ['lettersound', 'letters'], 'h', (sp, r) => {
       const set = [...(sp.set ?? LETTERS)]
@@ -243,7 +240,7 @@ export function kitStyles(K: Kit): Style[] {
       if (!pool.length) return null
       const x = one(r, pool), l = x.w[0]
       const others = some(r, named.filter((y) => !alike(y.w[0], l)), 2)
-      return [`k-lwho|${x.k}`, pick(r, `מה מתחיל באות ${l} (${LETTER_NAME[l]})?`, x.tile, others.map((y) => y.tile), `${x.w} מתחיל ב־${l}.`, { kind: 'tile', tile: { g: l } })]
+      return [`k-lwho|${x.k}`, pick(r, `מה מתחיל באות ${l} (${LETTER_NAME[l]})?`, x.tile, others.map((y) => y.tile), `${theWord(x)} ${x.isName ? 'מתחיל' : 'מתחילה'} ב־${l}.`, { kind: 'tile', tile: { g: l } })]
     }),
     S('same-sound', 'אותו צליל ראשון', ['firstsound', 'lettersound'], 'h', (sp, r) => {
       const set = sp.set ? [...sp.set] : [...LETTERS]
@@ -251,7 +248,7 @@ export function kitStyles(K: Kit): Style[] {
       if (!groups.length) return null
       const [x, y] = some(r, one(r, groups), 2), l = x.w[0]
       const others = some(r, named.filter((z) => !alike(z.w[0], l)), 2)
-      return [`k-same|${[x.k, y.k].sort().join()}`, pick(r, `מה מתחיל באותו צליל כמו ${x.w}?`, y.tile, others.map((z) => z.tile), `${x.w} ו${y.w}: שניהם מתחילים ב־${l}.`, { kind: 'tile', tile: x.tile })]
+      return [`k-same|${[x.k, y.k].sort().join()}`, pick(r, `מה מתחיל באותו צליל כמו ${x.w}?`, y.tile, others.map((z) => z.tile), `${x.w} ו${y.w}: שתי המילים מתחילות ב־${l}.`, { kind: 'tile', tile: x.tile })]
     }),
     S('find-letter', 'עוזרים למצוא אות', ['letters', 'lettersound'], 'e', (sp, r) => {
       const set = [...(sp.set ?? 'אב')], c = one(r, chars), l = one(r, set), p = he3(c)

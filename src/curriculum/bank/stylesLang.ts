@@ -95,12 +95,12 @@ export const SOUND_STYLES: Style[] = [
   style('ls-first', 'באיזו אות מתחילה?', ['lettersound'], 'e', (sp, r) => {
     const l = one(r, setOf(sp)), w = one(r, startsWith(l))
     const o = otherLetters(r, l, sp, 5).filter((x) => !alike(x, l)).slice(0, 2)
-    return [`ls-first|${w.w}`, pick(r, `באיזו אות מתחילה המילה "${w.w}"?`, g(l), o.map(g), `${w.w} מתחילה ב${ln(l)}.`, { kind: 'tile', tile: picTile(w) })]
+    return [`ls-first|${w.w}`, pick(r, `באיזו אות מתחילה המילה "${w.w}"?`, g(l), o.map(g), `המילה "${w.w}" מתחילה ב${ln(l)}.`, { kind: 'tile', tile: picTile(w) })]
   }),
   style('ls-pic', 'מה מתחיל באות?', ['lettersound'], 'h', (sp, r) => {
     const l = one(r, setOf(sp)), w = one(r, startsWith(l))
     const o = some(r, [...LETTERS].filter((x) => !alike(x, l)), 3).map((x) => one(r, startsWith(x)))
-    return [`ls-pic|${l}|${w.w}`, pick(r, `מה מתחיל באות ${l} (${ln(l)})?`, picTile(w), o.map(picTile), `${w.w} מתחיל ב${ln(l)}.`, { kind: 'tile', tile: g(l) })]
+    return [`ls-pic|${l}|${w.w}`, pick(r, `מה מתחיל באות ${l} (${ln(l)})?`, picTile(w), o.map(picTile), `המילה "${w.w}" מתחילה ב${ln(l)}.`, { kind: 'tile', tile: g(l) })]
   }),
   style('ls-match', 'אות ותמונה', ['lettersound'], 'h', (sp, r) => {
     const pool = [...new Set([...setOf(sp), ...some(r, [...LETTERS], 6)])]
@@ -114,7 +114,7 @@ export const SOUND_STYLES: Style[] = [
     const l = one(r, setOf(sp).filter((x) => startsWith(x).length >= 2))
     if (!l) return null
     const ins = some(r, startsWith(l), 2), other = one(r, [...LETTERS].filter((x) => !alike(x, l))), out = one(r, startsWith(other))
-    return [`ls-odd|${l}|${out.w}`, pick(r, `שתיים מתחילות ב${ln(l)}, ואחת לא. איזו לא?`, picTile(out), ins.map(picTile), `${out.w} מתחילה ב${ln(other)}.`, { kind: 'tile', tile: g(l) })]
+    return [`ls-odd|${l}|${out.w}`, pick(r, `שתיים מתחילות ב${ln(l)}, ואחת לא. איזו לא?`, picTile(out), ins.map(picTile), `המילה "${out.w}" מתחילה ב${ln(other)}.`, { kind: 'tile', tile: g(l) })]
   }),
   style('ls-tap', 'מסמנים מה מתחיל באות', ['lettersound'], 'h', (sp, r) => {
     const l = one(r, setOf(sp).filter((x) => startsWith(x).length >= 3))
@@ -133,20 +133,20 @@ export const FIRST_STYLES: Style[] = [
   style('fs-same', 'אותו צליל ראשון', ['firstsound'], 'e', (_sp, r) => {
     const [la, ...rest] = some(r, [...CLEAR_SOUNDS], 3)
     const [a, b] = some(r, startsWith(la), 2)
-    return [`fs-same|${a.w}|${b.w}`, pick(r, `מה מתחיל באותו צליל כמו "${a.w}"?`, picTile(b), rest.map((l) => picTile(one(r, startsWith(l)))), `${a.w} ו${b.w} מתחילים באותו צליל.`, { kind: 'tile', tile: picTile(a) })]
+    return [`fs-same|${a.w}|${b.w}`, pick(r, `מה מתחיל באותו צליל כמו "${a.w}"?`, picTile(b), rest.map((l) => picTile(one(r, startsWith(l)))), `המילים "${a.w}" ו"${b.w}" מתחילות באותו צליל.`, { kind: 'tile', tile: picTile(a) })]
   }),
   style('fs-last', 'הצליל האחרון', ['firstsound', 'build'], 't', (_sp, r) => {
-    const w = one(r, allWords.filter((x) => !alike(x.w.at(-1)!, 'כ')))
+    const w = one(r, allWords.filter((x) => !alike(x.w.at(-1)!, 'כ') && !'הא'.includes(x.w.at(-1)!))) // a silent ה or א at the end isn't heard
     const last = w.w.at(-1)!
     const o = [...new Set([w.w[0], ...some(r, [...CLEAR_SOUNDS, 'ש', 'ב'], 4)])].filter((x) => !alike(x, last)).slice(0, 2)
-    return [`fs-last|${w.w}`, pick(r, `באיזו אות נגמרת המילה "${w.w}"? מקשיבים לסוף!`, g(last), o.map(g), `${w.w} נגמרת ב${ln(last)}.`, { kind: 'tile', tile: picTile(w) })]
+    return [`fs-last|${w.w}`, pick(r, `באיזו אות נגמרת המילה "${w.w}"? מקשיבים לסוף!`, g(last), o.map(g), `המילה "${w.w}" נגמרת ב${ln(last)}.`, { kind: 'tile', tile: picTile(w) })]
   }),
   style('fs-not', 'מי לא מתחיל כמו...?', ['firstsound'], 'h', (_sp, r) => {
     const [la, lb] = some(r, [...CLEAR_SOUNDS], 2)
     const [a, b, c] = some(r, startsWith(la), 3)
     if (!c) return null
     const out = one(r, startsWith(lb))
-    return [`fs-not|${a.w}|${out.w}`, pick(r, `מי לא מתחיל כמו "${a.w}"?`, picTile(out), [b, c].map(picTile), `${out.w} מתחיל בצליל אחר.`, { kind: 'tile', tile: picTile(a) })]
+    return [`fs-not|${a.w}|${out.w}`, pick(r, `מי לא מתחיל כמו "${a.w}"?`, picTile(out), [b, c].map(picTile), `המילה "${out.w}" מתחילה בצליל אחר.`, { kind: 'tile', tile: picTile(a) })]
   }),
   style('fs-tap', 'מסמנים אותו צליל', ['firstsound'], 'h', (_sp, r) => {
     const [la, ...rest] = some(r, [...CLEAR_SOUNDS].filter((x) => startsWith(x).length >= 4), 4)

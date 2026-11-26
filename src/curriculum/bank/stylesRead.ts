@@ -41,7 +41,16 @@ const NIKUD: NW[] = NW(`
 `)
 const syl = (x: { base: string; sign: Sign }) => x.base + MARK[x.sign]
 const sounds = (sp: Spec) => [...(sp.set ?? 'aeiou')]
-const nwords = (sp: Spec) => NIKUD.filter((x) => sounds(sp).includes(SOUND[x.sign]))
+/** Every vowel sound in a word: a word is readable only once the child knows all of them. */
+function vowelsOf(w: string): Set<string> {
+  const out = new Set<string>(), ch = [...w]
+  ch.forEach((c, i) => {
+    if (c === 'ָ' || c === 'ַ') out.add('a'); else if (c === 'ֵ' || c === 'ֶ') out.add('e'); else if (c === 'ִ') out.add('i'); else if (c === 'ֹ') out.add('o'); else if (c === 'ֻ') out.add('u')
+    else if (c === 'ּ' && ch[i - 1] === 'ו' && i > 1 && !/[ְ-ֻ]/.test(ch[i + 1] ?? '')) out.add('u') // שורוק
+  })
+  return out
+}
+const nwords = (sp: Spec) => NIKUD.filter((x) => sounds(sp).includes(SOUND[x.sign]) && [...vowelsOf(x.w)].every((v) => sounds(sp).includes(v)))
 /** Two first syllables a child would hear as the same: same sound and a letter that sounds the same. */
 const sameStart = (a: NW, b: NW) => SOUND[a.sign] === SOUND[b.sign] && alike(a.plain, b.plain) && a.base.includes('ּ') === b.base.includes('ּ')
 /** Wrong syllables: the same letter with another vowel the child knows, else another letter with the same vowel. */
@@ -67,8 +76,9 @@ export const NIKUD_STYLES: Style[] = [
     return [`nkr|${x.w}`, pick(r, 'קוראים את המילה ובוחרים את התמונה', pic(x), o.map(pic), `כתוב ${x.w}.`, { kind: 'word', w: x.w })]
   }),
   style('nk-word', 'איזו מילה מתאימה?', ['nikud'], 't', (sp, r) => {
-    const x = one(r, nwords(sp)), close = NIKUD.filter((y) => y !== x && (y.plain === x.plain || y.w.replace(/[ְ-ׇ]/g, '').length === x.w.replace(/[ְ-ׇ]/g, '').length))
-    const o = some(r, close.length >= 2 ? close : NIKUD.filter((y) => y !== x), 2)
+    const known = nwords(sp), x = one(r, known), close = known.filter((y) => y !== x && (y.plain === x.plain || y.w.replace(/[ְ-ׇ]/g, '').length === x.w.replace(/[ְ-ׇ]/g, '').length))
+    const o = some(r, close.length >= 2 ? close : known.filter((y) => y !== x), 2)
+    if (o.length < 2) return null
     return [`nkw|${x.w}`, pick(r, 'איזו מילה מתאימה לתמונה? קוראים עד הסוף!', { t: x.w }, o.map((y) => ({ t: y.w })), `כתוב ${x.w}.`, { kind: 'tile', tile: { e: x.e } })]
   }),
   style('nk-sign', 'מה שם הניקוד?', ['nikud'], 'h', (sp, r) => {
@@ -173,6 +183,8 @@ const ACTS: Act[] = [
   { m: 'רואה', f: 'רואה', q: ['את מי {n} רואה?', 'את מי {n} רואה?'], things: P('פיל 🐘, ג׳ירפה 🦒, קוף 🐵, ינשוף 🦉, צב 🐢, נמר 🐯, זברה 🦓') },
   { m: 'מצייר', f: 'מציירת', q: ['מה {n} מצייר?', 'מה {n} מציירת?'], things: P('בית 🏠, פרח 🌸, שמש ☀️, עץ 🌳, כוכב ⭐, לב ❤️') },
 ]
+/** Verbs that fit almost any object (you can see or draw anything): never offered as a wrong answer. */
+const OPEN_VERBS = ['רואה', 'מצייר']
 const RIDES = P('אוטובוס 🚌, רכבת 🚂, מטוס ✈️, אופניים 🚲, סירה ⛵')
 const PLACES = ['בגן', 'בבית', 'בפארק', 'בחצר', 'בכיתה']
 const SILLY: [string, boolean][] = [
@@ -199,7 +211,8 @@ export const SENTENCE_STYLES: Style[] = [
   }),
   style('sn-fill', 'משלימים משפט', ['sentence', 'grammar'], 'h', (_sp, r) => {
     const h = hero(r), a = one(r, ACTS.filter((x) => x.things.length)), x = one(r, a.things)
-    const others = mix(r, ACTS.filter((y) => y !== a && y.things.length && !y.things.includes(x))).slice(0, 2).map((y) => (h.f ? y.f : y.m))
+    const others = mix(r, ACTS.filter((y) => y !== a && y.things.length && !y.things.includes(x) && !OPEN_VERBS.includes(y.m))).slice(0, 2).map((y) => (h.f ? y.f : y.m))
+    if (others.length < 2) others.push(h.f ? 'נוסעת' : 'נוסע')
     const right = h.f ? a.f : a.m
     if (others.some((o) => o === right)) return null
     return [`snf|${h.n}|${a.m}|${x.w}`, pick(r, 'איזו מילה משלימה את המשפט?', { t: right }, others.map((t) => ({ t })), `${h.n} ${right} ${nice(x.w)}.`, txt(`${h.n} ___ ${nice(x.w)}`))]
@@ -230,10 +243,13 @@ const PLURALS: [string, string, string][] = [
   ['בית', 'בתים', '🏠'], ['שולחן', 'שולחנות', '🍽️'], ['חלון', 'חלונות', '🪟'], ['כיסא', 'כיסאות', '🪑'], ['ביצה', 'ביצים', '🥚'], ['יד', 'ידיים', '✋'],
   ['רגל', 'רגליים', '🦵'], ['עין', 'עיניים', '👁️'], ['אוזן', 'אוזניים', '👂'], ['דג', 'דגים', '🐟'], ['סוס', 'סוסים', '🐴'], ['ציפור', 'ציפורים', '🐦'],
   ['מכונית', 'מכוניות', '🚗'], ['עוגה', 'עוגות', '🎂'], ['כדור', 'כדורים', '⚽'], ['אישה', 'נשים', '👩'], ['איש', 'אנשים', '👨'], ['עיר', 'ערים', '🏙️'],
-  ['לילה', 'לילות', '🌙'], ['אבא', 'אבות', '👨'], ['שן', 'שיניים', '🦷'], ['כוכב', 'כוכבים', '⭐'],
+  ['לילה', 'לילות', '🌙'], ['שן', 'שיניים', '🦷'], ['כוכב', 'כוכבים', '⭐'],
 ]
-const naive = (s: string) => (s.endsWith('ה') ? s.slice(0, -1) + 'ות' : s + 'ים')
-const naive2 = (s: string) => (s.endsWith('ה') ? s.slice(0, -1) + 'ים' : s + 'ות')
+const FIN2REG: Record<string, string> = { ך: 'כ', ם: 'מ', ן: 'נ', ף: 'פ', ץ: 'צ' }
+/** A final letter turns regular before an ending: עין → עינים (a wrong plural, but a real-looking one). */
+const stem = (s: string) => s.slice(0, -1) + (FIN2REG[s.at(-1)!] ?? s.at(-1))
+const naive = (s: string) => (s.endsWith('ה') ? s.slice(0, -1) + 'ות' : stem(s) + 'ים')
+const naive2 = (s: string) => (s.endsWith('ה') ? s.slice(0, -1) + 'ים' : stem(s) + 'ות')
 const OPP: [string, string][] = [['גדול', 'קטן'], ['חם', 'קר'], ['יום', 'לילה'], ['למעלה', 'למטה'], ['מהר', 'לאט'], ['שמח', 'עצוב'], ['פתוח', 'סגור'], ['ארוך', 'קצר'],
   ['כבד', 'קל'], ['רטוב', 'יבש'], ['חדש', 'ישן'], ['מלא', 'ריק'], ['רחוק', 'קרוב'], ['ראשון', 'אחרון'], ['נקי', 'מלוכלך'], ['חזק', 'חלש'], ['גבוה', 'נמוך'],
   ['רך', 'קשה'], ['בפנים', 'בחוץ'], ['לפני', 'אחרי'], ['שקט', 'רועש'], ['זקן', 'צעיר'], ['מתוק', 'חמוץ'], ['אור', 'חושך']]
@@ -286,15 +302,25 @@ export const GRAMMAR_STYLES: Style[] = [
 ]
 
 /* ───────── short stories to read and understand ───────── */
-const GO = P('לים 🏖️, לפארק 🌳, לגן־החיות 🦒, ליער 🌲, להר ⛰️')
+const GO = P('לים 🏖️, לפארק 🌳, לגן־החיות 🦒, להר ⛰️, לחווה 🐄')
+/** Who you might see in each place. */
+const SEEN_AT: Record<string, { pl: string; e: string }[]> = {
+  'לים': [{ pl: 'דגים', e: '🐟' }, { pl: 'סרטנים', e: '🦀' }, { pl: 'שחפים', e: '🐦' }],
+  'לפארק': [{ pl: 'כלבים', e: '🐶' }, { pl: 'ברווזים', e: '🦆' }, { pl: 'פרפרים', e: '🦋' }],
+  'לגן־החיות': [{ pl: 'פילים', e: '🐘' }, { pl: 'קופים', e: '🐵' }, { pl: 'אריות', e: '🦁' }],
+  'להר': [{ pl: 'ציפורים', e: '🐦' }, { pl: 'עזים', e: '🐐' }, { pl: 'פרפרים', e: '🦋' }],
+  'לחווה': [{ pl: 'סוסים', e: '🐴' }, { pl: 'ברווזים', e: '🦆' }, { pl: 'ארנבים', e: '🐰' }],
+}
 const WITH = P('אמא 👩, סבא 👴, הכלב 🐶, סבתא 👵, אבא 👨')
 const FOUND: { w: string; f: boolean; e: string }[] = [{ w: 'כדור', f: false, e: '⚽' }, { w: 'בובה', f: true, e: '🪆' }, { w: 'עפיפון', f: false, e: '🪁' }, { w: 'כובע', f: false, e: '🧢' }, { w: 'מטרייה', f: true, e: '☂️' }]
 const COLS = ['אדום', 'כחול', 'צהוב', 'ירוק', 'סגול', 'כתום']
 function tale(r: R) {
-  const h = hero(r), go = one(r, GO), wi = one(r, WITH.filter((x) => !(go.w.includes('חיות') && x.w === 'הכלב'))), m = one(r, MANY), n = int(r, 2, 5), fd = one(r, FOUND), c = one(r, COLS)
+  const h = hero(r), go = one(r, GO), wi = one(r, WITH.filter((x) => !(go.w.includes('חיות') && x.w === 'הכלב'))), m = one(r, SEEN_AT[go.w] ?? MANY), n = int(r, 2, 5), fd = one(r, FOUND), c = one(r, COLS)
   const color = fd.f ? COLOR_F[c] : c
-  const text = `${h.n} ${v(h, 'הלך', 'הלכה')} ${nice(go.w)} עם ${wi.w}. שם ${v(h, 'הוא ראה', 'היא ראתה')} ${NUM_M[n]} ${m.pl}. אחר כך ${v(h, 'הוא מצא', 'היא מצאה')} ${fd.w} ${color}.`
-  return { h, go, wi, m, n, fd, c, text, key: `${h.n}|${go.w}|${wi.w}|${m.pl}${n}|${fd.w}${c}` }
+  const sawFirst = r() < 0.5
+  const saw = `${v(h, 'הוא ראה', 'היא ראתה')} ${NUM_M[n]} ${m.pl}`, found = `${v(h, 'הוא מצא', 'היא מצאה')} ${fd.w} ${color}`
+  const text = `${h.n} ${v(h, 'הלך', 'הלכה')} ${nice(go.w)} עם ${wi.w}. ${sawFirst ? `שם ${saw}. אחר כך ${found}.` : `קודם ${found}. אחר כך ${saw}.`}`
+  return { h, go, wi, m, n, fd, c, text, sawFirst, key: `${h.n}|${go.w}|${wi.w}|${m.pl}${n}|${fd.w}${c}|${sawFirst}` }
 }
 export const READING_STYLES: Style[] = [
   style('rc-where', 'לאן הלכו?', ['reading'], 'h', (_sp, r) => {
@@ -316,7 +342,8 @@ export const READING_STYLES: Style[] = [
   }),
   style('rc-first', 'מה קרה קודם?', ['reading', 'story'], 't', (_sp, r) => {
     const t = tale(r)
-    const a = `${v(t.h, 'ראה', 'ראתה')} ${t.m.pl}`, b = `${v(t.h, 'מצא', 'מצאה')} ${t.fd.w}`
+    const sawIt = `${v(t.h, 'ראה', 'ראתה')} ${t.m.pl}`, foundIt = `${v(t.h, 'מצא', 'מצאה')} ${t.fd.w}`
+    const [a, b] = t.sawFirst ? [sawIt, foundIt] : [foundIt, sawIt]
     const { options, correct } = choices(r, { t: a }, [{ t: b }])
     return [`rcf|${t.key}`, { kind: 'pick', q: he(`מה קרה קודם? ${t.h.n}...`), show: txt(t.text), options, correct, why: he(`קודם ${a}, ואחר כך ${b}.`) }]
   }),

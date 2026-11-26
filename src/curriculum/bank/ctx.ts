@@ -20,8 +20,18 @@ const COMMON_STUFF: Stuff[] = [
   { w: 'ספר', pl: 'ספרים', e: '📖' }, { w: 'פרח', pl: 'פרחים', e: '🌸' }, { w: 'כוכב', pl: 'כוכבים', e: '⭐' }, { w: 'דג', pl: 'דגים', e: '🐟' },
   { w: 'תות', pl: 'תותים', e: '🍓' }, { w: 'סוכרייה', pl: 'סוכריות', e: '🍬' }, { w: 'מכונית', pl: 'מכוניות', e: '🚗' }, { w: 'עיפרון', pl: 'עפרונות', e: '✏️' },
 ]
-export function stuff(r: R): Stuff {
-  if (KIT && r() < 0.6) { const t = one(r, KIT.things.filter((x) => !x.w.includes(' '))); return { w: t.w, pl: t.pl, e: art(KIT.id, t.k) } }
+/** World things a story can't have a pile of, or give away (rivers, caves, planets, teeth…). */
+const NOT_COUNTABLE = new Set(['ברק', 'מגדל', 'גשר', 'טירה', 'דרקון', 'כוכב לכת', 'ירח', 'שמש', 'שביט', 'גלקסיה', 'אסטרואיד', 'מכתש', 'לוויין', 'חללית', 'מוסך',
+  'הר געש', 'נהר', 'מערה', 'הר', 'עקבה', 'מטאור', 'ממותה', 'דקל', 'עץ', 'את', 'סלע', 'קן', 'שן', 'מנוף', 'דחפור', 'רמזור', 'זרקור', 'אסטרונאוט', 'צלחת מעופפת', 'פיה', 'חד־קרן'])
+/** Many of something: hundreds of these are believable in a shop or a library. */
+const BIG_STUFF: Stuff[] = [
+  { w: 'ספר', pl: 'ספרים', e: '📖' }, { w: 'בלון', pl: 'בלונים', e: '🎈' }, { w: 'סוכרייה', pl: 'סוכריות', e: '🍬' }, { w: 'מדבקה', pl: 'מדבקות', e: '⭐' },
+  { w: 'עיפרון', pl: 'עפרונות', e: '✏️' }, { w: 'פרח', pl: 'פרחים', e: '🌸' }, { w: 'תות', pl: 'תותים', e: '🍓' },
+]
+/** Something to count in a story. `big`: the numbers go past 100, so only things you really find by the hundred. */
+export function stuff(r: R, big = false): Stuff {
+  if (big) return one(r, BIG_STUFF)
+  if (KIT && r() < 0.6) { const t = one(r, KIT.things.filter((x) => !x.w.includes(' ') && !NOT_COUNTABLE.has(x.w))); return { w: t.w, pl: t.pl, e: art(KIT.id, t.k) } }
   return one(r, COMMON_STUFF)
 }
 /** A verb in the hero's gender: v(h, 'קיבל', 'קיבלה'). */

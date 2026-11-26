@@ -31,11 +31,11 @@ export const STORY_STYLES: Style[] = [
     const i = int(r, 0, ALL_STORIES.length - 1), s = ALL_STORIES[i], k = int(r, 0, s.length - 2)
     const o = s.filter((_, j) => j !== k + 1 && j !== k).slice(0, 2)
     if (!o.length) return null
-    return [`st-after|${i}|${k}`, pick(r, 'מה יקרה מיד אחרי זה?', picTile(s[k + 1]), o.map(picTile), `אחרי ${nice(s[k].w)} בא ${nice(s[k + 1].w)}.`, { kind: 'tile', tile: picTile(s[k]) })]
+    return [`st-after|${i}|${k}`, pick(r, 'מה יקרה מיד אחרי זה?', picTile(s[k + 1]), o.map(picTile), `קודם ${nice(s[k].w)}, ואחר כך ${nice(s[k + 1].w)}.`, { kind: 'tile', tile: picTile(s[k]) })]
   }),
   style('st-first', 'מה היה בהתחלה?', ['story'], 'h', (_sp, r) => {
     const i = int(r, 0, ALL_STORIES.length - 1), s = ALL_STORIES[i]
-    return [`st-first|${i}`, pick(r, 'מה היה הכי בהתחלה?', picTile(s[0]), s.slice(1, 3).map(picTile), `הכול התחיל ב${nice(s[0].w)}.`)]
+    return [`st-first|${i}`, pick(r, 'מה היה הכי בהתחלה?', picTile(s[0]), s.slice(1, 3).map(picTile), `קודם כל: ${nice(s[0].w)}.`)]
   }),
   style('st-last', 'איך זה נגמר?', ['story'], 'h', (_sp, r) => {
     const i = int(r, 0, ALL_STORIES.length - 1), s = ALL_STORIES[i]
@@ -148,7 +148,7 @@ export const SOCIAL_STYLES: Style[] = [
   }),
   style('so-helper', 'מי עוזר לנו?', ['social', 'riddle'], 't', (_sp, r) => {
     const m = one(r, HELPERS)
-    return [`so-helper|${m.q}`, pick(r, m.q, picTile(m.a), m.bad.map(picTile), `${m.a.w}: הם יודעים לעזור.`)]
+    return [`so-helper|${m.q}`, pick(r, m.q, picTile(m.a), m.bad.map(picTile), `${m.a.w}! זה מי שעוזר כאן.`)]
   }),
   style('so-safe', 'מה בטוח?', ['social'], 't', (_sp, r) => {
     const dir = int(r, 0, 1)
@@ -232,7 +232,7 @@ export const RIDDLE_STYLES: Style[] = [
   }),
   style('rd-healthy', 'מה בריא?', ['riddle'], 'h', (_sp, r) => {
     const h = one(r, HEALTHY)
-    return [`rd-healthy|${h.w}`, pick(r, 'מה הכי בריא לאכול כל יום?', picTile(h), some(r, TREATS, 2).map(picTile), `${h.w} נותן כוח לגוף. ממתקים רק לפעמים.`)]
+    return [`rd-healthy|${h.w}`, pick(r, 'מה הכי בריא לאכול כל יום?', picTile(h), some(r, TREATS, 2).map(picTile), `${h.w}: זה נותן כוח לגוף. ממתקים רק לפעמים.`)]
   }),
   style('rd-plate', 'צלחת בריאה', ['riddle'], 't', (_sp, r) => [
     'rd-plate', tapall(r, 'בונים צלחת בריאה: מסמנים את כל האוכל הבריא', some(r, HEALTHY, 3).map(picTile), some(r, TREATS, 3).map(picTile), 'פירות, ירקות וחלב נותנים לנו כוח לגדול.'),

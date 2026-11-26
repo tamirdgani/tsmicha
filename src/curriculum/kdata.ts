@@ -74,8 +74,8 @@ export const CATS: Record<string, Cat> = {
   toys: { name: 'צעצועים', items: P('דובי 🧸, כדור ⚽, עפיפון 🪁, קובייה 🎲, פאזל 🧩, בלון 🎈, רובוט 🤖, יויו 🪀') },
   sea: { name: 'בים', items: P('דג 🐟, תמנון 🐙, כריש 🦈, לווייתן 🐳, סרטן 🦀, דולפין 🐬') },
   sky: { name: 'בשמיים', items: P('ציפור 🐦, פרפר 🦋, מטוס ✈️, נשר 🦅, דבורה 🐝, הליקופטר 🚁') },
-  hot: { name: 'חם', items: P('שמש ☀️, אש 🔥, תה ☕, מרק 🍲, הר־געש 🌋') },
-  cold: { name: 'קר', items: P('שלג ❄️, קרח 🧊, גלידה 🍦, בובת־שלג ⛄, פינגווין 🐧') },
+  hot: { name: 'חמים', items: P('שמש ☀️, אש 🔥, תה ☕, מרק 🍲, הר־געש 🌋') },
+  cold: { name: 'קרים', items: P('שלג ❄️, קרח 🧊, גלידה 🍦, בובת־שלג ⛄, פינגווין 🐧') },
 }
 /** Group pairs for sorting; the hard ones need more thought (fruit vs vegetables, sea vs sky). */
 export const SORT_PAIRS: [string, string][] = [['animals', 'vehicles'], ['clothes', 'toys'], ['hot', 'cold']]

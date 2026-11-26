@@ -29,15 +29,17 @@ let LEVELS = LEVELS_PRE
 const byTopic = new Map<Topic, Style[]>()
 for (const st of STYLES) for (const t of st.skills) byTopic.set(t, [...(byTopic.get(t) ?? []), st])
 
-type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage }
-let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k' }
+type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage; how: Set<string> }
+let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k', how: new Set() }
 
 /** What was chosen where (for scripts/check-lessons.ts). */
 export const GEN_LOG: { node: string; style: string; topic: Topic; pass: number }[] = []
 let NODE = ''
 
 type Slot = { topic: Topic; level: number; spec: Spec }
-type Ctx = { r: R; specs: Spec[]; inLesson: Map<string, number>; inPart: Set<string> }
+type Ctx = { r: R; specs: Spec[]; inLesson: Map<string, number>; inPart: Set<string>; filler: number; test: boolean }
+/** Picture riddles that don't teach the lesson's topic. */
+const FILLER = new Set(['k-shadow', 'k-peek', 'k-upside', 'k-shadow-match', 'k-color-tf', 'k-color-shadow', 'rd-shadow', 'rd-shadows', 'rd-peek', 'rd-spot', 'rd-upside'])
 
 /** Tries a style a few times for a question nobody has seen yet. */
 function attempt(st: Style, sp: Spec, r: R, allowSeen = false): Step | null {
@@ -89,21 +91,26 @@ function ask(slot: Slot, c: Ctx): Step {
   const atLevel = (st: Style) => YEAR.stage === 'pre' || slot.topic === 'riddle' || levels.includes(st.lv)
   // in school, the kindergarten warm-ups ("which one is not a letter?") are too easy: only the school skills keep easy questions
   const grownUp = (st: Style) => !(YEAR.stage === 'g1' || YEAR.stage === 'g2') || st.lv !== 'e' || st.skills.some((t) => SCHOOL.includes(t as Skill))
+  // a lesson about one thing ("making ten", "times 6 and 7") names the styles that teach exactly that
+  const only = slot.spec.only
+  // the lesson stays on its own topic: its own styles (even a second time) come before borrowing from neighbours
   const passes: Style[][] = [
+    only ? pool([slot.topic]).filter((st) => only.includes(st.id) && (c.inLesson.get(st.id) ?? 0) < 3) : [],
     kitPool([slot.topic]).filter(atLevel),
-    kitPool(kin).filter(atLevel),
     pool([slot.topic]).filter((st) => fresh(st) && levels.includes(st.lv)),
     kitPool([slot.topic]),
-    pool([slot.topic]).filter((st) => fresh(st) && levels.includes(st.lv)),
     pool([slot.topic]).filter(fresh),
+    pool([slot.topic]).filter((st) => !c.inPart.has(st.id) && (c.inLesson.get(st.id) ?? 0) < 2),
+    kitPool(kin).filter(atLevel),
     slot.topic === 'riddle' ? [] : pool(lessonTopics).filter(fresh),
     pool(kin).filter(fresh),
     pool(['riddle']).filter(fresh),
-    pool([slot.topic]).filter((st) => !c.inPart.has(st.id) && (c.inLesson.get(st.id) ?? 0) < 2),
     pool([slot.topic, ...lessonTopics, ...kin]).filter((st) => !c.inPart.has(st.id)),
   ]
+  // shadows, peeks and upside-down pictures are a nice surprise, not the lesson: one per lesson (two in pre-K)
+  const fillerOk = (st: Style) => !FILLER.has(st.id) || (!c.test && c.filler < (YEAR.stage === 'pre' ? 2 : YEAR.stage === 'k' ? 1 : 0))
   for (const [pass, all] of passes.entries()) {
-    const candidates = pass < passes.length - 1 ? all.filter(grownUp) : all
+    const candidates = pass < passes.length - 1 ? all.filter((st) => grownUp(st) && fillerOk(st)) : all
     // the style that waited longest goes first; ties are broken at random
     const ranked = mix(c.r, candidates).sort((a, b) => (YEAR.last.get(a.id) ?? -1) - (YEAR.last.get(b.id) ?? -1))
     for (const st of ranked) {
@@ -121,6 +128,7 @@ function ask(slot: Slot, c: Ctx): Step {
 function note(st: Style, c: Ctx) {
   c.inLesson.set(st.id, (c.inLesson.get(st.id) ?? 0) + 1)
   c.inPart.add(st.id)
+  if (FILLER.has(st.id)) c.filler++
   YEAR.last.set(st.id, YEAR.lesson)
 }
 
@@ -179,27 +187,59 @@ const INTRO: Partial<Record<Skill, { body: string[]; scene: string }>> = {
 
 /* ───────── "how do we calculate?" — taught before the first exercise of every lesson that calculates ───────── */
 const CALC: Skill[] = ['plus', 'minus', 'add', 'sub', 'times', 'divide', 'wordprob']
-function howTo(sp: Spec, short: boolean): ExplainStep | null {
-  const max = sp.max ?? 10, hard = !!sp.hard
-  const s = sp.s
+function howTo(sp: Spec, short: boolean, r: R): ExplainStep | null {
+  // every page works a fresh example, so the same "63 − 27" never comes back
+  const max = sp.max ?? 10, hard = !!sp.hard, s = sp.s
   const page = (title: string, body: string[], math: string[]): ExplainStep => ({ kind: 'explain', title: he(title), body: (short ? body.slice(0, 1) : body).map(he), math })
-  if (s === 'plus' || s === 'add' || (s === 'wordprob' && !short)) {
-    if (max <= 10) return page('איך מחברים?', ['מתחילים מהמספר הגדול, ושומרים אותו בראש.', 'סופרים קדימה את המספר הקטן על האצבעות.', '5 + 3: אומרים "5", וסופרים 6, 7, 8. יצא 8!'], ['5 + 3 = ?', '5 … 6, 7, 8', '5 + 3 = 8'])
-    if (max <= 20) return page('איך מחברים עד 20?', ['משלימים קודם ל־10. ל־8 חסרים 2 כדי להגיע ל־10.', 'את ה־2 לוקחים מה־5, ונשארו ממנו 3.', '10 ועוד 3 זה 13. קל לחבר ל־10!'], ['8 + 5 = ?', '8 + 2 = 10', '10 + 3 = 13', '8 + 5 = 13'])
-    if (max <= 100) return hard
-      ? page('איך מחברים עם המרה?', ['מחברים עשרות עם עשרות: 40 + 30 = 70.', 'מחברים אחדות עם אחדות: 7 + 6 = 13.', '13 אחדות הן עוד עשר ו־3. ביחד: 70 + 13 = 83.'], ['47 + 36 = ?', '40 + 30 = 70', '7 + 6 = 13', '70 + 13 = 83'])
-      : page('איך מחברים מספרים גדולים?', ['מחברים עשרות עם עשרות: 30 + 20 = 50.', 'מחברים אחדות עם אחדות: 4 + 5 = 9.', 'ביחד: 50 + 9 = 59.'], ['34 + 25 = ?', '30 + 20 = 50', '4 + 5 = 9', '50 + 9 = 59'])
-    return page('איך מחברים מאות?', ['מאות עם מאות: 300 + 200 = 500.', 'עשרות עם עשרות: 40 + 50 = 90. אחדות עם אחדות: 6 + 7 = 13.', 'ביחד: 500 + 90 + 13 = 603.'], ['346 + 257 = ?', '300 + 200 = 500', '40 + 50 = 90', '6 + 7 = 13', '500 + 90 + 13 = 603'])
+  const seq = (from: number, k: number, dir: 1 | -1) => Array.from({ length: k }, (_, i) => from + dir * (i + 1)).join(', ')
+  if (s === 'plus' || s === 'add') {
+    if (max <= 10) {
+      const a = int(r, 3, Math.max(3, max - 3)), b = int(r, 2, Math.max(2, Math.min(4, max - a)))
+      return page('איך מחברים?', ['מתחילים מהמספר הגדול, ושומרים אותו בראש.', 'סופרים קדימה את המספר הקטן על האצבעות.', `${a} + ${b}: אומרים "${a}", וסופרים ${seq(a, b, 1)}. יצא ${a + b}!`], [`${a} + ${b} = ?`, `${a} … ${seq(a, b, 1)}`, `${a} + ${b} = ${a + b}`])
+    }
+    if (max <= 20) {
+      const a = int(r, 6, 9), b = int(r, 11 - a, 9), need = 10 - a, rest = b - need
+      return page('איך מחברים עד 20?', [`משלימים קודם ל־10: ל־${a} חסרים ${need} כדי להגיע ל־10.`, `את ה־${need} לוקחים מה־${b}, ונשארו ממנו ${rest}.`, `10 ועוד ${rest} זה ${a + b}. קל לחבר ל־10!`], [`${a} + ${b} = ?`, `${a} + ${need} = 10`, `10 + ${rest} = ${a + b}`, `${a} + ${b} = ${a + b}`])
+    }
+    if (max <= 100) {
+      let a = 0, b = 0
+      for (let i = 0; i < 50; i++) { a = int(r, 21, 68); b = int(r, 12, 99 - a); if (b % 10 && a % 10 && ((a % 10) + (b % 10) >= 10) === hard) break }
+      const ta = a - (a % 10), tb = b - (b % 10), oa = a % 10, ob = b % 10, t = ta + tb, o = oa + ob
+      return page(hard ? 'איך מחברים עם המרה?' : 'איך מחברים מספרים גדולים?', [`מחברים עשרות עם עשרות: ${ta} + ${tb} = ${t}.`, `מחברים אחדות עם אחדות: ${oa} + ${ob} = ${o}.`, o >= 10 ? `${o} אחדות הן עוד עשר ו־${o - 10}. ביחד: ${t} + ${o} = ${a + b}.` : `ביחד: ${t} + ${o} = ${a + b}.`], [`${a} + ${b} = ?`, `${ta} + ${tb} = ${t}`, `${oa} + ${ob} = ${o}`, `${t} + ${o} = ${a + b}`])
+    }
+    const a = int(r, 2, 5) * 100 + int(r, 1, 8) * 10 + int(r, 1, 9), b = int(r, 1, 3) * 100 + int(r, 1, 8) * 10 + int(r, 1, 9)
+    const h = (x: number) => x - (x % 100), te = (x: number) => (x % 100) - (x % 10), o = (x: number) => x % 10
+    return page('איך מחברים מאות?', [`מאות עם מאות: ${h(a)} + ${h(b)} = ${h(a) + h(b)}.`, `עשרות עם עשרות: ${te(a)} + ${te(b)} = ${te(a) + te(b)}. אחדות עם אחדות: ${o(a)} + ${o(b)} = ${o(a) + o(b)}.`, `ביחד: ${h(a) + h(b)} + ${te(a) + te(b)} + ${o(a) + o(b)} = ${a + b}.`],
+      [`${a} + ${b} = ?`, `${h(a)} + ${h(b)} = ${h(a) + h(b)}`, `${te(a)} + ${te(b)} = ${te(a) + te(b)}`, `${o(a)} + ${o(b)} = ${o(a) + o(b)}`, `${h(a) + h(b)} + ${te(a) + te(b)} + ${o(a) + o(b)} = ${a + b}`])
   }
   if (s === 'minus' || s === 'sub') {
-    if (max <= 10) return page('איך מחסרים?', ['מתחילים מהמספר הראשון, ושומרים אותו בראש.', 'סופרים אחורה כמה שמורידים.', '7 − 3: אומרים "7", וסופרים אחורה 6, 5, 4. נשארו 4!', 'בודקים: 4 + 3 = 7. צדקנו!'], ['7 − 3 = ?', '7 … 6, 5, 4', '7 − 3 = 4'])
-    if (max <= 20) return page('איך מחסרים עד 20?', ['יורדים קודם ל־10: מ־13 מורידים 3, ומגיעים ל־10.', 'היינו צריכים להוריד 5. הורדנו 3, נשאר להוריד עוד 2.', '10 פחות 2 זה 8!'], ['13 − 5 = ?', '13 − 3 = 10', '10 − 2 = 8', '13 − 5 = 8'])
-    if (max <= 100) return page('איך מחסרים מספרים גדולים?', ['מורידים קודם את העשרות: 63 − 20 = 43.', 'אחר כך מורידים את האחדות: 43 − 7 = 36.', 'בודקים בחיבור: 36 + 27 = 63.'], ['63 − 27 = ?', '63 − 20 = 43', '43 − 7 = 36', '63 − 27 = 36'])
-    return page('איך מחסרים מאות?', ['מורידים קודם את המאות: 582 − 200 = 382.', 'אחר כך את העשרות ואת האחדות: 382 − 46 = 336.', 'בודקים בחיבור: 336 + 246 = 582.'], ['582 − 246 = ?', '582 − 200 = 382', '382 − 40 = 342', '342 − 6 = 336'])
+    if (max <= 10) {
+      const a = int(r, 6, Math.max(6, max)), b = int(r, 2, 4), d = a - b
+      return page('איך מחסרים?', ['מתחילים מהמספר הראשון, ושומרים אותו בראש.', 'סופרים אחורה כמה שמורידים.', `${a} − ${b}: אומרים "${a}", וסופרים אחורה ${seq(a, b, -1)}. נשארו ${d}!`, `בודקים: ${d} + ${b} = ${a}. צדקנו!`], [`${a} − ${b} = ?`, `${a} … ${seq(a, b, -1)}`, `${a} − ${b} = ${d}`])
+    }
+    if (max <= 20) {
+      const a = int(r, 11, 17), b = int(r, a - 9, 9), toTen = a - 10, rest = b - toTen, d = a - b
+      return page('איך מחסרים עד 20?', [`יורדים קודם ל־10: מ־${a} מורידים ${toTen} ומגיעים ל־10.`, `היינו צריכים להוריד ${b}. הורדנו ${toTen}, נשאר להוריד עוד ${rest}.`, `10 פחות ${rest} זה ${d}!`], [`${a} − ${b} = ?`, `${a} − ${toTen} = 10`, `10 − ${rest} = ${d}`, `${a} − ${b} = ${d}`])
+    }
+    if (max <= 100) {
+      let a = 0, b = 0
+      for (let i = 0; i < 50; i++) { a = int(r, 41, 98); b = int(r, 12, a - 11); if (b % 10 && b >= 10 && ((a % 10) < (b % 10)) === hard) break }
+      const tb = b - (b % 10), ob = b % 10, x = a - tb, d = a - b
+      return page('איך מחסרים מספרים גדולים?', [`מורידים קודם את העשרות: ${a} − ${tb} = ${x}.`, `אחר כך מורידים את האחדות: ${x} − ${ob} = ${d}.`, `בודקים בחיבור: ${d} + ${b} = ${a}.`], [`${a} − ${b} = ?`, `${a} − ${tb} = ${x}`, `${x} − ${ob} = ${d}`, `${a} − ${b} = ${d}`])
+    }
+    const a = int(r, 5, 9) * 100 + int(r, 1, 9) * 10 + int(r, 1, 9), b = int(r, 1, 4) * 100 + int(r, 1, 9) * 10 + int(r, 1, 9)
+    const hb = b - (b % 100), tb = (b % 100) - (b % 10), ob = b % 10, x = a - hb, y = x - tb, d = a - b
+    return page('איך מחסרים מאות?', [`מורידים קודם את המאות: ${a} − ${hb} = ${x}.`, `אחר כך את העשרות ואת האחדות: ${x} − ${tb} = ${y}, ${y} − ${ob} = ${d}.`, `בודקים בחיבור: ${d} + ${b} = ${a}.`], [`${a} − ${b} = ?`, `${a} − ${hb} = ${x}`, `${x} − ${tb} = ${y}`, `${y} − ${ob} = ${d}`])
   }
-  if (s === 'times') return page('איך כופלים?', ['3 × 4 זה שלוש קבוצות, ובכל קבוצה 4.', 'סופרים בקפיצות של 4: 4, 8, 12.', 'אפשר גם להחליף: 4 × 3 = 3 × 4 = 12.'], ['3 × 4 = ?', '4 + 4 + 4', '4, 8, 12', '3 × 4 = 12'])
-  if (s === 'divide') return page('איך מחלקים?', ['12 : 3 שואל: אם מחלקים 12 לשלושה, כמה כל אחד מקבל?', 'חושבים בכפל: 3 כפול כמה זה 12?', '3 × 4 = 12, אז 12 : 3 = 4.'], ['12 : 3 = ?', '3 × ? = 12', '3 × 4 = 12', '12 : 3 = 4'])
-  if (s === 'wordprob') return page('איך פותרים שאלה סיפורית?', ['קיבלו עוד? מחברים. נתנו, אכלו או הלכו? מחסרים.'], ['+ עוד', '− נשאר'])
+  if (s === 'times') {
+    const a = int(r, 2, 4), b = int(r, 3, Math.min(10, Math.max(3, max)))
+    return page('איך כופלים?', [`${a} × ${b} זה ${a} קבוצות, ובכל קבוצה ${b}.`, `סופרים בקפיצות של ${b}: ${Array.from({ length: a }, (_, i) => b * (i + 1)).join(', ')}.`, `אפשר גם להחליף: ${b} × ${a} = ${a} × ${b} = ${a * b}.`], [`${a} × ${b} = ?`, Array(a).fill(b).join(' + '), Array.from({ length: a }, (_, i) => b * (i + 1)).join(', '), `${a} × ${b} = ${a * b}`])
+  }
+  if (s === 'divide') {
+    const a = int(r, 2, 5), b = int(r, 2, Math.min(10, Math.max(3, max)))
+    return page('איך מחלקים?', [`${a * b} : ${a} שואל: אם מחלקים ${a * b} ל־${a} שווה בשווה, כמה כל אחד מקבל?`, `חושבים בכפל: ${a} כפול כמה זה ${a * b}?`, `${a} × ${b} = ${a * b}, אז ${a * b} : ${a} = ${b}.`], [`${a * b} : ${a} = ?`, `${a} × ? = ${a * b}`, `${a} × ${b} = ${a * b}`, `${a * b} : ${a} = ${b}`])
+  }
+  if (s === 'wordprob') return page('איך פותרים שאלה סיפורית?', ['קוראים לאט ומוצאים את המספרים.', 'קיבלו עוד? מחברים. נתנו, אכלו או הלכו? מחסרים.'], ['+ עוד', '− נשאר'])
   return null
 }
 
@@ -229,9 +269,13 @@ function puzzleGame(unit: number, specs: Spec[], r: R): PuzzleStep {
     const n = int(r, 2, Math.min(9, f.max)), e = kit ? art(kit.id, one(r, kit.things).k) : one(r, ['🍎', '⭐', '🐟', '🎈', '🐞', '🍓'])
     return { kind: 'puzzle', title: he(`פאזל: המספר ${n}`), g: String(n), e, n, cols, rows }
   }
-  const pool = f.kind === 'letters' ? [...f.set].filter((l) => WORDS_BY_LETTER[l]) : [...LETTERS]
-  const l = one(r, pool), w = one(r, WORDS_BY_LETTER[l])
-  return { kind: 'puzzle', title: he(`פאזל: האות ${l}`), g: l, word: w.w, e: w.e, cols, rows }
+  if (f.kind === 'letters') {
+    const l = one(r, [...f.set].filter((x) => WORDS_BY_LETTER[x])), w = one(r, WORDS_BY_LETTER[l])
+    return { kind: 'puzzle', title: he(`פאזל: האות ${l}`), g: l, word: w.w, e: w.e, cols, rows }
+  }
+  // a lesson without letters doesn't sneak them in: a number puzzle of the child's world instead
+  const n = int(r, 2, 9), e = kit ? art(kit.id, one(r, kit.things).k) : one(r, ['🍎', '⭐', '🐟', '🎈', '🐞', '🍓'])
+  return { kind: 'puzzle', title: he(`פאזל: המספר ${n}`), g: String(n), e, n, cols, rows }
 }
 
 function memoryGame(unit: number, specs: Spec[], r: R): MemoryStep {
@@ -256,10 +300,9 @@ function memoryGame(unit: number, specs: Spec[], r: R): MemoryStep {
   if (s === 'seasons') return { kind: 'memory', title: he('זיכרון: עונה ומה קורה בה'), pairs: SEASONS.map((x) => [{ e: x.e, t: x.n }, { t: one(r, x.clues) }]) }
   if (s === 'feelings' || s === 'social') return { kind: 'memory', title: he('זיכרון: פרצוף ורגש'), pairs: some(r, FEELINGS, n).map((x) => [{ e: x.e }, { t: x.n }]) }
   if (s === 'logic' || s === 'odd') return { kind: 'memory', title: he('זיכרון: מה הולך ביחד?'), pairs: some(r, ANALOGIES, n).map(([a, b]) => [picTile(a), picTile(b)]) }
-  // everything else practises letters on the way, like the floor puzzle did
-  const ls: string[] = []
-  for (const l of mix(r, [...LETTERS])) { if (ls.length >= n) break; if (!ls.some((x) => alike(x, l))) ls.push(l) }
-  return { kind: 'memory', title: he('זיכרון: אות ותמונה'), pairs: ls.map((l) => [{ g: l }, picTile(one(r, WORDS_BY_LETTER[l]))]) }
+  // everything else: pairs from the child's world, or things that go together (no letters before they're taught)
+  if (kit) return { kind: 'memory', title: he(`זיכרון: ${kit.title}`), pairs: kitMemory(kit, r, n) }
+  return { kind: 'memory', title: he('זיכרון: מה הולך ביחד?'), pairs: some(r, ANALOGIES, n).map(([a, b]) => [picTile(a), picTile(b)]) }
 }
 
 const ARCADE: ArcadeStep[] = [
@@ -289,7 +332,7 @@ export function buildYear(nodes: PathNode[], world?: WorldId, stage: Stage = 'k'
   CURVE = stage === 'pre' ? CURVE_PRE : CURVE_SCHOOL
   const kitByTopic = new Map<Topic, Style[]>()
   if (kit) for (const st of kitStyles(kit)) for (const t of st.skills) kitByTopic.set(t, [...(kitByTopic.get(t) ?? []), st])
-  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage }
+  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage, how: new Set() }
   const out: Record<string, Lesson> = {}
   GEN_LOG.length = 0
   for (const n of nodes) { NODE = n.id; out[n.id] = buildLesson(n); YEAR.lesson++ }
@@ -299,12 +342,15 @@ export function buildYear(nodes: PathNode[], world?: WorldId, stage: Stage = 'k'
 
 function buildLesson(node: PathNode): Lesson {
   const r = rng(node.id)
-  const specs = node.specs.length ? node.specs : [{ s: 'count' as Skill }]
+  const base = node.specs.length ? node.specs : [{ s: 'count' as Skill }]
+  // the chapter challenge is harder than a lesson: every skill at its hard end, thinking questions throughout
+  const specs = node.kind === 'test' ? base.map((x) => ({ ...x, hard: true })) : base
   const isMix = node.kind !== 'lesson'
+  const riddles = YEAR.stage === 'pre' ? RIDDLE_AT : RIDDLE_AT.slice(0, 1)
   let turn = int(r, 0, specs.length - 1)
   const usedFacts = new Set<string>()
   const traced = new Set<string>()
-  const ctx: Ctx = { r, specs, inLesson: new Map(), inPart: new Set() }
+  const ctx: Ctx = { r, specs, inLesson: new Map(), inPart: new Set(), filler: 0, test: node.kind === 'test' }
 
   const parts: Part[] = PART_STEPS.map((count, d) => {
     const steps: Step[] = []
@@ -312,10 +358,18 @@ function buildLesson(node: PathNode): Lesson {
       steps.push(intro(node, specs[0], isMix))
       // before any calculating: how to do it (a full page in a lesson, a one-line reminder in a check or review)
       const seen = new Set<string>()
+      const unit = node.id.match(/^u\d+/)?.[0] ?? ''
       for (const sp of specs) {
         if (!CALC.includes(sp.s)) continue
-        const how = howTo(sp, isMix)
-        if (how && !seen.has(how.title.he)) { seen.add(how.title.he); if (how.title.he === node.title.he) how.title = he('ככה מחשבים'); steps.push(how) }
+        const how = howTo(sp, isMix, r)
+        if (!how || seen.has(how.title.he)) continue
+        seen.add(how.title.he)
+        // once per chapter: the first lesson (or check) that calculates that way explains how; later ones just practise
+        const key = `${unit}|${how.title.he}`
+        if (YEAR.how.has(key)) continue
+        YEAR.how.add(key)
+        if (how.title.he === node.title.he) how.title = he('ככה מחשבים')
+        steps.push(how)
       }
     }
     // parts 2 and 3 open with a "did you know?" — a breather, and something to wonder about
@@ -323,9 +377,9 @@ function buildLesson(node: PathNode): Lesson {
     ctx.inPart = new Set()
     for (let i = 0; i < count; i++) {
       const sp = specs[turn++ % specs.length]
-      const riddle = RIDDLE_AT.some(([pd, pi]) => pd === d && pi === i)
+      const riddle = riddles.some(([pd, pi]) => pd === d && pi === i)
       if (sp.s === 'trace' && !riddle) { steps.push(trace(sp, r, traced)); continue }
-      steps.push(ask({ topic: riddle ? 'riddle' : sp.s, level: CURVE[d][i] ?? 2, spec: sp }, ctx))
+      steps.push(ask({ topic: riddle ? 'riddle' : sp.s, level: node.kind === 'test' ? 3 : CURVE[d][i] ?? 2, spec: sp }, ctx))
     }
     // The middle part of every lesson (and the chapter challenge) ends with a game.
     if (d === 1 && (node.kind === 'lesson' || node.kind === 'test')) {
@@ -366,7 +420,18 @@ function intro(node: PathNode, sp: Spec, isMix: boolean): ExplainStep {
     const what = node.kind === 'test' ? 'אתגר סוף הפרק! כל מה שלמדנו, בבת אחת.' : node.kind === 'checkpoint' ? 'מבדק קטן: נראה כמה כבר יודעים.' : 'חזרה: מתרגלים שוב את מה שלמדנו.'
     return { kind: 'explain', title: node.title, body: [he(what), he('לא ממהרים. חושבים, ואז בוחרים.')], scene: node.kind === 'test' ? '🏆⭐🚀' : '🔁✨' }
   }
-  const it = INTRO[sp.s] ?? { body: ['בוא נלמד משהו חדש!'], scene: '✨' }
+  const it = { ...(INTRO[sp.s] ?? { body: ['בוא נלמד משהו חדש!'], scene: '✨' }) }
+  // the last lesson of a chapter celebrates what was learned, it doesn't promise new letters
+  if (/-l8$/.test(node.id)) it.body = ['היום חוגגים את סוף הפרק!', 'מתרגלים את כל מה שלמדנו, והשאלות קצת יותר קשות.']
+  else if (sp.s === 'bignum') it.body = (sp.max ?? 100) <= 20 ? ['מ־11 עד 20 יש עשר אחד, ועוד כמה אחדות.', 'במספר 14 יש עשר אחד ו־4 אחדות.'] : (sp.max ?? 100) <= 100 ? ['במספר דו־ספרתי יש עשרות ואחדות.', 'במספר 47 יש 4 עשרות ו־7 אחדות.'] : ['במספר תלת־ספרתי יש מאות, עשרות ואחדות.', 'במספר 365 יש 3 מאות, 6 עשרות ו־5 אחדות.']
+  else if (sp.s === 'nikud') {
+    const v = (sp.set ?? 'a').at(-1)
+    it.body = v === 'a' ? ['הניקוד הוא סימנים קטנים ליד האות, שאומרים איך לקרוא אותה.', 'קמץ ( ָ ) ופתח ( ַ ) נשמעים אותו דבר: אַ. בָּ, מַ, דָּ.']
+      : v === 'i' ? ['היום מכירים את החיריק: נקודה אחת מתחת לאות.', 'חיריק נשמע אִי: בִּי, מִי, פִּיל.']
+      : v === 'u' ? ['היום מכירים את החולם ( וֹ ) ואת השורוק ( וּ ).', 'חולם נשמע אוֹ: דּוֹב. שורוק נשמע אוּ: סוּס. גם הקובוץ ( ֻ ) נשמע אוּ.']
+      : v === 'o' ? ['היום מכירים את החולם: נקודה מעל האות, או מעל הוו ( וֹ ).', 'חולם נשמע אוֹ: דֹּב, שׁוֹר.']
+      : ['היום מכירים את הצירה ( ֵ ) ואת הסגול ( ֶ ).', 'שניהם נשמעים אֶ: לֵב, כֶּלֶב.']
+  }
   const kit = YEAR.kit
   if (kit) {
     // two of the child's characters come along, a different pair each lesson

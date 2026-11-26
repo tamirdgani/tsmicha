@@ -15,7 +15,7 @@ const ls = (set: string): Spec => ({ s: 'lettersound', set })
 const tr = (set: string): Spec => ({ s: 'trace', set })
 const pl = (max: number, hard?: boolean): Spec => ({ s: 'plus', max, hard })
 const mi = (max: number, hard?: boolean): Spec => ({ s: 'minus', max, hard })
-const tm = (max: number): Spec => ({ s: 'times', max })
+const tm = (max: number, set?: string): Spec => ({ s: 'times', max, set })
 const dv = (max: number): Spec => ({ s: 'divide', max })
 const bn = (max: number): Spec => ({ s: 'bignum', max })
 const sk = (set: string): Spec => ({ s: 'skip', set })
@@ -23,6 +23,8 @@ const wp = (max: number, hard?: boolean): Spec => ({ s: 'wordprob', max, hard })
 const nk = (set: string): Spec => ({ s: 'nikud', set })
 const gr = (set: string): Spec => ({ s: 'grammar', set })
 const S = (s: Spec['s'], extra: Partial<Spec> = {}): Spec => ({ s, ...extra })
+/** A lesson about one exact thing: these styles come first. */
+const only = (sp: Spec, ...ids: string[]): Spec => ({ ...sp, only: ids })
 const u = (he: string, en: string, goalHe: string, goalEn: string, lessons: [string, string, Spec[]][]): UnitSeed => ({ title: { he, en }, goal: { he: goalHe, en: goalEn }, lessons })
 
 export const SEEDS_K: UnitSeed[] = [
@@ -51,7 +53,7 @@ export const SEEDS_K: UnitSeed[] = [
     ['כ ו־ל', 'Kaf and Lamed', [lt(A + B + C), ls('כל'), mi(10)]],
     ['חרוזים', 'Rhymes', [S('rhyme'), ls(C), pl(10, true)]],
     ['כותבים ט, י, כ, ל', 'Writing Tet to Lamed', [tr(C), lt(C, true), S('numorder', { max: 10, hard: true })]],
-    ['משלימים לעשר', 'Making ten', [pl(10, true), S('add', { max: 10, hard: true }), S('logic')]],
+    ['משלימים לעשר', 'Making ten', [only(pl(10, true), 'pl-ten', 'pl-missing'), S('add', { max: 10, hard: true }), S('logic')]],
     ['בונים מילה קטנה', 'Building a small word', [S('build', { max: 2 }), ls(A + B + C), mi(10)]],
     ['סיפורי חשבון', 'Number stories', [wp(10), pl(10), mi(10)]],
     ['אלופי ט עד ל', 'Tet-to-Lamed champions', [lt(A + B + C, true), ls(A + B + C), pl(10, true), mi(10, true)]],
@@ -87,9 +89,9 @@ export const SEEDS_K: UnitSeed[] = [
     ['חגיגת האלף־בית', 'Alef-bet party', [lt(ALL, true), ls(ALL), S('words'), pl(20, true), mi(20)]],
   ]),
   u('חשבון עד 20', 'Math to 20', 'משלימים לעשר, יורדים לעשר, קופצים בקפיצות', 'Make ten, back to ten, skip counting', [
-    ['משלימים ל־10', 'Make ten first', [pl(20, true), lt(ALL)]],
+    ['משלימים ל־10', 'Make ten first', [only(pl(20, true), 'pl-ten', 'pl-hard', 'pl-three'), lt(ALL)]],
     ['יורדים ל־10', 'Back to ten first', [mi(20, true), ls(ALL)]],
-    ['קופצים בשתיים', 'Counting by twos', [sk('2'), bn(20)]],
+    ['קופצים בשתיים', 'Counting by twos', [sk('2'), only(bn(20), 'bn-even', 'bn-gap')]],
     ['פלוס או מינוס?', 'Plus or minus?', [pl(20), mi(20), wp(20)]],
     ['קופצים בחמש ובעשר', 'By fives and tens', [sk('5,10'), bn(100)]],
     ['מספרים עד 100', 'Numbers to 100', [bn(100), S('words')]],
@@ -149,25 +151,25 @@ export const SEEDS_K: UnitSeed[] = [
 ]
 
 export const SEEDS_G1: UnitSeed[] = [
-  u('חוזרים לבית הספר', 'Back to school', 'אותיות, מילים וחשבון עד 20', 'Letters, words and math to 20', [
-    ['כל האותיות', 'All the letters', [ls(ALL), lt(ALL, true), pl(20, true)]],
-    ['מילים ארוכות', 'Long words', [S('words'), S('finals'), mi(20, true)]],
-    ['חיבור עד 20', 'Adding to 20', [pl(20, true), wp(20)]],
-    ['חיסור עד 20', 'Taking away to 20', [mi(20, true), wp(20)]],
-    ['משפטים', 'Sentences', [S('sentence'), S('words'), bn(100)]],
-    ['קופצים בקפיצות', 'Skip counting', [sk('2,5,10'), bn(100), S('words')]],
-    ['סיפור קצר', 'A short story', [S('reading'), pl(20, true), mi(20, true)]],
-    ['פותחים את השנה', 'Opening the year', [S('words'), S('reading'), wp(20, true), bn(100)]],
-  ]),
-  u('קמץ ופתח', 'Kamatz and Patach', 'קוראים הברות עם אַ', 'Reading syllables with “a”', [
-    ['מה זה ניקוד?', 'What is niqqud?', [nk('a'), lt(ALL)]],
+  u('קמץ ופתח', 'Kamatz and Patach', 'קוראים הברות עם אַ, וחשבון עד 20', 'Reading syllables with “a”, and math to 20', [
+    ['מה זה ניקוד?', 'What is niqqud?', [nk('a'), ls(ALL)]],
     ['קמץ', 'Kamatz', [nk('a'), pl(20, true)]],
     ['פתח', 'Patach', [nk('a'), mi(20, true)]],
-    ['הברות עם אַ', 'Syllables with “a”', [nk('a'), S('words'), bn(100)]],
-    ['מילים עם אַ', 'Words with “a”', [nk('a'), S('sentence'), wp(20)]],
-    ['עשרות ואחדות', 'Tens and ones', [bn(100), nk('a'), sk('10')]],
-    ['קוראים עם קמץ ופתח', 'Reading with “a”', [nk('a'), S('reading'), pl(20, true)]],
-    ['אלופי האַ', '“A” champions', [nk('a'), bn(100), pl(20, true), mi(20, true)]],
+    ['הברות עם אַ', 'Syllables with “a”', [nk('a'), lt(ALL, true), pl(20)]],
+    ['חיבור עד 20', 'Adding to 20', [pl(20, true), nk('a')]],
+    ['חיסור עד 20', 'Taking away to 20', [mi(20, true), nk('a')]],
+    ['קוראים עם קמץ ופתח', 'Reading with “a”', [nk('a'), wp(20)]],
+    ['אלופי האַ', '“A” champions', [nk('a'), pl(20, true), mi(20, true)]],
+  ]),
+  u('מספרים עד 100', 'Numbers to 100', 'עשרות ואחדות, וקפיצות', 'Tens and ones, and skip counting', [
+    ['עשרות ואחדות', 'Tens and ones', [bn(100), nk('a')]],
+    ['משווים מספרים', 'Comparing numbers', [only(bn(100), 'bn-compare', 'bn-max', 'bn-order'), nk('a')]],
+    ['קופצים בעשרות', 'Counting by tens', [sk('10'), bn(100)]],
+    ['עוד עשר, פחות עשר', 'Ten more, ten less', [only(bn(100), 'bn-ten-more', 'bn-gap'), pl(20, true)]],
+    ['קופצים בשתיים ובחמש', 'By twos and fives', [sk('2,5'), mi(20, true)]],
+    ['סיפורי חשבון', 'Number stories', [wp(20), nk('a')]],
+    ['זוגי ואי־זוגי', 'Even and odd', [only(bn(100), 'bn-even'), sk('2')]],
+    ['אלופי המספרים', 'Number champions', [bn(100), sk('2,5,10'), pl(20, true), mi(20, true)]],
   ]),
   u('חיריק', 'Hirik', 'קוראים הברות עם אִי', 'Reading syllables with “i”', [
     ['חיריק', 'Hirik', [nk('ai'), bn(100)]],
@@ -175,18 +177,18 @@ export const SEEDS_G1: UnitSeed[] = [
     ['חיבור עשרות', 'Adding tens', [pl(100), nk('ai')]],
     ['מילים עם אִי', 'Words with “i”', [nk('ai'), S('words'), mi(100)]],
     ['חיסור עשרות', 'Taking away tens', [mi(100), nk('ai')]],
-    ['משפטים מנוקדים', 'Sentences with niqqud', [nk('ai'), S('sentence'), wp(20, true)]],
+    ['משפטים ומילים', 'Sentences and words', [nk('ai'), S('sentence'), wp(20, true)]],
     ['סופרים בעשרות', 'Counting by tens', [sk('10,5'), bn(100), nk('ai')]],
     ['אלופי החיריק', 'Hirik champions', [nk('ai'), pl(100), mi(100), wp(20, true)]],
   ]),
   u('חולם ושורוק', 'Holam and Shuruk', 'קוראים הברות עם אוֹ ואוּ', 'Reading syllables with “o” and “u”', [
-    ['חולם', 'Holam', [nk('aio'), pl(100)]],
-    ['שורוק וקובוץ', 'Shuruk and Kubutz', [nk('aiou'), mi(100)]],
+    ['חולם', 'Holam', [nk('aio'), pl(20, true)]],
+    ['שורוק וקובוץ', 'Shuruk and Kubutz', [nk('aiou'), mi(20, true)]],
     ['אוֹ או אוּ?', '“O” or “u”?', [nk('aiou'), bn(100)]],
     ['מילים מנוקדות', 'Words with niqqud', [nk('aiou'), S('words'), pl(100)]],
-    ['זוגי ואי־זוגי', 'Even and odd', [bn(100), sk('2'), nk('aiou')]],
+    ['מילים עם ניקוד', 'Words with niqqud', [nk('aiou'), bn(100)]],
     ['סיפורי חשבון עד 100', 'Stories to 100', [wp(100), nk('aiou')]],
-    ['קוראים סיפור מנוקד', 'A story with niqqud', [S('reading'), nk('aiou'), mi(100)]],
+    ['קוראים סיפור', 'Reading a story', [S('reading'), nk('aiou'), mi(100)]],
     ['אלופי החולם והשורוק', 'O-and-U champions', [nk('aiou'), pl(100), mi(100), wp(100)]],
   ]),
   u('צירה וסגול', 'Tzere and Segol', 'כל התנועות: אַ, אֶ, אִי, אוֹ, אוּ', 'All five vowels', [
@@ -283,11 +285,11 @@ export const SEEDS_G2: UnitSeed[] = [
     ['פותחים את כיתה ב׳', 'Opening second grade', [pl(100, true), mi(100, true), S('reading'), gr('pogts')]],
   ]),
   u('לוח הכפל', 'The times table', 'כפל עד 10 × 10', 'Times up to 10 × 10', [
-    ['כפל ב־2, 5 ו־10', 'Times 2, 5, 10', [tm(5), sk('2,5,10')]],
-    ['כפל ב־3 וב־4', 'Times 3 and 4', [tm(6), sk('3,4')]],
+    ['כפל ב־2, 5 ו־10', 'Times 2, 5, 10', [tm(10, '2,5,10'), sk('2,5,10')]],
+    ['כפל ב־3 וב־4', 'Times 3 and 4', [tm(10, '3,4'), sk('3,4')]],
     ['מחליפים סדר', 'Swapping the order', [tm(7), S('reading')]],
-    ['כפל ב־6 וב־7', 'Times 6 and 7', [tm(8), pl(100, true)]],
-    ['כפל ב־8 וב־9', 'Times 8 and 9', [tm(10), mi(100, true)]],
+    ['כפל ב־6 וב־7', 'Times 6 and 7', [tm(10, '6,7'), pl(100, true)]],
+    ['כפל ב־8 וב־9', 'Times 8 and 9', [tm(10, '8,9'), mi(100, true)]],
     ['כמה חסר בכפל?', 'Missing factor', [tm(10), gr('pogts')]],
     ['סיפורי כפל', 'Times stories', [tm(10), wp(100, true)]],
     ['אלופי לוח הכפל', 'Times-table champions', [tm(10), wp(100, true), S('reading')]],
@@ -308,7 +310,7 @@ export const SEEDS_G2: UnitSeed[] = [
     ['בונים מספר מספרות', 'Building from digits', [bn(1000), S('reading')]],
     ['חיבור מאות', 'Adding hundreds', [pl(1000), bn(1000)]],
     ['חיסור מאות', 'Taking away hundreds', [mi(1000), bn(1000)]],
-    ['קפיצות של 10 ו־100', 'Jumps of 10 and 100', [bn(1000), sk('10,5')]],
+    ['קפיצות של 10 ו־100', 'Jumps of 10 and 100', [only(bn(1000), 'bn-gap', 'bn-ten-more'), sk('10,100')]],
     ['סיפורים עם מספרים גדולים', 'Big-number stories', [wp(1000), pl(1000)]],
     ['אלופי האלף', 'Thousand champions', [bn(1000), pl(1000), mi(1000), dv(10)]],
   ]),
@@ -343,11 +345,11 @@ export const SEEDS_G2: UnitSeed[] = [
     ['אלופי הקריאה', 'Reading champions', [S('reading'), S('sentence'), gr('pogts'), wp(1000, true)]],
   ]),
   u('בעיות מילוליות', 'Word problems', 'קוראים, מחליטים איזה תרגיל, ופותרים', 'Read, choose the exercise, solve', [
-    ['איזה תרגיל?', 'Which exercise?', [wp(100, true), pl(100, true)]],
-    ['שני שלבים', 'Two steps', [wp(1000, true), mi(1000, true)]],
-    ['כסף', 'Money', [wp(100, true), tm(10)]],
-    ['שעות', 'Hours', [wp(100, true), dv(10)]],
-    ['רגליים וגלגלים', 'Legs and wheels', [wp(100, true), tm(10)]],
+    ['איזה תרגיל?', 'Which exercise?', [only(wp(100, true), 'wp-which'), pl(100, true)]],
+    ['שני שלבים', 'Two steps', [only(wp(1000, true), 'wp-two'), mi(1000, true)]],
+    ['כסף', 'Money', [only(wp(100, true), 'wp-money'), tm(10)]],
+    ['שעות', 'Hours', [only(wp(100, true), 'wp-time'), dv(10)]],
+    ['רגליים', 'Legs', [only(tm(10), 'wp-legs'), wp(100, true)]],
     ['יותר ופחות', 'More and less', [wp(1000, true), bn(1000)]],
     ['קוראים לאט', 'Reading slowly', [wp(1000, true), S('reading')]],
     ['אלופי הבעיות', 'Problem champions', [wp(1000, true), tm(10), dv(10)]],

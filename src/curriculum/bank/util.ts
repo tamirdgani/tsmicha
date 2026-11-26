@@ -24,7 +24,10 @@ export const tileKey = (t: Tile) => JSON.stringify(t)
 
 /** Shuffles the right answer in among the others and remembers where it landed. */
 export function choices(r: R, right: Tile, others: Tile[]) {
-  const all = mix(r, [right, ...others])
+  // never two cards that look the same, and never a "wrong" card identical to the right one
+  const seen = new Set([tileKey(right)])
+  const uniq = others.filter((t) => { const k = tileKey(t); if (seen.has(k)) return false; seen.add(k); return true })
+  const all = mix(r, [right, ...uniq])
   return { options: all, correct: all.indexOf(right) }
 }
 /** Numbers near n (never n itself), inside lo…hi. */
@@ -40,7 +43,10 @@ export function pick(r: R, q: string, right: Tile, others: Tile[], why: string, 
   return { kind: 'pick', q: he(q), show, options, correct, why: he(why) }
 }
 export function tapall(r: R, q: string, rights: Tile[], wrongs: Tile[], why: string, show?: Show): TapAllStep {
-  const all = mix(r, [...rights.map((t) => ({ t, ok: true })), ...wrongs.map((t) => ({ t, ok: false }))])
+  const rk = new Set(rights.map(tileKey))
+  const seenW = new Set<string>()
+  const ws = wrongs.filter((t) => { const k = tileKey(t); if (rk.has(k) || seenW.has(k)) return false; seenW.add(k); return true })
+  const all = mix(r, [...rights.map((t) => ({ t, ok: true })), ...ws.map((t) => ({ t, ok: false }))])
   return { kind: 'tapall', q: he(q), show, options: all.map((x) => x.t), right: all.flatMap((x, i) => (x.ok ? [i] : [])), why: he(why) }
 }
 export const order = (q: string, items: Tile[], why: string): OrderStep => ({ kind: 'order', q: he(q), items, why: he(why) })
