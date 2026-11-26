@@ -1,7 +1,7 @@
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { FIN_LIT, courseMinutes } from '../curriculum/course'
 import { Icon, type IconName } from '../ds/Icon'
 import { Sprout, type SproutMood } from '../ds/Sprout'
@@ -10,14 +10,14 @@ import { LangThemeToggles, Logo, useShortScreen } from '../ds/ui'
 import { useI18n } from '../i18n/I18n'
 import type { StrKey } from '../i18n/strings'
 import { useAuth, type User } from '../lib/auth'
-import { focusUnits, goalXp, type AgeRange, type Goal, type Minutes, type Profile, type Situation } from '../lib/profile'
+import { type AgeRange, type Goal, type Minutes, type Profile, type Situation } from '../lib/profile'
 import { sfx } from '../lib/sfx'
 import { Emo, RichText } from '../worlds/Art'
 import { setCurrentWorld } from '../worlds/current'
 import { setCurrentStage } from '../curriculum/stage'
 
-type Step = 'name' | 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy' | 'plant'
-const ORDER: Step[] = ['name', 'welcome', 'age', 'goal', 'sit', 'time', 'buddy', 'plant']
+type Step = 'name' | 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy'
+const ORDER: Step[] = ['name', 'welcome', 'age', 'goal', 'sit', 'time', 'buddy']
 const QUESTIONS: Step[] = ['age', 'goal', 'sit', 'time', 'buddy']
 
 const AGES: AgeRange[] = ['pre', 'k', 'g1', 'g2']
@@ -59,7 +59,8 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
     setReact(null)
     setStep(to)
   }
-  const next = () => go(ORDER[Math.min(idx + 1, ORDER.length - 1)])
+  // after the last question the child goes straight to the path (no extra "wake Piko" screen)
+  const next = () => { if (idx >= ORDER.length - 1) { if (profile) onDone(profile); return } go(ORDER[idx + 1]) }
   const back = () => go(ORDER[Math.max(idx - 1, 0)])
 
   /** Single-choice answers: Sprout reacts, then the flow moves on by itself. */
@@ -105,7 +106,6 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
     sit: t('ob.sit.say'),
     time: t('ob.time.say'),
     buddy: t('ob.buddy.say', { name }),
-    plant: t('ob.plant.say'),
   }
   const mood: SproutMood = react ? 'cheer' : step === 'welcome' ? 'happy' : 'think'
   const qIndex = QUESTIONS.indexOf(step)
@@ -120,17 +120,17 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
       <header className="shrink-0 max-w-2xl w-full mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center gap-3">
         <div className={step === 'welcome' || step === 'name' ? '' : 'w-11'}>
           {step === 'name' && <Logo size={28} />}
-          {idx > 0 && step !== 'plant' && (
+          {idx > 0 && (
             <button className={cn(buttonVariants({ variant: 'ghost', size: 'icon-lg' }))} onClick={back} aria-label={t('ob.back')}>
               <Icon name="chevron" style={{ transform: dir === 'rtl' ? 'none' : 'scaleX(-1)' }} />
             </button>
           )}
         </div>
-        <div className="flex-1 flex gap-1.5" {...(qIndex >= 0 || step === 'plant' ? { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': QUESTIONS.length, 'aria-valuenow': Math.max(0, qIndex), 'aria-label': t('ob.step', { i: Math.max(0, qIndex) + 1, n: QUESTIONS.length }) } : {})}>
+        <div className="flex-1 flex gap-1.5" {...(qIndex >= 0 ? { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': QUESTIONS.length, 'aria-valuenow': Math.max(0, qIndex), 'aria-label': t('ob.step', { i: Math.max(0, qIndex) + 1, n: QUESTIONS.length }) } : {})}>
           {step !== 'welcome' && step !== 'name' && QUESTIONS.map((q, i) => (
             <span key={q} className="h-2.5 flex-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-deep)' }}>
               <motion.i className="block h-full rounded-full" style={{ background: 'var(--brand)' }}
-                initial={false} animate={{ width: step === 'plant' || i < qIndex ? '100%' : i === qIndex ? '50%' : '0%' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} />
+                initial={false} animate={{ width: i < qIndex ? '100%' : i === qIndex ? '50%' : '0%' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} />
             </span>
           ))}
         </div>
@@ -143,7 +143,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
 
       <main className="flex-1 min-h-0 w-full max-w-2xl mx-auto flex flex-col">
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 pb-3" data-ob-main>
-        {step !== 'plant' && step !== 'welcome' && step !== 'name' && step !== 'buddy' && <SproutSays mood={mood} text={react ?? say[step]} />}
+        {step !== 'welcome' && step !== 'name' && step !== 'buddy' && <SproutSays mood={mood} text={react ?? say[step]} />}
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.section key={step} className="mt-3 sm:mt-6"
@@ -184,12 +184,11 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
 
             {step === 'time' && <TimeStep minutes={minutes} pick={(m) => { setMinutes(m); setReact(t('ob.time.react')) }} />}
 
-            {step === 'plant' && profile && <PlantStep profile={profile} onDone={() => onDone(profile)} />}
           </motion.section>
         </AnimatePresence>
 
         </div>
-        {step !== 'plant' && (
+        {(
           <div className="shrink-0 px-4 sm:px-6 py-3 sm:pt-6 sm:pb-10 max-sm:border-t" style={{ background: 'var(--bg)', borderColor: 'var(--line)' }}>
             <div className={`max-w-2xl mx-auto flex items-center gap-4 ${step === 'welcome' || step === 'name' ? 'sm:justify-center' : ''}`}>
               <button className={cn(buttonVariants({ variant: 'default', size: 'xl' }), 'flex-1 sm:flex-none sm:min-w-56')} onClick={next} disabled={!canNext}>
@@ -474,117 +473,3 @@ function ChoiceBurst() {
 }
 
 /* ─────────────────────────── Plant the seed ─────────────────────────── */
-
-function PlantStep({ profile, onDone }: { profile: Profile; onDone: () => void }) {
-  const { t, pick, num } = useI18n()
-  const [phase, setPhase] = useState<'idle' | 'dropping' | 'grown'>('idle')
-  const plant = () => {
-    if (phase !== 'idle') return
-    setPhase('dropping')
-    sfx.wake()
-    window.setTimeout(() => setPhase('grown'), 750)
-  }
-  const focus = useMemo(() => focusUnits(profile).map((id) => FIN_LIT.units.find((u) => u.id === id)!).filter(Boolean).slice(0, 4), [profile])
-  const firstLesson = FIN_LIT.units[0].nodes[0]
-  const short = useShortScreen()
-
-  return (
-    <div className="flex flex-col items-center">
-      <div className="w-full flex items-end gap-3 sm:gap-4 mt-2 sm:mt-6">
-        <div className="card px-5 py-4 flex-1" style={{ borderRadius: 22 }}>
-          <p className="m-0 t-h3" aria-live="polite">{phase === 'grown' ? t('ob.plant.done') : t('ob.plant.say')}</p>
-        </div>
-      </div>
-
-      {/* scene */}
-      <button onClick={plant} disabled={phase !== 'idle'} aria-label={`${t('ob.plant.hint')}: ${t('ob.plant.cta')}`}
-        className={`relative mt-4 sm:mt-6 w-full max-w-md rounded-2xl overflow-hidden border-0 p-0 transition-[height] duration-700 ${phase === 'grown' ? 'h-[clamp(170px,26dvh,288px)]' : 'h-[clamp(200px,40dvh,288px)]'}`}
-        style={{ background: 'var(--brand-soft)', cursor: phase === 'idle' ? 'pointer' : 'default' }}>
-        {/* sun */}
-        <motion.span className="absolute top-6 end-8 w-14 h-14 rounded-full" style={{ background: 'var(--color-sun)' }}
-          animate={phase === 'grown' ? { scale: [1, 1.15, 1] } : {}} transition={{ duration: 0.8 }} />
-        {/* soil */}
-        <motion.svg viewBox="0 0 400 120" className="absolute bottom-0 inset-x-0 w-full" aria-hidden="true"
-          animate={phase === 'dropping' ? { y: [0, 4, -2, 0] } : {}} transition={{ duration: 0.4, delay: 0.35 }}>
-          <path d="M0 60 C80 30 140 28 200 30 C260 28 320 30 400 60 V120 H0Z" fill="#8d99ae" />
-          <path d="M0 60 C80 30 140 28 200 30 C260 28 320 30 400 60" stroke="#5c677d" strokeWidth="4" fill="none" />
-          {[60, 120, 270, 330].map((x) => <circle key={x} cx={x} cy={80 + (x % 3) * 8} r="4" fill="#5c677d" />)}
-        </motion.svg>
-
-        {/* seed */}
-        <AnimatePresence>
-          {phase !== 'grown' && (
-            <motion.span className="absolute left-1/2 -translate-x-1/2" style={{ top: 70 }}
-              initial={{ y: -12 }} animate={phase === 'dropping' ? { y: 150, scale: 0.7 } : { y: [-12, -2, -12] }}
-              exit={{ opacity: 0 }}
-              transition={phase === 'dropping' ? { duration: 0.4, ease: 'easeIn' } : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>
-              <svg width="34" height="44" viewBox="0 0 34 44" aria-hidden="true"><path d="M20 2 L4 26 H16 L12 42 L30 16 H18 Z" fill="#FFC83D" stroke="#946200" strokeWidth="2" strokeLinejoin="round" /></svg>
-            </motion.span>
-          )}
-        </AnimatePresence>
-
-        {/* sprout rises */}
-        <AnimatePresence>
-          {phase === 'grown' && (
-            <motion.span className="absolute left-1/2 -translate-x-1/2 bottom-12"
-              initial={{ y: 90, scale: 0.3 }} animate={{ y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 160, damping: 12 }}>
-              <Sprout size={short ? 110 : 150} stage={1} mood="cheer" kind={profile.buddy} />
-            </motion.span>
-          )}
-        </AnimatePresence>
-        {phase === 'grown' && <LeafBurst />}
-
-        {phase === 'idle' && (
-          <span className="absolute bottom-4 inset-x-0 text-center t-small font-semibold" style={{ color: '#fff' }}>{t('ob.plant.hint')}</span>
-        )}
-      </button>
-
-      {phase === 'idle' && (
-        <button className={cn(buttonVariants({ variant: 'default', size: 'xl' }), 'mt-4 sm:mt-6 min-w-56')} onClick={plant}>
-          <Icon name="sparkle" size={18} />{t('ob.plant.cta')}
-        </button>
-      )}
-
-      <AnimatePresence>
-        {phase === 'grown' && (
-          <motion.div className="card w-full max-w-md mt-4 sm:mt-6 p-5 sm:p-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-            <h2 className="t-h2 m-0">{t('ob.sum.title')}</h2>
-            <ul className="list-none p-0 m-0 mt-3 sm:mt-4 grid gap-2 sm:gap-3">
-              <SumRow icon="xp" tone="var(--sun-soft)" color="var(--sun-strong)">{t('ob.sum.goal', { x: num(goalXp(profile.minutes)), m: num(profile.minutes) })}</SumRow>
-              {focus.length > 0 && <SumRow icon="target" tone="var(--brand-soft)" color="var(--brand)">{t('ob.sum.focus', { u: focus.map((u) => pick(u.title)).join(' · ') })}</SumRow>}
-              <SumRow icon="book" tone="var(--sky-soft)" color="var(--sky-strong)">{t('ob.sum.first', { t: pick(firstLesson.title) })}</SumRow>
-            </ul>
-            <button className={cn(buttonVariants({ variant: 'default', size: 'xl' }), 'w-full mt-4 sm:mt-6')} onClick={onDone}>{t('ob.sum.cta')}</button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-function SumRow({ icon, tone, color, children }: { icon: IconName; tone: string; color: string; children: ReactNode }) {
-  return (
-    <li className="flex items-center gap-3">
-      <span className="grid place-items-center w-10 h-10 rounded-lg shrink-0" style={{ background: tone, color }}><Icon name={icon} size={20} /></span>
-      <span className="t-small font-medium">{children}</span>
-    </li>
-  )
-}
-
-function LeafBurst() {
-  const leaves = Array.from({ length: 10 }, (_, i) => {
-    const a = (i / 10) * Math.PI * 2
-    return { x: Math.cos(a) * (90 + (i % 3) * 20), y: Math.sin(a) * 70 - 40, r: (i * 47) % 360, c: i % 3 === 0 ? '#C9F27B' : i % 3 === 1 ? '#4FB65A' : '#FFC83D' }
-  })
-  return (
-    <span className="absolute left-1/2 bottom-28 pointer-events-none" aria-hidden="true">
-      {leaves.map((l, i) => (
-        <motion.svg key={i} width="16" height="16" viewBox="0 0 16 16" className="absolute"
-          initial={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 0.4 }} animate={{ x: l.x, y: l.y, opacity: 0, rotate: l.r, scale: 1 }}
-          transition={{ duration: 1.1, ease: 'easeOut', delay: 0.15 }}>
-          <path d="M2 14 C2 6 8 2 14 2 C14 8 10 14 2 14Z" fill={l.c} />
-        </motion.svg>
-      ))}
-    </span>
-  )
-}
