@@ -26,7 +26,12 @@ export type Shape = 'circle' | 'square' | 'triangle' | 'rect' | 'star' | 'heart'
 /** One answer card. Any mix of: an emoji, a big glyph (letter or digit), a drawn shape, a pile of emoji, a caption. */
 export type Tile = { e?: string; g?: string; shape?: Shape; color?: string; scale?: number; many?: { e: string; n: number }; t?: string
   /** How the picture is drawn: `sil` a black shadow · `flip` mirrored · `peek` only the top half shows · `tilt` upside down. */
-  fx?: 'sil' | 'flip' | 'peek' | 'tilt' }
+  fx?: 'sil' | 'flip' | 'peek' | 'tilt'
+  /** School pictures: a clock [hour, minute] · shekel coins · a fraction [coloured, parts, pizza|bar, unequal parts?]
+      · an object on a ruler · a flat shape · a solid · dice faces · a ten-frame with n counters. */
+  clock?: [number, number]; coins?: number[]; frac?: [number, number, 'pie' | 'bar', boolean?]
+  bar?: { len: number; ruler?: boolean; color?: string }; poly?: 'tri' | 'sq' | 'rect' | 'pent' | 'hex' | 'circle'
+  solid?: 'cube' | 'sphere' | 'cylinder' | 'cone' | 'pyramid'; dice?: number[]; frame?: number }
 /** What the child looks at above the answers. */
 export type Show =
   | { kind: 'pile'; e: string; n: number }
@@ -41,6 +46,8 @@ export type Show =
   | { kind: 'expr'; text: string }
   /** Something to read: a sentence or a short story. */
   | { kind: 'text'; text: string }
+  /** A bar graph: how many chose each thing. */
+  | { kind: 'bars'; items: { e: string; n: number }[] }
 
 export type PickStep = { kind: 'pick'; q: L; show?: Show; options: Tile[]; correct: number; why: L; challenge?: boolean }
 export type OrderStep = { kind: 'order'; q: L; items: Tile[]; why: L; challenge?: boolean }

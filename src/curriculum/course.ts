@@ -17,6 +17,8 @@ export type Skill =
   | 'plus' | 'minus' | 'times' | 'divide' | 'bignum' | 'skip' | 'wordprob'
   // school reading
   | 'nikud' | 'finals' | 'words' | 'sentence' | 'grammar' | 'reading'
+  // the rest of the curriculum: clocks, money, fractions, measuring, shapes, graphs, quick seeing, hearing sounds
+  | 'clock' | 'money' | 'fraction' | 'measure' | 'geometry' | 'graph' | 'quick' | 'phon'
 
 /** `max`/`min`: number range · `set`: letters or digits to work on · `hard`: harder variant. */
 /** `only`: style ids that teach exactly this lesson's point; they come first, and may come back within the lesson. */
@@ -55,8 +57,6 @@ export type UnitSeed = { title: L; goal: L; lessons: LessonSeed[] }
 
 const ALEF_ZAYIN = 'אבגדהוז'
 const HET_LAMED = 'חטיכל'
-const MEM_AYIN = 'מנסע'
-const PE_TAV = 'פצקרשת'
 
 /** Pre-K (גן טרום חובה): colors, shapes and first numbers, with letters along the way. */
 const SEEDS_PRE: UnitSeed[] = [
@@ -159,17 +159,17 @@ const SEEDS_PRE: UnitSeed[] = [
     ],
   },
   {
-    title: { he: 'אותיות מ–ע', en: 'Letters Mem–Ayin' },
-    goal: { he: 'להכיר, לשמוע ולכתוב את מ, נ, ס, ע', en: 'Know, hear and write Mem, Nun, Samekh, Ayin' },
+    title: { he: 'רואים, מודדים וצורות', en: 'Seeing, measuring and shapes' },
+    goal: { he: 'כמה יש בלי לספור, ארוך וקצר, וצורות', en: 'How many without counting, long and short, and shapes' },
     lessons: [
-      ['מ ו־נ', 'Mem and Nun', [{ s: 'letters', set: 'מנ' }, { s: 'lettersound', set: 'מנ' }]],
-      ['ס ו־ע', 'Samekh and Ayin', [{ s: 'letters', set: MEM_AYIN }, { s: 'lettersound', set: 'סע' }]],
-      ['כותבים מ ו־נ', 'Writing Mem and Nun', [{ s: 'trace', set: 'מנ' }, { s: 'letters', set: 'מנ' }]],
-      ['כותבים ס ו־ע', 'Writing Samekh and Ayin', [{ s: 'trace', set: 'סע' }, { s: 'letters', set: 'סע' }]],
-      ['מי מתחיל ב...?', 'Who starts with…?', [{ s: 'lettersound', set: MEM_AYIN }]],
-      ['16 אותיות!', '16 letters!', [{ s: 'letters', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN }]],
-      ['צליל ראשון', 'First sound', [{ s: 'firstsound' }, { s: 'lettersound', set: HET_LAMED + MEM_AYIN }]],
-      ['חגיגת מ עד ע', 'Mem-to-Ayin party', [{ s: 'letters', set: MEM_AYIN }, { s: 'lettersound', set: MEM_AYIN }, { s: 'trace', set: MEM_AYIN }]],
+      ['קובייה', 'Dice', [{ s: 'quick' }, { s: 'count', max: 6 }]],
+      ['כמה בלי לספור?', 'Without counting', [{ s: 'quick' }, { s: 'moreless', max: 6 }]],
+      ['מסגרת עשר', 'Ten-frame', [{ s: 'quick', only: ['qk-frame'] }, { s: 'count', max: 10 }]],
+      ['ארוך וקצר', 'Long and short', [{ s: 'measure', set: 'c' }, { s: 'size' }]],
+      ['מהקצר לארוך', 'Short to long', [{ s: 'measure', set: 'c', only: ['ms-order', 'ms-longer'] }, { s: 'pattern' }]],
+      ['צורות', 'Shapes', [{ s: 'geometry' }, { s: 'shapes' }]],
+      ['צורות סביבנו', 'Shapes around us', [{ s: 'shapes', hard: true }, { s: 'geometry' }]],
+      ['חגיגת המספרים והצורות', 'Numbers and shapes party', [{ s: 'quick' }, { s: 'measure', set: 'c' }, { s: 'geometry' }, { s: 'count', max: 10 }]],
     ],
   },
   {
@@ -187,31 +187,31 @@ const SEEDS_PRE: UnitSeed[] = [
     ],
   },
   {
-    title: { he: 'אותיות פ–ת', en: 'Letters Pe–Tav' },
-    goal: { he: 'להשלים את כל האלף־בית', en: 'Finish the whole alef-bet' },
+    title: { he: 'משחקי צלילים', en: 'Sound games' },
+    goal: { he: 'מחברים צלילים, מוחאים הברות ומחרזים', en: 'Blend sounds, clap syllables and rhyme' },
     lessons: [
-      ['פ ו־צ', 'Pe and Tsadi', [{ s: 'letters', set: 'פצ' }, { s: 'lettersound', set: 'פצ' }]],
-      ['ק ו־ר', 'Qof and Resh', [{ s: 'letters', set: 'פצקר' }, { s: 'lettersound', set: 'קר' }]],
-      ['ש ו־ת', 'Shin and Tav', [{ s: 'letters', set: PE_TAV }, { s: 'lettersound', set: 'שת' }]],
-      ['כותבים פ, צ, ק', 'Writing Pe, Tsadi, Qof', [{ s: 'trace', set: 'פצק' }, { s: 'letters', set: 'פצק' }]],
-      ['כותבים ר, ש, ת', 'Writing Resh, Shin, Tav', [{ s: 'trace', set: 'רשת' }, { s: 'letters', set: 'רשת' }]],
-      ['מי מתחיל ב...?', 'Who starts with…?', [{ s: 'lettersound', set: PE_TAV }]],
-      ['כל האלף־בית!', 'The whole alef-bet!', [{ s: 'letters', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN + PE_TAV }]],
-      ['חגיגת האלף־בית', 'Alef-bet party', [{ s: 'letters', set: PE_TAV }, { s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN + PE_TAV }, { s: 'trace', set: PE_TAV }]],
+      ['מחברים צלילים', 'Blending sounds', [{ s: 'phon' }, { s: 'syll' }]],
+      ['מחיאות כפיים', 'Clapping', [{ s: 'syll', hard: true }, { s: 'phon' }]],
+      ['חרוזים', 'Rhymes', [{ s: 'rhyme' }, { s: 'phon' }]],
+      ['הצליל הראשון', 'First sound', [{ s: 'firstsound' }, { s: 'phon' }]],
+      ['הצליל האחרון', 'Last sound', [{ s: 'phon', only: ['ph-first-last'] }, { s: 'rhyme' }]],
+      ['מילים מצחיקות', 'Funny words', [{ s: 'rhyme' }, { s: 'syll' }]],
+      ['מה נשאר?', 'What is left?', [{ s: 'phon', only: ['ph-drop', 'ph-blend'] }, { s: 'firstsound' }]],
+      ['מסיבת צלילים', 'Sound party', [{ s: 'phon' }, { s: 'rhyme' }, { s: 'syll' }, { s: 'firstsound' }]],
     ],
   },
   {
-    title: { he: 'מילים ראשונות', en: 'First words' },
-    goal: { he: 'לחבר אותיות למילים קטנות', en: 'Put letters together into small words' },
+    title: { he: 'חושבים וממיינים', en: 'Thinking and sorting' },
+    goal: { he: 'מיון, דפוסים, חידות וגרף ראשון', en: 'Sorting, patterns, riddles and a first graph' },
     lessons: [
-      ['באיזו אות זה מתחיל?', 'Which letter does it start with?', [{ s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN + PE_TAV }]],
-      ['בונים מילה קטנה', 'Building a small word', [{ s: 'build', max: 2 }]],
-      ['עוד מילים קטנות', 'More small words', [{ s: 'build', max: 2 }, { s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED }]],
-      ['בונים מילה של 3', 'Building a 3-letter word', [{ s: 'build', max: 3 }]],
-      ['קוראים מילה ראשונה', 'Reading a first word', [{ s: 'read', max: 2 }]],
-      ['מילה ותמונה', 'Word and picture', [{ s: 'read', max: 3 }]],
-      ['בונים וקוראים', 'Build and read', [{ s: 'build', max: 3 }, { s: 'read', max: 3 }]],
-      ['קורא צעיר', 'Young reader', [{ s: 'build', max: 3 }, { s: 'read', max: 3 }, { s: 'syll' }]],
+      ['מה לא שייך?', 'Odd one out', [{ s: 'odd' }, { s: 'sortcat' }]],
+      ['גרף של פירות', 'A fruit graph', [{ s: 'graph', only: ['gp-most'] }, { s: 'count', max: 10 }]],
+      ['מסדרים לקבוצות', 'Sorting', [{ s: 'sortcat', hard: true }, { s: 'logic' }]],
+      ['דפוסים', 'Patterns', [{ s: 'pattern', hard: true }, { s: 'quick' }]],
+      ['מי ניצח בהצבעה?', 'Who won the vote?', [{ s: 'graph', only: ['gp-most', 'gp-how'] }, { s: 'moreless', max: 10 }]],
+      ['חידות', 'Riddles', [{ s: 'logic' }, { s: 'odd', hard: true }]],
+      ['מה הולך עם מה?', 'What goes with what?', [{ s: 'logic' }, { s: 'sortcat' }]],
+      ['אלופי החשיבה', 'Thinking champions', [{ s: 'pattern', hard: true }, { s: 'graph' }, { s: 'logic' }, { s: 'sortcat' }]],
     ],
   },
   {
@@ -225,7 +225,7 @@ const SEEDS_PRE: UnitSeed[] = [
       ['עונות השנה', 'The seasons', [{ s: 'seasons' }]],
       ['הבוקר שלי', 'My morning', [{ s: 'story' }, { s: 'days' }]],
       ['כללים בכיתה', 'Classroom rules', [{ s: 'social', hard: true }, { s: 'feelings' }]],
-      ['מוכנים לגן חובה!', 'Ready for kindergarten!', [{ s: 'count', max: 10 }, { s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED + MEM_AYIN + PE_TAV }, { s: 'add', max: 10 }, { s: 'social' }, { s: 'logic' }]],
+      ['מוכנים לגן חובה!', 'Ready for kindergarten!', [{ s: 'count', max: 10 }, { s: 'lettersound', set: ALEF_ZAYIN + HET_LAMED }, { s: 'add', max: 10 }, { s: 'social' }, { s: 'logic' }]],
     ],
   },
 ]

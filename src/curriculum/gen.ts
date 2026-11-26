@@ -66,10 +66,12 @@ const FAMILY: Partial<Record<Skill, Skill[]>> = {
   plus: ['minus', 'wordprob'], minus: ['plus', 'wordprob'], times: ['divide', 'skip'], divide: ['times', 'wordprob'], bignum: ['skip', 'plus'],
   skip: ['bignum', 'times'], wordprob: ['plus', 'minus'], nikud: ['words', 'lettersound'], finals: ['words', 'build'], words: ['read', 'finals'],
   sentence: ['words', 'grammar'], grammar: ['sentence', 'words'], reading: ['sentence', 'grammar'],
+  clock: ['wordprob', 'money'], money: ['wordprob', 'clock'], fraction: ['divide', 'geometry'], measure: ['size', 'geometry'], geometry: ['shapes', 'measure'],
+  graph: ['moreless', 'minus'], quick: ['count', 'add'], phon: ['firstsound', 'syll'],
 }
 /** Skills whose `set` isn't a set of letters (vowels, grammar kinds, skip steps): never hand it to a letter style. */
-const OWN_SET: Skill[] = ['nikud', 'grammar', 'skip']
-const SCHOOL: Skill[] = ['plus', 'minus', 'times', 'divide', 'bignum', 'skip', 'wordprob', 'nikud', 'finals', 'words', 'sentence', 'grammar', 'reading']
+const OWN_SET: Skill[] = ['nikud', 'grammar', 'skip', 'clock', 'measure']
+const SCHOOL: Skill[] = ['plus', 'minus', 'times', 'divide', 'bignum', 'skip', 'wordprob', 'nikud', 'finals', 'words', 'sentence', 'grammar', 'reading', 'clock', 'money', 'fraction', 'measure', 'geometry', 'graph', 'quick', 'phon']
 const LETTER_SET: Skill[] = ['letters', 'lettersound', 'trace']
 
 function ask(slot: Slot, c: Ctx): Step {
@@ -184,6 +186,14 @@ const INTRO: Partial<Record<Skill, { body: string[]; scene: string }>> = {
   words: { body: ['עכשיו קוראים מילים ארוכות!', 'קוראים אות אחרי אות, מימין לשמאל, עד הסוף.'], scene: '📖🌟' },
   sentence: { body: ['כמה מילים ביחד עושות משפט.', 'קוראים את כל המשפט, ואז עונים.'], scene: '📖✏️' },
   grammar: { body: ['למילים יש חוקים: אחד והרבה, הוא והיא, אתמול ומחר.', 'בוא נגלה אותם!'], scene: '🔤🧠' },
+  clock: { body: ['לשעון יש שני מחוגים: הקצר אומר את השעה, והארוך את הדקות.', 'כשהמחוג הארוך על 12, השעה עגולה. כשהוא על 6, זה וחצי.'], scene: '⏰' },
+  money: { body: ['בישראל משלמים בשקלים. יש מטבעות של 1, 2, 5 ו־10 שקלים.', 'סופרים כסף מהמטבע הגדול לקטן.'], scene: '🪙' },
+  fraction: { body: ['כשמחלקים משהו לחלקים שווים, לכל חלק יש שם.', 'שני חלקים שווים: כל אחד חצי. ארבעה חלקים: כל אחד רבע.'], scene: '🍕' },
+  measure: { body: ['מודדים אורך עם סרגל, ומתחילים תמיד מ־0.', 'דברים קטנים מודדים בסנטימטרים, ודברים גדולים במטרים.'], scene: '✏️' },
+  geometry: { body: ['לכל צורה יש צלעות (קווים) וקודקודים (פינות).', 'משולש: 3 צלעות. ריבוע: 4. ויש גם גופים: קובייה, כדור וגליל.'], scene: '🔺' },
+  graph: { body: ['גרף עמודות מראה כמה בחרו בכל דבר.', 'העמודה הכי גבוהה קיבלה הכי הרבה.'], scene: '🍎🍌🍓' },
+  quick: { body: ['אפשר לראות כמה יש בלי לספור אחד־אחד!', 'כמו בקובייה: רואים חמש נקודות ויודעים שזה חמש.'], scene: '🎲' },
+  phon: { body: ['כל מילה בנויה מצלילים קטנים.', 'ד... ג... ביחד: דג! מקשיבים טוב לכל צליל.'], scene: '👂🐟' },
   reading: { body: ['היום קוראים סיפור קצר.', 'קוראים לאט, ואז עונים על שאלה. אפשר לחזור ולקרוא שוב!'], scene: '📖🔍' },
 }
 
@@ -249,7 +259,7 @@ function howTo(sp: Spec, short: boolean, r: R): ExplainStep | null {
    Every lesson's middle part ends with a game built from that lesson's own material: a jigsaw puzzle of a
    letter (or number) picture, or a memory game. They grow with the year: 6 → 9 → 12 pieces, 3 → 4 → 5 pairs. */
 const LETTER_SKILLS: Skill[] = ['letters', 'lettersound', 'build', 'read', 'firstsound', 'nikud', 'finals', 'words', 'sentence', 'grammar', 'reading']
-const NUMBER_SKILLS: Skill[] = ['count', 'numrec', 'moreless', 'numorder', 'add', 'sub', 'plus', 'minus', 'times', 'divide', 'bignum', 'skip', 'wordprob']
+const NUMBER_SKILLS: Skill[] = ['count', 'numrec', 'moreless', 'numorder', 'add', 'sub', 'plus', 'minus', 'times', 'divide', 'bignum', 'skip', 'wordprob', 'quick', 'money', 'clock']
 
 function family(specs: Spec[]): { kind: 'letters'; set: string } | { kind: 'numbers'; max: number } | { kind: 'other'; spec: Spec } {
   const lettersSet = specs.filter((x) => LETTER_SKILLS.includes(x.s) || (x.s === 'trace' && !/\d/.test(x.set ?? ''))).map((x) => (x.s === 'letters' || x.s === 'lettersound' || x.s === 'trace' ? x.set ?? LETTERS : LETTERS)).join('')

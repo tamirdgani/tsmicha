@@ -12,6 +12,7 @@ import { sfx } from '../lib/sfx'
 const rise = (d = 0) => ({ initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { delay: d, duration: 0.35, ease: [0.22, 1, 0.36, 1] as const } })
 const shuffle = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]] } return b }
 import { Emo, EMOJI_FONT, RichText } from '../worlds/Art'
+import { BarGraph, hasPicture, TilePicture } from './Pictures'
 
 /* ─────────────────────────── Drawing a tile ─────────────────────────── */
 
@@ -55,6 +56,7 @@ export function TileView({ tile, big }: { tile: Tile; big?: boolean }) {
       {tile.shape && <ShapeSvg shape={tile.shape} color={tile.color} size={64 * k} />}
       {tile.many && <Pile e={tile.many.e} n={tile.many.n} size={big ? 44 : 30} />}
       {tile.e && <Emo e={tile.e} size={54 * k * (tile.scale ?? 1)} style={fx} />}
+      <TilePicture tile={tile} big={big} />
       {tile.g && <span className="font-extrabold t-num" style={{ fontSize: 60 * k, lineHeight: 1, color: 'var(--ink)', ...fx }}>{tile.g}</span>}
       {tile.t && <span className="font-semibold text-center" style={{ fontSize: big ? 22 : tile.e || tile.g ? 16 : 22, lineHeight: 1.25 }}><RichText text={tile.t} /></span>}
     </span>
@@ -160,6 +162,9 @@ export function ShowView({ show }: { show: Show }) {
       </motion.div>
     )
   }
+  if (show.kind === 'bars') {
+    return <motion.div {...rise(0.08)} className={box} style={boxStyle}><BarGraph items={show.items} /></motion.div>
+  }
   if (show.kind === 'expr') {
     return (
       <motion.div {...rise(0.08)} className={box} style={boxStyle}>
@@ -255,7 +260,7 @@ export function Pick({ step, status, report }: { step: PickStep; status: Status;
     return () => window.removeEventListener('keydown', onKey)
   })
   const n = step.options.length
-  const textOnly = step.options.every((o) => o.t && !o.e && !o.g && !o.shape && !o.many)
+  const textOnly = step.options.every((o) => o.t && !o.e && !o.g && !o.shape && !o.many && !hasPicture(o))
   const cols = gridCols(n, textOnly)
   return (
     <div>
@@ -294,7 +299,7 @@ export function TapAll({ step, status, report }: { step: TapAllStep; status: Sta
     if (sel.includes(i)) { sfx.unplace(); setSel((s) => s.filter((x) => x !== i)) } else { sfx.place(sel.length); setSel((s) => [...s, i]) }
   }
   const n = step.options.length
-  const textOnly = step.options.every((o) => o.t && !o.e && !o.g && !o.shape && !o.many)
+  const textOnly = step.options.every((o) => o.t && !o.e && !o.g && !o.shape && !o.many && !hasPicture(o))
   return (
     <div>
       <Question text={pick(step.q)} />
