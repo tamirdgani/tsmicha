@@ -7,5 +7,6 @@ import { ART as c5 } from './c5'
 import { ART as c6 } from './c6'
 import { ART as c7 } from './c7'
 import { ART as c8 } from './c8'
+import { ART as c9 } from './c9'
 
-export const COMMON: Record<string, string> = { ...c1, ...c2, ...c3, ...c4, ...c5, ...c6, ...c7, ...c8 }
+export const COMMON: Record<string, string> = { ...c1, ...c2, ...c3, ...c4, ...c5, ...c6, ...c7, ...c8, ...c9 }

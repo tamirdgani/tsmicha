@@ -1,5 +1,6 @@
 /* Checks the whole year: every question valid, none repeated, styles rotating. Run: npm run check:lessons */
-import { COURSE, allNodes } from '../src/curriculum/course'
+import { COURSE, allNodes, courseFor } from '../src/curriculum/course'
+import { STAGES } from '../src/curriculum/stage'
 import { LESSONS } from '../src/curriculum/lessons'
 import { STYLES } from '../src/curriculum/bank'
 import { GEN_LOG } from '../src/curriculum/gen'
@@ -11,7 +12,7 @@ import { COMMON } from '../src/art/common'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { KITS, WORLD_IDS, type WorldId } from '../src/worlds/kits'
 
-const nodes = allNodes(COURSE)
+let nodes = allNodes(COURSE)
 const problems: string[] = []
 const texts = new Map<string, string>()
 let questions = 0
@@ -73,12 +74,15 @@ console.log('picked in pass (0 right skill & level · 1 any level · 2 lesson sk
 console.log(`same style twice in one lesson: ${twice} times · median gap between uses: ${gaps[Math.floor(gaps.length / 2)]} lessons, shortest: ${gaps[0]}`)
 const t0 = performance.now(); console.log('most used:', [...uses.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => `${k}:${v}`).join(' '))
 
-// every world: its own year, valid, never repeating, and mostly told with the world's cast
-console.log('\n── worlds ──')
-for (const w of WORLD_IDS) {
+// every stage × every world: its own year, valid, never repeating, and mostly told with the world's cast
+let allProblems = problems.length
+for (const stage of STAGES) {
+nodes = allNodes(courseFor(stage))
+console.log(`\n── ${stage} · ${courseFor(stage).title.he}: ${nodes.length} nodes ──`)
+for (const w of [undefined, ...WORLD_IDS]) {
   const t1 = performance.now()
   const probs: string[] = []
-  const year = lessonsFor(w)
+  const year = lessonsFor(w, stage)
   validate(year, probs, new Map())
   const ms = Math.round(performance.now() - t1)
   const kit = GEN_LOG.filter((g) => g.style.startsWith('k-')).length
@@ -86,11 +90,18 @@ for (const w of WORLD_IDS) {
   for (const g of GEN_LOG) { const m = per.get(g.node) ?? new Map(); m.set(g.style, (m.get(g.style) ?? 0) + 1); per.set(g.node, m) }
   let tw = 0; for (const m of per.values()) for (const v of m.values()) if (v > 1) tw += v - 1
   const relaxed = GEN_LOG.filter((g) => g.pass === 9).length
+  allProblems += probs.length
+  const lv = { e: 0, h: 0, t: 0 } as Record<string, number>
+  const byId = new Map(STYLES.map((x) => [x.id, x.lv]))
+  for (const g of GEN_LOG) { const l = byId.get(g.style); if (l) lv[l]++ }
+  if (!w) { console.log(`no world: problems ${probs.length} · forced repeats ${GEN_LOG.filter((g) => g.pass === 9).length} · levels e/h/t ${lv.e}/${lv.h}/${lv.t} · ${ms}ms`); for (const p of probs.slice(0, 15)) console.log('   ', p); continue }
   console.log(`${w.padEnd(8)} ${KITS[w].title}: ${kit}/${GEN_LOG.length} questions from the world (${Math.round((100 * kit) / GEN_LOG.length)}%) · problems ${probs.length} · twice-in-lesson ${tw} · forced repeats ${relaxed} · ${ms}ms`)
   for (const p of probs.slice(0, 15)) console.log('   ', p)
   const missing = [...KITS[w].chars.map((c) => c.k), ...KITS[w].things.map((t) => t.k), 'badge', 'pattern'].filter((k) => !ARTS[w][k])
   if (missing.length) console.log('    missing drawings:', missing.join(', '))
 }
+}
+console.log(`\nALL PROBLEMS: ${allProblems}`)
 
 // nothing in the app may fall back to an emoji: every emoji written anywhere in src has our drawing
 const srcFiles: string[] = []

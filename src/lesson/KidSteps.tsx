@@ -160,6 +160,24 @@ export function ShowView({ show }: { show: Show }) {
       </motion.div>
     )
   }
+  if (show.kind === 'expr') {
+    return (
+      <motion.div {...rise(0.08)} className={box} style={boxStyle}>
+        <span dir="ltr" className="font-extrabold t-num flex items-center gap-3 flex-wrap justify-center" style={{ fontSize: 'clamp(44px, 11vw, 72px)', lineHeight: 1 }}>
+          {show.text.split(' ').map((p, i) => p === '?'
+            ? <motion.span key={i} className="inline-grid place-items-center rounded-xl" style={{ minWidth: '1.2em', height: '1.2em', border: '3px dashed var(--sky-strong)', color: 'var(--sky-strong)' }} animate={{ scale: [1, 1.08, 1] }} transition={{ repeat: Infinity, duration: 1.4 }}>?</motion.span>
+            : <span key={i} style={{ color: /^[+−×:=<>-]$/.test(p) ? 'var(--brand-ink)' : 'var(--ink)' }}>{p}</span>)}
+        </span>
+      </motion.div>
+    )
+  }
+  if (show.kind === 'text') {
+    return (
+      <motion.div {...rise(0.08)} className={box} style={{ ...boxStyle, minHeight: 0 }}>
+        <p className="m-0 font-semibold text-center" style={{ fontSize: show.text.length > 60 ? 21 : 27, lineHeight: 1.6 }}><RichText text={show.text} /></p>
+      </motion.div>
+    )
+  }
   // word
   return (
     <motion.div {...rise(0.08)} className={box} style={boxStyle}>

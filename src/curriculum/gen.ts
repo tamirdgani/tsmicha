@@ -16,16 +16,21 @@ import { STYLES, type Style, type Topic } from './bank'
 import { he, int, mix, one, picTile, rng, signature, some, type R } from './bank/util'
 import { kitMemory, kitStyles } from './bank/stylesKit'
 import { art, KITS, type Kit, type WorldId } from '../worlds/kits'
+import { setKitCtx } from './bank/ctx'
+import type { Stage } from './stage'
 
 /* ───────── choosing questions ───────── */
 
 /** Which style levels suit each question level: 0 easy · 1 regular · 2 hard · 3 thinking question. */
-const LEVELS: Style['lv'][][] = [['e'], ['e', 'h'], ['h'], ['t']]
+const LEVELS_PRE: Style['lv'][][] = [['e'], ['e', 'h'], ['h'], ['t']]
+/** From kindergarten on, even the first question of a lesson makes the child think. */
+const LEVELS_SCHOOL: Style['lv'][][] = [['e', 'h'], ['h'], ['h', 't'], ['t']]
+let LEVELS = LEVELS_PRE
 const byTopic = new Map<Topic, Style[]>()
 for (const st of STYLES) for (const t of st.skills) byTopic.set(t, [...(byTopic.get(t) ?? []), st])
 
-type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]> }
-let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map() }
+type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage }
+let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k' }
 
 /** What was chosen where (for scripts/check-lessons.ts). */
 export const GEN_LOG: { node: string; style: string; topic: Topic; pass: number }[] = []
@@ -54,11 +59,18 @@ const FAMILY: Partial<Record<Skill, Skill[]>> = {
   colors: ['pattern', 'sortcat'], shapes: ['size', 'pattern'], size: ['logic', 'position'], position: ['logic', 'size'], odd: ['sortcat', 'logic'],
   sortcat: ['odd', 'logic'], pattern: ['logic', 'odd'], logic: ['odd', 'sortcat'], story: ['days', 'logic'], days: ['story', 'seasons'],
   seasons: ['days', 'story'], feelings: ['social'], social: ['feelings', 'schoolbag'], schoolbag: ['social', 'days'],
+  plus: ['minus', 'wordprob'], minus: ['plus', 'wordprob'], times: ['divide', 'skip'], divide: ['times', 'wordprob'], bignum: ['skip', 'plus'],
+  skip: ['bignum', 'times'], wordprob: ['plus', 'minus'], nikud: ['words', 'lettersound'], finals: ['words', 'build'], words: ['read', 'finals'],
+  sentence: ['words', 'grammar'], grammar: ['sentence', 'words'], reading: ['sentence', 'grammar'],
 }
+/** Skills whose `set` isn't a set of letters (vowels, grammar kinds, skip steps): never hand it to a letter style. */
+const OWN_SET: Skill[] = ['nikud', 'grammar', 'skip']
+const SCHOOL: Skill[] = ['plus', 'minus', 'times', 'divide', 'bignum', 'skip', 'wordprob', 'nikud', 'finals', 'words', 'sentence', 'grammar', 'reading']
+const LETTER_SET: Skill[] = ['letters', 'lettersound', 'trace']
 
 function ask(slot: Slot, c: Ctx): Step {
   const fresh = (st: Style) => !c.inLesson.has(st.id)
-  const levels = slot.topic === 'riddle' ? ['e', 'h', 't'] : LEVELS[slot.level]
+  const levels = slot.topic === 'riddle' ? (YEAR.stage === 'g1' || YEAR.stage === 'g2' ? ['h', 't'] : ['e', 'h', 't']) : LEVELS[slot.level]
   const lessonTopics = [...new Set(c.specs.map((s) => s.s as Topic))]
   const kin = slot.topic === 'riddle' ? [] : (FAMILY[slot.topic] ?? [])
   // the spec a style gets: the lesson's own spec for its skill, or this slot's spec renamed (same letters, same range)
@@ -67,14 +79,21 @@ function ask(slot: Slot, c: Ctx): Step {
     const own = c.specs.find((s) => st.skills.includes(s.s))
     if (own) return own
     const k = kin.find((x) => st.skills.includes(x))
-    return k ? { ...slot.spec, s: k } : slot.spec
+    if (!k) return slot.spec
+    if (OWN_SET.includes(slot.spec.s) || OWN_SET.includes(k)) return { s: k, max: slot.spec.max, hard: slot.spec.hard, set: LETTER_SET.includes(k) ? LETTERS : undefined }
+    return { ...slot.spec, s: k }
   }
   const pool = (topics: Topic[]) => [...new Set(topics.flatMap((t) => byTopic.get(t) ?? []))]
   // the child's own world comes first: its questions are told with the cast they chose
   const kitPool = (topics: Topic[]) => [...new Set(topics.flatMap((t) => YEAR.kitByTopic.get(t) ?? []))].filter(fresh)
+  const atLevel = (st: Style) => YEAR.stage === 'pre' || slot.topic === 'riddle' || levels.includes(st.lv)
+  // in school, the kindergarten warm-ups ("which one is not a letter?") are too easy: only the school skills keep easy questions
+  const grownUp = (st: Style) => !(YEAR.stage === 'g1' || YEAR.stage === 'g2') || st.lv !== 'e' || st.skills.some((t) => SCHOOL.includes(t as Skill))
   const passes: Style[][] = [
+    kitPool([slot.topic]).filter(atLevel),
+    kitPool(kin).filter(atLevel),
+    pool([slot.topic]).filter((st) => fresh(st) && levels.includes(st.lv)),
     kitPool([slot.topic]),
-    kitPool(kin),
     pool([slot.topic]).filter((st) => fresh(st) && levels.includes(st.lv)),
     pool([slot.topic]).filter(fresh),
     slot.topic === 'riddle' ? [] : pool(lessonTopics).filter(fresh),
@@ -83,7 +102,8 @@ function ask(slot: Slot, c: Ctx): Step {
     pool([slot.topic]).filter((st) => !c.inPart.has(st.id) && (c.inLesson.get(st.id) ?? 0) < 2),
     pool([slot.topic, ...lessonTopics, ...kin]).filter((st) => !c.inPart.has(st.id)),
   ]
-  for (const [pass, candidates] of passes.entries()) {
+  for (const [pass, all] of passes.entries()) {
+    const candidates = pass < passes.length - 1 ? all.filter(grownUp) : all
     // the style that waited longest goes first; ties are broken at random
     const ranked = mix(c.r, candidates).sort((a, b) => (YEAR.last.get(a.id) ?? -1) - (YEAR.last.get(b.id) ?? -1))
     for (const st of ranked) {
@@ -142,16 +162,55 @@ const INTRO: Partial<Record<Skill, { body: string[]; scene: string }>> = {
   feelings: { body: ['לפעמים שמחים, לפעמים עצובים, לפעמים כועסים.', 'כל הרגשות בסדר. בוא נכיר אותם.'], scene: '😀😢😠😨' },
   social: { body: ['בגן ובבית הספר יש הרבה חברים.', 'מה עושה חבר טוב? בוא נחשוב ביחד.'], scene: '🧒🤝👧' },
   schoolbag: { body: ['בכיתה א׳ יש לך ילקוט משלך!', 'מה שמים בו, ומה משאירים בבית?'], scene: '🎒✏️📚' },
+  plus: { body: ['היום מחשבים בראש: חיבור!', 'אין כאן תמונות לספור. חושבים, ואז בוחרים.'], scene: '➕🧠' },
+  minus: { body: ['היום מחשבים בראש: חיסור!', 'חיסור זה להוריד. בוא נראה איך עושים את זה.'], scene: '➖🧠' },
+  times: { body: ['כפל זה דרך מהירה לחבר את אותו מספר כמה פעמים.', 'שלוש קבוצות של 4? זה 3 × 4!'], scene: '✖️🍎' },
+  divide: { body: ['חילוק זה לחלק שווה בשווה, שלכל אחד יהיה אותו דבר.', 'ובודקים בכפל!'], scene: '🍪➗' },
+  bignum: { body: ['במספר גדול לכל ספרה יש מקום: אחדות, עשרות ומאות.', 'במספר 47 יש 4 עשרות ו־7 אחדות.'], scene: '🔢' },
+  skip: { body: ['אפשר לספור בקפיצות: 2, 4, 6, 8...', 'או בקפיצות של 5 ושל 10. מה החוק?'], scene: '🐸🔢' },
+  wordprob: { body: ['בשאלה סיפורית קוראים לאט ומוצאים את המספרים.', 'קיבלו עוד? מחברים. נתנו, אכלו או עפו? מחסרים.'], scene: '📖➕➖' },
+  nikud: { body: ['הניקוד הוא נקודות וקווים קטנים ליד האות.', 'הם אומרים לנו איך לקרוא אותה: בָּ, בִּי, בּוֹ, בּוּ, בֶּ.'], scene: '📖✨' },
+  finals: { body: ['חמש אותיות מחליפות צורה בסוף מילה:', 'כ ← ך, מ ← ם, נ ← ן, פ ← ף, צ ← ץ.'], scene: '🔤✨' },
+  words: { body: ['עכשיו קוראים מילים ארוכות!', 'קוראים אות אחרי אות, מימין לשמאל, עד הסוף.'], scene: '📖🌟' },
+  sentence: { body: ['כמה מילים ביחד עושות משפט.', 'קוראים את כל המשפט, ואז עונים.'], scene: '📖✏️' },
+  grammar: { body: ['למילים יש חוקים: אחד והרבה, הוא והיא, אתמול ומחר.', 'בוא נגלה אותם!'], scene: '🔤🧠' },
+  reading: { body: ['היום קוראים סיפור קצר.', 'קוראים לאט, ואז עונים על שאלה. אפשר לחזור ולקרוא שוב!'], scene: '📖🔍' },
+}
+
+/* ───────── "how do we calculate?" — taught before the first exercise of every lesson that calculates ───────── */
+const CALC: Skill[] = ['plus', 'minus', 'add', 'sub', 'times', 'divide', 'wordprob']
+function howTo(sp: Spec, short: boolean): ExplainStep | null {
+  const max = sp.max ?? 10, hard = !!sp.hard
+  const s = sp.s
+  const page = (title: string, body: string[], math: string[]): ExplainStep => ({ kind: 'explain', title: he(title), body: (short ? body.slice(0, 1) : body).map(he), math })
+  if (s === 'plus' || s === 'add' || (s === 'wordprob' && !short)) {
+    if (max <= 10) return page('איך מחברים?', ['מתחילים מהמספר הגדול, ושומרים אותו בראש.', 'סופרים קדימה את המספר הקטן על האצבעות.', '5 + 3: אומרים "5", וסופרים 6, 7, 8. יצא 8!'], ['5 + 3 = ?', '5 … 6, 7, 8', '5 + 3 = 8'])
+    if (max <= 20) return page('איך מחברים עד 20?', ['משלימים קודם ל־10. ל־8 חסרים 2 כדי להגיע ל־10.', 'את ה־2 לוקחים מה־5, ונשארו ממנו 3.', '10 ועוד 3 זה 13. קל לחבר ל־10!'], ['8 + 5 = ?', '8 + 2 = 10', '10 + 3 = 13', '8 + 5 = 13'])
+    if (max <= 100) return hard
+      ? page('איך מחברים עם המרה?', ['מחברים עשרות עם עשרות: 40 + 30 = 70.', 'מחברים אחדות עם אחדות: 7 + 6 = 13.', '13 אחדות הן עוד עשר ו־3. ביחד: 70 + 13 = 83.'], ['47 + 36 = ?', '40 + 30 = 70', '7 + 6 = 13', '70 + 13 = 83'])
+      : page('איך מחברים מספרים גדולים?', ['מחברים עשרות עם עשרות: 30 + 20 = 50.', 'מחברים אחדות עם אחדות: 4 + 5 = 9.', 'ביחד: 50 + 9 = 59.'], ['34 + 25 = ?', '30 + 20 = 50', '4 + 5 = 9', '50 + 9 = 59'])
+    return page('איך מחברים מאות?', ['מאות עם מאות: 300 + 200 = 500.', 'עשרות עם עשרות: 40 + 50 = 90. אחדות עם אחדות: 6 + 7 = 13.', 'ביחד: 500 + 90 + 13 = 603.'], ['346 + 257 = ?', '300 + 200 = 500', '40 + 50 = 90', '6 + 7 = 13', '500 + 90 + 13 = 603'])
+  }
+  if (s === 'minus' || s === 'sub') {
+    if (max <= 10) return page('איך מחסרים?', ['מתחילים מהמספר הראשון, ושומרים אותו בראש.', 'סופרים אחורה כמה שמורידים.', '7 − 3: אומרים "7", וסופרים אחורה 6, 5, 4. נשארו 4!', 'בודקים: 4 + 3 = 7. צדקנו!'], ['7 − 3 = ?', '7 … 6, 5, 4', '7 − 3 = 4'])
+    if (max <= 20) return page('איך מחסרים עד 20?', ['יורדים קודם ל־10: מ־13 מורידים 3, ומגיעים ל־10.', 'היינו צריכים להוריד 5. הורדנו 3, נשאר להוריד עוד 2.', '10 פחות 2 זה 8!'], ['13 − 5 = ?', '13 − 3 = 10', '10 − 2 = 8', '13 − 5 = 8'])
+    if (max <= 100) return page('איך מחסרים מספרים גדולים?', ['מורידים קודם את העשרות: 63 − 20 = 43.', 'אחר כך מורידים את האחדות: 43 − 7 = 36.', 'בודקים בחיבור: 36 + 27 = 63.'], ['63 − 27 = ?', '63 − 20 = 43', '43 − 7 = 36', '63 − 27 = 36'])
+    return page('איך מחסרים מאות?', ['מורידים קודם את המאות: 582 − 200 = 382.', 'אחר כך את העשרות ואת האחדות: 382 − 46 = 336.', 'בודקים בחיבור: 336 + 246 = 582.'], ['582 − 246 = ?', '582 − 200 = 382', '382 − 40 = 342', '342 − 6 = 336'])
+  }
+  if (s === 'times') return page('איך כופלים?', ['3 × 4 זה שלוש קבוצות, ובכל קבוצה 4.', 'סופרים בקפיצות של 4: 4, 8, 12.', 'אפשר גם להחליף: 4 × 3 = 3 × 4 = 12.'], ['3 × 4 = ?', '4 + 4 + 4', '4, 8, 12', '3 × 4 = 12'])
+  if (s === 'divide') return page('איך מחלקים?', ['12 : 3 שואל: אם מחלקים 12 לשלושה, כמה כל אחד מקבל?', 'חושבים בכפל: 3 כפול כמה זה 12?', '3 × 4 = 12, אז 12 : 3 = 4.'], ['12 : 3 = ?', '3 × ? = 12', '3 × 4 = 12', '12 : 3 = 4'])
+  if (s === 'wordprob') return page('איך פותרים שאלה סיפורית?', ['קיבלו עוד? מחברים. נתנו, אכלו או הלכו? מחסרים.'], ['+ עוד', '− נשאר'])
+  return null
 }
 
 /* ───────── games inside the lessons ─────────
    Every lesson's middle part ends with a game built from that lesson's own material: a jigsaw puzzle of a
    letter (or number) picture, or a memory game. They grow with the year: 6 → 9 → 12 pieces, 3 → 4 → 5 pairs. */
-const LETTER_SKILLS: Skill[] = ['letters', 'lettersound', 'build', 'read', 'firstsound']
-const NUMBER_SKILLS: Skill[] = ['count', 'numrec', 'moreless', 'numorder', 'add', 'sub']
+const LETTER_SKILLS: Skill[] = ['letters', 'lettersound', 'build', 'read', 'firstsound', 'nikud', 'finals', 'words', 'sentence', 'grammar', 'reading']
+const NUMBER_SKILLS: Skill[] = ['count', 'numrec', 'moreless', 'numorder', 'add', 'sub', 'plus', 'minus', 'times', 'divide', 'bignum', 'skip', 'wordprob']
 
 function family(specs: Spec[]): { kind: 'letters'; set: string } | { kind: 'numbers'; max: number } | { kind: 'other'; spec: Spec } {
-  const lettersSet = specs.filter((x) => LETTER_SKILLS.includes(x.s) || (x.s === 'trace' && !/\d/.test(x.set ?? ''))).map((x) => x.set ?? LETTERS).join('')
+  const lettersSet = specs.filter((x) => LETTER_SKILLS.includes(x.s) || (x.s === 'trace' && !/\d/.test(x.set ?? ''))).map((x) => (x.s === 'letters' || x.s === 'lettersound' || x.s === 'trace' ? x.set ?? LETTERS : LETTERS)).join('')
   if (lettersSet) return { kind: 'letters', set: [...new Set(lettersSet)].join('') }
   const nums = specs.filter((x) => NUMBER_SKILLS.includes(x.s) || (x.s === 'trace' && /\d/.test(x.set ?? '')))
   if (nums.length) return { kind: 'numbers', max: Math.max(5, ...nums.map((x) => x.max ?? 5)) }
@@ -214,16 +273,22 @@ const arcadeGame = (i: number): ArcadeStep => ({ ...ARCADE[i] })
 const PART_TITLES = ['מתחילים', 'מתאמנים', 'אתגר!']
 const PART_STEPS = [4, 5, 5]
 /** The level of each question in each part: 0 easy · 1 regular · 2 hard (tempting wrong answers) · 3 thinking question. */
-const CURVE = [[0, 1, 2, 3], [1, 3, 2, 3, 2], [2, 3, 2, 3, 3]]
+const CURVE_PRE = [[0, 1, 2, 3], [1, 3, 2, 3, 2], [2, 3, 2, 3, 3]]
+/** From kindergarten on the lesson opens with a real question and climbs fast. */
+const CURVE_SCHOOL = [[0, 2, 1, 3], [2, 3, 2, 3, 3], [3, 2, 3, 3, 3]]
+let CURVE = CURVE_PRE
 /** A surprise riddle — a shadow, a "who am I?", true or false… — in these places of every lesson: [part, question]. */
 const RIDDLE_AT = [[1, 3], [2, 1]]
 
 /** Builds the whole year in path order, so no question repeats and styles rotate across lessons. */
-export function buildYear(nodes: PathNode[], world?: WorldId): Record<string, Lesson> {
+export function buildYear(nodes: PathNode[], world?: WorldId, stage: Stage = 'k'): Record<string, Lesson> {
   const kit = world ? KITS[world] : undefined
+  setKitCtx(kit)
+  LEVELS = stage === 'pre' ? LEVELS_PRE : LEVELS_SCHOOL
+  CURVE = stage === 'pre' ? CURVE_PRE : CURVE_SCHOOL
   const kitByTopic = new Map<Topic, Style[]>()
   if (kit) for (const st of kitStyles(kit)) for (const t of st.skills) kitByTopic.set(t, [...(kitByTopic.get(t) ?? []), st])
-  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic }
+  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage }
   const out: Record<string, Lesson> = {}
   GEN_LOG.length = 0
   for (const n of nodes) { NODE = n.id; out[n.id] = buildLesson(n); YEAR.lesson++ }
@@ -242,7 +307,16 @@ function buildLesson(node: PathNode): Lesson {
 
   const parts: Part[] = PART_STEPS.map((count, d) => {
     const steps: Step[] = []
-    if (d === 0) steps.push(intro(node, specs[0], isMix))
+    if (d === 0) {
+      steps.push(intro(node, specs[0], isMix))
+      // before any calculating: how to do it (a full page in a lesson, a one-line reminder in a check or review)
+      const seen = new Set<string>()
+      for (const sp of specs) {
+        if (!CALC.includes(sp.s)) continue
+        const how = howTo(sp, isMix)
+        if (how && !seen.has(how.title.he)) { seen.add(how.title.he); if (how.title.he === node.title.he) how.title = he('ככה מחשבים'); steps.push(how) }
+      }
+    }
     // parts 2 and 3 open with a "did you know?" — a breather, and something to wonder about
     else steps.push(d === 1 && YEAR.kit ? kitFact(YEAR.kit, r) : factFor(specs, usedFacts, r))
     ctx.inPart = new Set()

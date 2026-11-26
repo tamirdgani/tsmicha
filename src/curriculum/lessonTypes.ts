@@ -4,7 +4,8 @@ import type { FutureFx } from '../lib/future'
 export type Visual = 'barter' | 'commodity' | 'jobs' | 'shekel' | 'trust' | 'sources' | 'work' | 'stand' | 'needwant' | 'sale' | 'clockcoin' | 'fork' | 'week'
 
 /** `scene`: a big row of emoji that sets the scene for a pre-reader (the parent reads the text aloud). */
-export type ExplainStep = { kind: 'explain'; title: L; body: L[]; visual?: Visual; scene?: string }
+/** `math`: a worked example, one line per step ("8 + 2 = 10", "10 + 3 = 13"), shown big and left-to-right. */
+export type ExplainStep = { kind: 'explain'; title: L; body: L[]; visual?: Visual; scene?: string; math?: string[] }
 /** `challenge`: the harder question that closes a part, worth bonus XP when right on the first try. */
 export type McqStep = { kind: 'mcq'; q: L; options: L[]; correct: number; why: L; challenge?: boolean }
 /** Guess before the explanation. Never graded or retried: it's there to make you commit to an idea first. */
@@ -36,6 +37,10 @@ export type Show =
   | { kind: 'word'; e?: string; w: string; hide?: number }
   /** A is to B as C is to ? — two pairs, one above the other. */
   | { kind: 'analogy'; a: [string, string]; b: string }
+  /** An exercise written out: "8 + 5 = ?" (left to right, as math is written in Hebrew too). */
+  | { kind: 'expr'; text: string }
+  /** Something to read: a sentence or a short story. */
+  | { kind: 'text'; text: string }
 
 export type PickStep = { kind: 'pick'; q: L; show?: Show; options: Tile[]; correct: number; why: L; challenge?: boolean }
 export type OrderStep = { kind: 'order'; q: L; items: Tile[]; why: L; challenge?: boolean }

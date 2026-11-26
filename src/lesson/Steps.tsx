@@ -36,6 +36,14 @@ export function Explain({ step, report }: { step: ExplainStep; report: Report })
         </motion.div>
       )}
       <motion.h2 {...rise(0.05)} className="t-h1 mt-4 sm:mt-6 mb-0"><RichText text={pick(step.title)} /></motion.h2>
+      {step.math && (
+        <motion.div {...rise(0.1)} dir="ltr" className="card mt-4 grid gap-2 justify-items-center px-4 py-4" style={{ boxShadow: 'none', background: 'var(--surface-2)' }}>
+          {step.math.map((m, i) => (
+            <motion.span key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 + i * 0.45 }}
+              className="font-extrabold t-num" style={{ fontSize: i === step.math!.length - 1 ? 40 : 32, lineHeight: 1.15, color: i === step.math!.length - 1 ? 'var(--brand-ink)' : 'var(--ink)' }}><RichText text={m} /></motion.span>
+          ))}
+        </motion.div>
+      )}
       {list ? (
         <ul className="list-none p-0 m-0 mt-5 grid gap-3">
           {step.body.map((b, i) => (

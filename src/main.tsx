@@ -16,6 +16,7 @@ import { BuddyProvider } from './ds/buddies'
 import type { ReactNode } from 'react'
 import { installTapSound } from './lib/sfx'
 import { currentWorld, setCurrentWorld } from './worlds/current'
+import { setCurrentStage } from './curriculum/stage'
 import { WorldBackdrop } from './worlds/Theme'
 
 function Home() {
@@ -33,6 +34,8 @@ function ChosenBuddy({ children }: { children: ReactNode }) {
   const { profile } = useProfile(user?.id)
   // the world the child loves (onboarding) drives the questions, the pictures and the look of every screen
   setCurrentWorld(profile?.goal)
+  // the stage (pre-K, kindergarten, first, second grade) picks the year and how hard it is
+  setCurrentStage(profile?.age)
   return <BuddyProvider id={profile?.buddy ?? 'robot'}><WorldBackdrop world={currentWorld()} />{children}</BuddyProvider>
 }
 

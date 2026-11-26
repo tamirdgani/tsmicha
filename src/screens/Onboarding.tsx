@@ -14,6 +14,7 @@ import { focusUnits, goalXp, type AgeRange, type Goal, type Minutes, type Profil
 import { sfx } from '../lib/sfx'
 import { Emo, RichText } from '../worlds/Art'
 import { setCurrentWorld } from '../worlds/current'
+import { setCurrentStage } from '../curriculum/stage'
 
 type Step = 'name' | 'welcome' | 'age' | 'goal' | 'sit' | 'time' | 'buddy' | 'plant'
 const ORDER: Step[] = ['name', 'welcome', 'age', 'goal', 'sit', 'time', 'buddy', 'plant']
@@ -79,7 +80,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
       if (e.key === 'Enter' && canNext) { e.preventDefault(); next() }
       const n = Number(e.key)
       if (!n) return
-      if (step === 'age' && AGES[n - 1]) { setAge(AGES[n - 1]); pickAndGo(t('ob.age.react')) }
+      if (step === 'age' && AGES[n - 1]) { setAge(AGES[n - 1]); setCurrentStage(AGES[n - 1]); pickAndGo(t('ob.age.react')) }
       if (step === 'goal' && GOALS[n - 1]) { setGoal(GOALS[n - 1].id); setCurrentWorld(GOALS[n - 1].id); pickAndGo(t('ob.goal.react')) }
       if (step === 'sit' && SITS[n - 1]) toggleSit(SITS[n - 1].id)
       if (step === 'time' && TIMES[n - 1]) { setMinutes(TIMES[n - 1]); setReact(t('ob.time.react')) }
@@ -157,7 +158,7 @@ export function Onboarding({ user, onDone }: { user: User; onDone: (p: Profile) 
               <Options>
                 {AGES.map((a, i) => (
                   <Option key={a} n={i + 1} selected={age === a} title={t(`ob.age.${a}` as StrKey)} desc={t(`ob.age.${a}.d` as StrKey)}
-                    onClick={() => { setAge(a); pickAndGo(t('ob.age.react')) }} />
+                    onClick={() => { setAge(a); setCurrentStage(a); pickAndGo(t('ob.age.react')) }} />
                 ))}
               </Options>
             )}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { BuddyId } from '../ds/buddies'
 import { setCurrentWorld } from '../worlds/current'
+import { setCurrentStage } from '../curriculum/stage'
 
 /** The child's stage this year. */
 export type AgeRange = 'pre' | 'k' | 'g1' | 'g2'
@@ -67,5 +68,6 @@ export function resetLearner(uid: string) {
     localStorage.removeItem(`kfitza.progress.${uid}`)
   } catch { /* private mode */ }
   setCurrentWorld(null)
+  setCurrentStage(null)
   window.dispatchEvent(new CustomEvent('kfitza-profile', { detail: { uid, profile: null } }))
 }

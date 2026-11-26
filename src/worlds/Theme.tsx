@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { ARTS, Emo } from './Art'
 import { currentWorld, setCurrentWorld } from './current'
+import { currentStage, setCurrentStage, STAGES, type Stage } from '../curriculum/stage'
 import { art, KITS, WORLD_IDS, type WorldId } from './kits'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useAuth } from '../lib/auth'
@@ -83,7 +84,9 @@ export function worldCheer(seed: number): { text: string; e: string } | null {
   return { text: k.cheer[seed % k.cheer.length], e: art(k.id, k.chars[(seed * 3) % k.chars.length].k) }
 }
 
-/** The world badge in the top bar: tap it to move to another world. */
+const STAGE_NAME: Record<Stage, string> = { pre: 'גן טרום חובה', k: 'גן חובה', g1: 'כיתה א׳', g2: 'כיתה ב׳' }
+
+/** The world badge in the top bar: tap it to move to another world or another grade. */
 export function WorldButton() {
   const { user } = useAuth()
   const { profile, save } = useProfile(user?.id)
@@ -94,6 +97,13 @@ export function WorldButton() {
     sfx.pick()
     setCurrentWorld(id)
     save({ ...profile, goal: id })
+    setOpen(false)
+  }
+  const stage = currentStage()
+  const chooseStage = (s: Stage) => {
+    sfx.pick()
+    setCurrentStage(s)
+    save({ ...profile, age: s })
     setOpen(false)
   }
   return (
@@ -117,6 +127,16 @@ export function WorldButton() {
                 <Emo e={art(id, 'badge')} size={42} />
                 <span className="font-semibold">{KITS[id].title}</span>
               </motion.button>
+            ))}
+          </div>
+          <h3 className="t-h3 mt-5 mb-0">באיזו כיתה?</h3>
+          <p className="t-small ink-2 mt-1 mb-0">כל שלב הוא שנה שלמה, וכל שלב קשה יותר מהקודם.</p>
+          <div role="radiogroup" className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+            {STAGES.map((s) => (
+              <button key={s} role="radio" aria-checked={stage === s} onClick={() => chooseStage(s)} className="p-3 rounded-xl cursor-pointer font-semibold"
+                style={{ font: 'inherit', fontWeight: 600, color: 'var(--ink)', background: stage === s ? 'var(--brand-soft)' : 'var(--surface)', border: `2px solid ${stage === s ? 'var(--brand)' : 'var(--line)'}` }}>
+                {STAGE_NAME[s]}
+              </button>
             ))}
           </div>
         </DialogContent>

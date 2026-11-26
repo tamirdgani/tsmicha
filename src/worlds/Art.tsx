@@ -70,18 +70,28 @@ export function EmoLine({ text, size, gap = 8 }: { text: string; size: number; g
   )
 }
 
-/** Text with any emoji in it drawn as small pictures inline, at the text's own size. */
+/** An exercise inside Hebrew text ("7 − 3 = 4", "3 × 4"): math is written left to right, so it is isolated
+    from the sentence around it — otherwise the browser would show "7 − 3" as "3 − 7". */
+const MATH = /((?:\d+|\?)(?: ?[+−×:=<>-] ?(?:\d+|\?))+)/g
+function withMath(text: string, key: string): ReactNode {
+  if (!/\d ?[+−×:=<>-] ?[\d?]|\? ?[+−×:=] ?\d/.test(text)) return text
+  return text.split(MATH).map((part, i) => i % 2
+    ? <bdi key={`${key}-${i}`} dir="ltr" style={{ unicodeBidi: 'isolate', whiteSpace: 'nowrap' }}>{part}</bdi>
+    : <Fragment key={`${key}-${i}`}>{part}</Fragment>)
+}
+
+/** Text with any emoji in it drawn as small pictures inline, at the text's own size (and exercises kept left to right). */
 export function RichText({ text }: { text: string }): ReactNode {
-  if (!PICTO.test(text)) return text
+  if (!PICTO.test(text)) return withMath(text, 't')
   const out: ReactNode[] = []
   let buf = ''
   for (const g of graphemes(text)) {
     if (!isPicto(g)) { buf += g; continue }
-    if (buf) { out.push(buf); buf = '' }
+    if (buf) { out.push(withMath(buf, `b${out.length}`)); buf = '' }
     const m = artMarkup(g)
     if (m) out.push(<svg key={out.length} viewBox="0 0 100 100" aria-hidden="true" style={{ width: '1.35em', height: '1.35em', display: 'inline-block', verticalAlign: '-0.32em', margin: '0 0.06em' }} dangerouslySetInnerHTML={{ __html: m }} />)
   }
-  if (buf) out.push(buf)
+  if (buf) out.push(withMath(buf, `b${out.length}`))
   return <>{out.map((x, i) => <Fragment key={i}>{x}</Fragment>)}</>
 }
 

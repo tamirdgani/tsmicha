@@ -12,6 +12,10 @@ export type Skill =
   | 'count' | 'numrec' | 'moreless' | 'numorder' | 'add' | 'sub' | 'trace'
   | 'syll' | 'rhyme' | 'firstsound' | 'letters' | 'lettersound' | 'build' | 'read'
   | 'story' | 'days' | 'seasons' | 'feelings' | 'social' | 'schoolbag' | 'logic'
+  // school math: digits only, the child calculates
+  | 'plus' | 'minus' | 'times' | 'divide' | 'bignum' | 'skip' | 'wordprob'
+  // school reading
+  | 'nikud' | 'finals' | 'words' | 'sentence' | 'grammar' | 'reading'
 
 /** `max`/`min`: number range · `set`: letters or digits to work on · `hard`: harder variant. */
 export type Spec = { s: Skill; max?: number; min?: number; set?: string; hard?: boolean }
@@ -41,15 +45,19 @@ export type Course = {
   locked?: boolean
 }
 
-type LessonSeed = [string, string, Spec[]]
-type UnitSeed = { title: L; goal: L; lessons: LessonSeed[] }
+import { currentStage, type Stage } from './stage'
+import { SEEDS_G1, SEEDS_G2, SEEDS_K } from './seeds'
+
+export type LessonSeed = [string, string, Spec[]]
+export type UnitSeed = { title: L; goal: L; lessons: LessonSeed[] }
 
 const ALEF_ZAYIN = 'אבגדהוז'
 const HET_LAMED = 'חטיכל'
 const MEM_AYIN = 'מנסע'
 const PE_TAV = 'פצקרשת'
 
-const SEEDS: UnitSeed[] = [
+/** Pre-K (גן טרום חובה): colors, shapes and first numbers, with letters along the way. */
+const SEEDS_PRE: UnitSeed[] = [
   {
     title: { he: 'שלום, פיקו!', en: 'Hello, Piko!' },
     goal: { he: 'צבעים, צורות, גדלים ומקומות', en: 'Colors, shapes, sizes and places' },
@@ -254,20 +262,42 @@ function buildUnit(seed: UnitSeed, i: number, all: UnitSeed[]): Unit {
   }
 }
 
-/** Unit 1: the kindergarten year. Its "units" are shown as chapters (פרקים). */
+const META: Record<Stage, { title: L; tagline: L; seeds: UnitSeed[] }> = {
+  pre: { title: { he: 'גן טרום חובה', en: 'Pre-K' }, tagline: { he: 'צבעים, צורות, מספרים ואותיות ראשונות', en: 'Colors, shapes, numbers and first letters' }, seeds: SEEDS_PRE },
+  k: { title: { he: 'גן חובה', en: 'Kindergarten' }, tagline: { he: 'מגיעים מוכנים לכיתה א׳', en: 'Arrive ready for first grade' }, seeds: SEEDS_K },
+  g1: { title: { he: 'כיתה א׳', en: 'First grade' }, tagline: { he: 'קוראים עם ניקוד, מחשבים עד 100', en: 'Reading with niqqud, math to 100' }, seeds: SEEDS_G1 },
+  g2: { title: { he: 'כיתה ב׳', en: 'Second grade' }, tagline: { he: 'כפל, חילוק, עד 1000 והבנת הנקרא', en: 'Times, sharing, to 1000 and reading comprehension' }, seeds: SEEDS_G2 },
+}
+const built = new Map<Stage, Course>()
+/** The year of one stage. Its "units" are shown as chapters (פרקים). */
+export function courseFor(stage: Stage): Course {
+  let c = built.get(stage)
+  if (!c) {
+    const m = META[stage]
+    c = { id: stage, title: m.title, tagline: m.tagline, units: m.seeds.map((s, i) => buildUnit(s, i, m.seeds)) }
+    built.set(stage, c)
+  }
+  return c
+}
+/** The year of the child's stage (onboarding: pre-K, kindergarten, first or second grade). */
 export const COURSE: Course = {
-  id: 'k',
-  title: { he: 'יחידה 1 · גן חובה', en: 'Unit 1 · Kindergarten' },
-  tagline: { he: 'מגיעים מוכנים לכיתה א׳', en: 'Arrive ready for first grade' },
-  units: SEEDS.map((s, i) => buildUnit(s, i, SEEDS)),
+  get id() { return courseFor(currentStage()).id },
+  get title() { return courseFor(currentStage()).title },
+  get tagline() { return courseFor(currentStage()).tagline },
+  get units() { return courseFor(currentStage()).units },
 }
 /** Kept for screens that still use the old name. */
 export const FIN_LIT = COURSE
 
-export const NEXT_COURSES: Course[] = [
-  { id: 'g1', title: { he: 'יחידה 2 · כיתה א׳', en: 'Unit 2 · First grade' }, tagline: { he: 'קריאה, כתיבה וחשבון של כיתה א׳', en: 'First-grade reading, writing and math' }, units: [], locked: true },
-  { id: 'g2', title: { he: 'יחידה 3 · כיתה ב׳', en: 'Unit 3 · Second grade' }, tagline: { he: 'נפתחת אחרי כיתה א׳', en: 'Opens after first grade' }, units: [], locked: true },
-]
+const NEXT: Record<Stage, Stage[]> = { pre: ['k', 'g1'], k: ['g1', 'g2'], g1: ['g2'], g2: [] }
+/** The years that come after this one (shown locked at the end of the path). */
+export const NEXT_COURSES: Course[] = new Proxy([] as Course[], {
+  get: (_t, p) => {
+    const list = NEXT[currentStage()].map((s) => ({ id: s, title: META[s].title, tagline: { he: 'נפתחת אחרי השנה הזאת', en: 'Opens after this year' }, units: [], locked: true }))
+    const v = Reflect.get(list, p)
+    return typeof v === 'function' ? v.bind(list) : v
+  },
+})
 
 export const allNodes = (c: Course) => c.units.flatMap((u) => u.nodes)
 export const courseMinutes = (c: Course) => allNodes(c).reduce((s, n) => s + n.minutes, 0)
