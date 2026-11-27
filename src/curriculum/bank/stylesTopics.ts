@@ -272,10 +272,19 @@ export const PHON_STYLES: Style[] = [
 export const MIXED_STYLES: Style[] = [
   style('wp-mix', 'כפל וחיבור', ['wordprob', 'times'], 't', (sp, r) => {
     if ((sp.max ?? 10) <= 100 && sp.s !== 'times') return null
-    const packs = int(r, 2, 5), per = int(r, 3, 8), gone = int(r, 2, per), h = hero(r)
-    const total = packs * per, ans = total - gone
-    const thing = one(r, [['חבילות', 'ביצים', 'נשברו'], ['קופסאות', 'עוגיות', 'נאכלו'], ['שקיות', 'תפוחים', 'נפלו']])
-    return [`wpx|${packs}x${per}-${gone}`, pick(r, `${h.n} ${v(h, 'קנה', 'קנתה')} ${packs} ${thing[0]}, ובכל אחת ${per} ${thing[1]}. ${gone} ${thing[1]} ${thing[2]}. כמה ${thing[1]} נשארו?`, num(ans), wrongs(r, ans, 3, [total, packs + per - gone]).map(num), `קודם כפל: ${packs} × ${per} = ${total}. אחר כך חיסור: ${total} − ${gone} = ${ans}.`)]
+    const packs = int(r, 2, 5), per = int(r, 3, 8), h = hero(r), total = packs * per
+    // [containers, things, what happened to some, what was added]
+    const thing = one(r, [
+      ['חבילות', 'ביצים', 'נשברו', 'קנו עוד'], ['קופסאות', 'עוגיות', 'נאכלו', 'אפו עוד'], ['שקיות', 'תפוחים', 'נפלו', 'קטפו עוד'],
+      ['מגירות', 'גרביים', 'נעלמו', 'קיבלו עוד'], ['צנצנות', 'סוכריות', 'חולקו', 'הוסיפו עוד'], ['שורות', 'כיסאות', 'נשברו', 'הביאו עוד'],
+      ['ענפים', 'פרחים', 'נבלו', 'צמחו עוד'], ['מדפים', 'ספרים', 'הושאלו', 'הגיעו עוד'], ['ארגזים', 'כדורים', 'התפוצצו', 'קנו עוד'],
+    ])
+    if (r() < 0.5) {
+      const gone = int(r, 2, per), ans = total - gone
+      return [`wpx|${packs}x${per}-${gone}`, pick(r, `${h.n} ${v(h, 'קנה', 'קנתה')} ${packs} ${thing[0]}, ובכל אחת ${per} ${thing[1]}. ${gone} ${thing[1]} ${thing[2]}. כמה ${thing[1]} נשארו?`, num(ans), wrongs(r, ans, 3, [total, packs + per - gone]).map(num), `קודם כפל: ${packs} × ${per} = ${total}. אחר כך חיסור: ${total} − ${gone} = ${ans}.`)]
+    }
+    const more = int(r, 2, 9), ans = total + more
+    return [`wpx|${packs}x${per}+${more}`, pick(r, `היו ${packs} ${thing[0]}, ובכל אחת ${per} ${thing[1]}. אחר כך ${thing[3]} ${more} ${thing[1]}. כמה ${thing[1]} יש עכשיו?`, num(ans), wrongs(r, ans, 3, [total, packs + per + more]).map(num), `קודם כפל: ${packs} × ${per} = ${total}. אחר כך חיבור: ${total} + ${more} = ${ans}.`)]
   }),
 ]
 

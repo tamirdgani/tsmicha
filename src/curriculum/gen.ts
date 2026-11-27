@@ -31,8 +31,8 @@ let LEVELS = LEVELS_PRE
 const byTopic = new Map<Topic, Style[]>()
 for (const st of STYLES) for (const t of st.skills) byTopic.set(t, [...(byTopic.get(t) ?? []), st])
 
-type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage; how: Set<string>; unit: string; unitFacts: Set<string>; taught: Set<Topic>; letters: Set<string> }
-let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k', how: new Set(), unit: '', unitFacts: new Set(), taught: new Set(), letters: new Set() }
+type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage; how: Set<string>; unit: string; unitFacts: Set<string>; taught: Set<Topic>; letters: Set<string>; uses: Map<string, number> }
+let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k', how: new Set(), unit: '', unitFacts: new Set(), taught: new Set(), letters: new Set(), uses: new Map() }
 
 /** Topics a question can't lean on before they're taught: a story about change waits for the coins lesson. */
 const GATED: Topic[] = ['clock', 'money', 'times', 'divide', 'fraction']
@@ -118,6 +118,8 @@ function ask(slot: Slot, c: Ctx): Step {
   const only = slot.spec.only
   // …and then the lesson's other own-topic styles stay out ("which got the most?" isn't followed by a sum to 19)
   const ownOk = (st: Style) => !only || only.includes(st.id)
+  // no kind of question takes over the year: a style borrowed from another topic comes back at most 14 times, any style at most 36
+  const fewOk = (st: Style) => !!only?.includes(st.id) || (YEAR.uses.get(st.id) ?? 0) < (st.skills[0] === slot.topic ? 36 : 14)
   // nothing from a topic the child hasn't met yet (the lesson's own topics count as met)
   const taughtOk = (st: Style) => [...st.skills.filter((t) => GATED.includes(t)), ...(NEEDS[st.id] ?? [])].every((t) => t === slot.topic || YEAR.taught.has(t) || c.specs.some((s) => s.s === t))
   // the lesson stays on its own topic: its own styles (even a second time) come before borrowing from neighbours
@@ -135,9 +137,9 @@ function ask(slot: Slot, c: Ctx): Step {
     pool([slot.topic, ...lessonTopics, ...kin]).filter((st) => !c.inPart.has(st.id)),
   ]
   // shadows, peeks and upside-down pictures are a nice surprise, not the lesson: one per lesson (two in pre-K)
-  const fillerOk = (st: Style) => !FILLER.has(st.id) || (!c.test && c.filler < (YEAR.stage === 'pre' ? 2 : YEAR.stage === 'k' ? 1 : 0))
+  const fillerOk = (st: Style) => !FILLER.has(st.id) || (!c.test && c.filler < (YEAR.stage === 'pre' || YEAR.stage === 'k' ? 1 : 0))
   for (const [pass, all] of passes.entries()) {
-    const candidates = (pass < passes.length - 1 ? all.filter((st) => grownUp(st) && fillerOk(st)) : all).filter(taughtOk)
+    const candidates = (pass < passes.length - 1 ? all.filter((st) => grownUp(st) && fillerOk(st) && fewOk(st)) : all).filter(taughtOk)
     // the style that waited longest goes first; ties are broken at random
     const ranked = mix(c.r, candidates).sort((a, b) => (YEAR.last.get(a.id) ?? -1) - (YEAR.last.get(b.id) ?? -1))
     for (const st of ranked) {
@@ -156,6 +158,7 @@ function note(st: Style, c: Ctx) {
   c.inLesson.set(st.id, (c.inLesson.get(st.id) ?? 0) + 1)
   c.inPart.add(st.id)
   if (FILLER.has(st.id)) c.filler++
+  YEAR.uses.set(st.id, (YEAR.uses.get(st.id) ?? 0) + 1)
   YEAR.last.set(st.id, YEAR.lesson)
 }
 
@@ -185,7 +188,7 @@ const INTRO: Partial<Record<Skill, { body: string[]; scene: string }>> = {
   sub: { body: ['להוריד זה לקחת חלק ולספור מה נשאר.', 'היו שלושה בלונים, אחד עף. כמה נשארו?'], scene: '🎈🎈🎈➖🎈' },
   trace: { body: ['היום כותבים עם האצבע!', 'עוברים לאט על הקו האפור, מלמעלה למטה.'], scene: '✍️✨' },
   syll: { body: ['כל מילה מתחלקת לחלקים קטנים. כל חלק מקבל מחיאת כף.', 'בַּ־נָ־נָה: שלוש מחיאות! 👏👏👏'], scene: '👏🍌' },
-  rhyme: { body: ['מילים מתחרזות נשמעות אותו דבר בסוף.', 'ירח ופרח, כלב וחלב. מצחיק, נכון?'], scene: '🌙🌸' },
+  rhyme: { body: ['מילים מתחרזות נשמעות אותו דבר בסוף.', 'ירח ופרח, שעון ובלון. מצחיק, נכון?'], scene: '🌙🌸' },
   firstsound: { body: ['כל מילה מתחילה בצליל. דג מתחיל ב־ד, דוב מתחיל ב־ד.', 'מקשיבים לצליל הראשון!'], scene: '🐟🐻' },
   letters: { body: ['לכל צליל יש אות. היום נכיר אותיות חדשות!', 'מסתכלים טוב על הצורה של כל אות.'], scene: '🔤✨' },
   lettersound: { body: ['כל מילה מתחילה באות. אריה מתחיל ב־א.', 'נמצא איזו אות פותחת כל מילה?'], scene: '🦁 א' },
@@ -373,7 +376,7 @@ export function buildYear(nodes: PathNode[], world?: WorldId, stage: Stage = 'k'
   CURVE = stage === 'pre' ? CURVE_PRE : CURVE_SCHOOL
   const kitByTopic = new Map<Topic, Style[]>()
   if (kit) for (const st of kitStyles(kit)) for (const t of st.skills) kitByTopic.set(t, [...(kitByTopic.get(t) ?? []), st])
-  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage, how: new Set(), unit: '', unitFacts: new Set(), taught: new Set(TAUGHT_BEFORE[stage]), letters: new Set(stage === 'g1' || stage === 'g2' ? LETTERS : '') }
+  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage, how: new Set(), unit: '', unitFacts: new Set(), taught: new Set(TAUGHT_BEFORE[stage]), letters: new Set(stage === 'g1' || stage === 'g2' ? LETTERS : ''), uses: new Map() }
   const out: Record<string, Lesson> = {}
   GEN_LOG.length = 0
   for (const n of nodes) {
@@ -397,7 +400,7 @@ function buildLesson(node: PathNode): Lesson {
   // …except carrying and borrowing past 20: a chapter that didn't teach them doesn't test them
   const specs = node.kind === 'test' ? base.map((x) => ({ ...x, hard: x.hard || !(CALC.includes(x.s) && (x.max ?? 10) > 20) })) : base
   const isMix = node.kind !== 'lesson'
-  const riddles = YEAR.stage === 'pre' ? RIDDLE_AT : RIDDLE_AT.slice(0, 1)
+  const riddles = RIDDLE_AT.slice(0, 1)
   let turn = int(r, 0, specs.length - 1)
   const usedFacts = new Set<string>()
   const traced = new Set<string>()
