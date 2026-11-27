@@ -82,7 +82,9 @@ export const NIKUD_STYLES: Style[] = [
     return [`nkw|${x.w}`, pick(r, 'איזו מילה מתאימה לתמונה? קוראים עד הסוף!', { t: x.w }, o.map((y) => ({ t: y.w })), `כתוב ${x.w}.`, { kind: 'tile', tile: { e: x.e } })]
   }),
   style('nk-sign', 'מה שם הניקוד?', ['nikud'], 'h', (sp, r) => {
-    const x = one(r, nwords(sp)), others = mix(r, (Object.keys(SIGN_NAME) as Sign[]).filter((s) => SOUND[s] !== SOUND[x.sign] && s !== 'holamh')).slice(0, 2)
+    // the hard wrong answer is the sign that sounds the same (קמץ for פתח): the child has to look at the shape
+    const x = one(r, nwords(sp)), all = (Object.keys(SIGN_NAME) as Sign[]).filter((s) => s !== 'holamh' && SIGN_NAME[s] !== SIGN_NAME[x.sign])
+    const twin = all.filter((s) => SOUND[s] === SOUND[x.sign]), others = [...some(r, twin, 1), ...mix(r, all.filter((s) => SOUND[s] !== SOUND[x.sign]))].slice(0, 2)
     return [`nks|${syl(x)}`, pick(r, `איך קוראים לניקוד של ${syl(x)}?`, { t: SIGN_NAME[x.sign] }, others.map((s) => ({ t: SIGN_NAME[s] })), `זה ${SIGN_NAME[x.sign]}, והוא נשמע ${SAY[SOUND[x.sign]]}: ${syl(x)}.`, { kind: 'tile', tile: { g: syl(x) } })]
   }),
   style('nk-sound', 'אותו צליל', ['nikud'], 't', (sp, r) => {
@@ -328,31 +330,37 @@ function tale(r: R) {
   return { h, go, wi, m, n, fd, c, text, sawFirst, key: `${h.n}|${go.w}|${wi.w}|${m.pl}${n}|${fd.w}${c}|${sawFirst}` }
 }
 export const READING_STYLES: Style[] = [
-  style('rc-where', 'לאן הלכו?', ['reading'], 'h', (_sp, r) => {
+  style('rc-where', 'לאן הלכו?', ['reading'], 'h', (sp, r) => {
+    if (sp.set === 'L') return null // second grade reads the longer stories
     const t = tale(r)
     return [`rcw|${t.key}`, pick(r, `קוראים את הסיפור. לאן ${v(t.h, 'הלך', 'הלכה')} ${t.h.n}?`, pic(t.go), some(r, GO.filter((x) => x !== t.go), 2).map(pic), `כתוב: "${v(t.h, 'הלך', 'הלכה')} ${nice(t.go.w)}".`, txt(t.text))]
   }),
-  style('rc-with', 'עם מי?', ['reading'], 'h', (_sp, r) => {
+  style('rc-with', 'עם מי?', ['reading'], 'h', (sp, r) => {
+    if (sp.set === 'L') return null // second grade reads the longer stories
     const t = tale(r)
     return [`rcm|${t.key}`, pick(r, `עם מי ${v(t.h, 'הלך', 'הלכה')} ${t.h.n}?`, pic(t.wi), some(r, WITH.filter((x) => x !== t.wi), 2).map(pic), `כתוב: "עם ${t.wi.w}".`, txt(t.text))]
   }),
-  style('rc-many', 'כמה?', ['reading'], 't', (_sp, r) => {
+  style('rc-many', 'כמה?', ['reading'], 't', (sp, r) => {
+    if (sp.set === 'L') return null // second grade reads the longer stories
     const t = tale(r)
     return [`rcn|${t.key}`, pick(r, `כמה ${t.m.pl} ${v(t.h, 'ראה', 'ראתה')} ${t.h.n}?`, { g: String(t.n) }, [2, 3, 4, 5].filter((x) => x !== t.n).slice(0, 2).map((x) => ({ g: String(x) })), `כתוב "${numOf(t.n, t.m)} ${t.m.pl}": זה ${t.n}.`, txt(t.text))]
   }),
-  style('rc-color', 'באיזה צבע?', ['reading'], 't', (_sp, r) => {
+  style('rc-color', 'באיזה צבע?', ['reading'], 't', (sp, r) => {
+    if (sp.set === 'L') return null // second grade reads the longer stories
     const t = tale(r), o = some(r, COLS.filter((x) => x !== t.c), 2)
     const tile = (c: string): Tile => ({ shape: 'circle', color: COLOR_HEX[c], t: t.fd.f ? COLOR_F[c] : c })
     return [`rcc|${t.key}`, pick(r, `באיזה צבע ${t.fd.f ? 'הייתה' : 'היה'} ה${t.fd.w}?`, tile(t.c), o.map(tile), `כתוב: "${t.fd.w} ${t.fd.f ? COLOR_F[t.c] : t.c}".`, txt(t.text))]
   }),
-  style('rc-first', 'מה קרה קודם?', ['reading', 'story'], 't', (_sp, r) => {
+  style('rc-first', 'מה קרה קודם?', ['reading', 'story'], 't', (sp, r) => {
+    if (sp.set === 'L') return null // second grade reads the longer stories
     const t = tale(r)
     const sawIt = `${v(t.h, 'ראה', 'ראתה')} ${t.m.pl}`, foundIt = `${v(t.h, 'מצא', 'מצאה')} ${t.fd.w}`
     const [a, b] = t.sawFirst ? [sawIt, foundIt] : [foundIt, sawIt]
     const { options, correct } = choices(r, { t: a }, [{ t: b }])
     return [`rcf|${t.key}`, { kind: 'pick', q: he(`מה קרה קודם? ${t.h.n}...`), show: txt(t.text), options, correct, why: he(`קודם ${a}, ואחר כך ${b}.`) }]
   }),
-  style('rc-found', 'מה מצאו?', ['reading'], 'h', (_sp, r) => {
+  style('rc-found', 'מה מצאו?', ['reading'], 'h', (sp, r) => {
+    if (sp.set === 'L') return null // second grade reads the longer stories
     const t = tale(r)
     return [`rcd|${t.key}`, pick(r, `מה ${v(t.h, 'מצא', 'מצאה')} ${t.h.n}?`, { e: t.fd.e }, some(r, FOUND.filter((x) => x !== t.fd), 2).map((x) => ({ e: x.e })), `כתוב: "${v(t.h, 'מצא', 'מצאה')} ${t.fd.w}".`, txt(t.text))]
   }),
@@ -430,4 +438,68 @@ export const STORY_STYLES: Style[] = [
   }),
 ]
 
-export const READ_SCHOOL_STYLES: Style[] = [...NIKUD_STYLES, ...FINAL_STYLES, ...WORDS_STYLES, ...SENTENCE_STYLES, ...GRAMMAR_STYLES, ...READING_STYLES, ...STORY_STYLES]
+/* ───────── longer stories: a whole outing, with a problem and how it was solved ─────────
+   Spec `set` 'M' (end of first grade): four sentences. 'L' (second grade): five, with the day and who heard about it. */
+const TRIP_WITH = WITH.filter((x) => x.w !== 'הכלב')
+const PROBLEMS: [string, string][] = [
+  ['פתאום התחיל לרדת גשם', 'הם עמדו מתחת לעץ גדול עד שהגשם נגמר'],
+  ['פתאום רוח חזקה העיפה את הכובע', 'הם רצו אחרי הכובע ותפסו אותו ליד הספסל'],
+  ['פתאום הם שמו לב שבקבוק המים ריק', 'הם מילאו את הבקבוק בברזייה'],
+  ['פתאום הם לא מצאו את הדרך חזרה', 'הם שאלו שוטר, והוא הראה להם את הדרך'],
+  ['פתאום נגמר להם האוכל', 'הם קנו כריכים בקיוסק'],
+]
+const WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי']
+const TOLD: { to: string; e: string }[] = [{ to: 'לאבא', e: '👨' }, { to: 'לסבתא', e: '👵' }, { to: 'לאח הקטן', e: '👦' }, { to: 'לסבא', e: '👴' }]
+function tripStory(r: R, long: boolean) {
+  const h = hero(r), go = one(r, GO), wi = one(r, TRIP_WITH), m = one(r, SEEN_AT[go.w] ?? MANY), n = int(r, 2, 5), pi = int(r, 0, PROBLEMS.length - 1), [prob, fix] = PROBLEMS[pi]
+  const day = one(r, WEEKDAYS), told = one(r, TOLD.filter((x) => x.to.slice(1) !== wi.w))
+  const text = [
+    `${long ? `ביום ${day} ` : ''}${h.n} ${v(h, 'הלך', 'הלכה')} ${nice(go.w)} עם ${wi.w}.`,
+    `שם הם ראו ${numOf(n, m)} ${m.pl}.`,
+    `${prob}.`,
+    `${fix}.`,
+    ...(long ? [`בערב ${h.n} ${v(h, 'סיפר', 'סיפרה')} ${told.to} על כל מה שקרה.`] : []),
+  ].join(' ')
+  return { h, go, wi, m, n, pi, prob, fix, day, told, text, key: `${h.n}|${go.w}|${wi.w}|${m.pl}${n}|${pi}|${long ? day + told.to : ''}` }
+}
+const lvl = (sp: Spec) => (sp.set === 'L' ? 'L' : sp.set === 'M' ? 'M' : null)
+const LONG_STYLES: Style[] = [
+  style('rc-trip-with', 'עם מי?', ['reading'], 'h', (sp, r) => {
+    if (!lvl(sp)) return null
+    const t = tripStory(r, lvl(sp) === 'L')
+    return [`rtw|${t.key}`, pick(r, `קוראים את כל הסיפור. עם מי ${v(t.h, 'הלך', 'הלכה')} ${t.h.n}?`, pic(t.wi), some(r, TRIP_WITH.filter((x) => x !== t.wi), 2).map(pic), `כתוב: "עם ${t.wi.w}".`, txt(t.text))]
+  }),
+  style('rc-trip-many', 'כמה ראו?', ['reading'], 'h', (sp, r) => {
+    if (!lvl(sp)) return null
+    const t = tripStory(r, lvl(sp) === 'L')
+    return [`rtn|${t.key}`, pick(r, `כמה ${t.m.pl} הם ראו?`, { g: String(t.n) }, some(r, [2, 3, 4, 5].filter((x) => x !== t.n), 2).map((x) => ({ g: String(x) })), `כתוב "${numOf(t.n, t.m)} ${t.m.pl}": זה ${t.n}.`, txt(t.text))]
+  }),
+  style('rc-trip-problem', 'מה קרה פתאום?', ['reading'], 't', (sp, r) => {
+    if (!lvl(sp)) return null
+    const t = tripStory(r, lvl(sp) === 'L'), o = some(r, PROBLEMS.filter((_, i) => i !== t.pi), 2)
+    const say = (x: string) => x.replace('פתאום ', '')
+    return [`rtp|${t.key}`, pick(r, 'מה קרה פתאום?', { t: say(t.prob) }, o.map((x) => ({ t: say(x[0]) })), `כתוב: "${t.prob}".`, txt(t.text))]
+  }),
+  style('rc-trip-fix', 'מה עשו?', ['reading'], 't', (sp, r) => {
+    if (!lvl(sp)) return null
+    const t = tripStory(r, lvl(sp) === 'L'), o = some(r, PROBLEMS.filter((_, i) => i !== t.pi), 2)
+    return [`rtf|${t.key}`, pick(r, `${t.prob.replace('פתאום ', 'אחרי ש')}, מה הם עשו?`, { t: t.fix }, o.map((x) => ({ t: x[1] })), `כתוב: "${t.fix}".`, txt(t.text))]
+  }),
+  style('rc-trip-order', 'מה קרה קודם?', ['reading', 'story'], 't', (sp, r) => {
+    if (!lvl(sp)) return null
+    const t = tripStory(r, lvl(sp) === 'L')
+    return [`rto|${t.key}`, order('מסדרים לפי הסיפור: מה קרה קודם?', [{ t: `ראו ${t.m.pl}` }, { t: t.prob.replace('פתאום ', '') }, { t: t.fix }], 'קודם ראו, אחר כך הייתה בעיה, ובסוף פתרו אותה.', txt(t.text))]
+  }),
+  style('rc-trip-day', 'באיזה יום?', ['reading', 'days'], 'h', (sp, r) => {
+    if (lvl(sp) !== 'L') return null
+    const t = tripStory(r, true)
+    return [`rtd|${t.key}`, pick(r, 'באיזה יום זה קרה?', { t: `יום ${t.day}` }, some(r, WEEKDAYS.filter((x) => x !== t.day), 2).map((x) => ({ t: `יום ${x}` })), `כתוב: "ביום ${t.day}".`, txt(t.text))]
+  }),
+  style('rc-trip-told', 'למי סיפרו?', ['reading'], 't', (sp, r) => {
+    if (lvl(sp) !== 'L') return null
+    const t = tripStory(r, true)
+    return [`rtt|${t.key}`, pick(r, `למי ${v(t.h, 'סיפר', 'סיפרה')} ${t.h.n} בערב?`, { e: t.told.e, t: t.told.to.slice(1) }, some(r, TOLD.filter((x) => x !== t.told), 2).map((x) => ({ e: x.e, t: x.to.slice(1) })), `כתוב: "${v(t.h, 'סיפר', 'סיפרה')} ${t.told.to}".`, txt(t.text))]
+  }),
+]
+
+export const READ_SCHOOL_STYLES: Style[] = [...NIKUD_STYLES, ...FINAL_STYLES, ...WORDS_STYLES, ...SENTENCE_STYLES, ...GRAMMAR_STYLES, ...READING_STYLES, ...STORY_STYLES, ...LONG_STYLES]

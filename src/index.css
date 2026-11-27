@@ -81,3 +81,8 @@
      instead of a half-transparent glow that disappears on light backgrounds. */
   :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; box-shadow: none; }
 }
+
+/* hops and counters on the "how do we calculate?" pages appear one after another */
+@keyframes hop-in { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+.hop { opacity: 0; animation: hop-in .35s ease-out forwards; transform-box: fill-box; }
+@media (prefers-reduced-motion: reduce) { .hop { animation: none; opacity: 1 } }

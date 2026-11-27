@@ -6,6 +6,7 @@ import type { BasketStep, WeekStep, CalcStep, ExplainStep, McqStep, PredictStep,
 import { Icon } from '../ds/Icon'
 import { useI18n } from '../i18n/I18n'
 import { LessonVisual } from './Visuals'
+import { Frames, NumberLine, TilePicture } from './Pictures'
 import { Sprout } from '../ds/Sprout'
 import { Slider } from '@/components/ui/slider'
 import { HABITS } from '../lib/future'
@@ -36,6 +37,18 @@ export function Explain({ step, report }: { step: ExplainStep; report: Report })
         </motion.div>
       )}
       <motion.h2 {...rise(0.05)} className="t-h1 mt-4 sm:mt-6 mb-0"><RichText text={pick(step.title)} /></motion.h2>
+      {step.pic && (
+        <motion.div {...rise(0.08)} className="card mt-4 flex flex-wrap items-end justify-center gap-5 px-3 py-4" style={{ boxShadow: 'none', background: 'var(--surface-2)' }}>
+          {step.pic.kind === 'line' && <NumberLine {...step.pic} />}
+          {step.pic.kind === 'frames' && <Frames {...step.pic} />}
+          {step.pic.kind === 'tiles' && step.pic.items.map((t, i) => (
+            <figure key={i} className="m-0 grid justify-items-center gap-1">
+              <TilePicture tile={t} big />
+              {step.pic!.kind === 'tiles' && step.pic!.caps?.[i] && <figcaption className="font-extrabold" style={{ fontSize: 18 }}><RichText text={step.pic!.caps[i]} /></figcaption>}
+            </figure>
+          ))}
+        </motion.div>
+      )}
       {step.math && (
         <motion.div {...rise(0.1)} dir="ltr" className="card mt-4 grid gap-2 justify-items-center px-4 py-4" style={{ boxShadow: 'none', background: 'var(--surface-2)' }}>
           {step.math.map((m, i) => (

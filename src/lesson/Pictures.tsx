@@ -77,11 +77,15 @@ export function Fraction({ n, d, kind = 'pie', uneven, s = 84 }: { n: number; d:
 }
 
 /** An object (a coloured bar) lying on a ruler that starts at 0. Without `ruler`, just the bar (to compare lengths). */
-export function Ruler({ len, ruler, color = '#ffc83d', s = 84 }: { len: number; ruler?: boolean; color?: string; s?: number }) {
-  const max = 15, unit = 140 / max
+export function Ruler({ len, ruler, color = '#ffc83d', blocks, s = 84 }: { len: number; ruler?: boolean; color?: string; blocks?: number; s?: number }) {
+  const max = 15, unit = 140 / max, tall = ruler || blocks
   return (
-    <svg width={s * 1.9} height={ruler ? s * 0.75 : s * 0.4} viewBox={`0 0 160 ${ruler ? 64 : 34}`} aria-hidden="true">
+    <svg width={s * 1.9} height={tall ? s * 0.75 : s * 0.4} viewBox={`0 0 160 ${tall ? 64 : 34}`} aria-hidden="true">
       <rect x="10" y="6" width={len * unit} height="20" rx="5" fill={color} stroke={INK} strokeWidth="2.5" />
+      {/* measuring with blocks: a row of equal cubes laid end to end under the bar */}
+      {blocks && Array.from({ length: Math.round(len / blocks) }, (_, i) => (
+        <rect key={i} x={10 + i * blocks * unit} y="32" width={blocks * unit} height={blocks * unit > 22 ? 22 : blocks * unit} rx="2" fill={i % 2 ? '#6db7ff' : '#9ad98a'} stroke={INK} strokeWidth="2" />
+      ))}
       {ruler && (
         <g>
           <rect x="4" y="32" width="152" height="28" rx="3" fill="#fff6d6" stroke={INK} strokeWidth="2" />
@@ -187,11 +191,70 @@ export function TilePicture({ tile, big }: { tile: Tile; big?: boolean }) {
       {tile.clock && <ClockFace h={tile.clock[0]} m={tile.clock[1]} s={s} />}
       {tile.coins && <Coins values={tile.coins} s={s} />}
       {tile.frac && <Fraction n={tile.frac[0]} d={tile.frac[1]} kind={tile.frac[2]} uneven={tile.frac[3]} s={s} />}
-      {tile.bar && <Ruler len={tile.bar.len} ruler={tile.bar.ruler} color={tile.bar.color} s={s} />}
+      {tile.bar && <Ruler len={tile.bar.len} ruler={tile.bar.ruler} color={tile.bar.color} blocks={tile.bar.blocks} s={s} />}
       {tile.poly && <Polygon p={tile.poly} s={s} />}
       {tile.solid && <SolidShape k={tile.solid} s={s} />}
       {tile.dice && <span className="inline-flex gap-2">{tile.dice.map((n, i) => <Dice key={i} n={n} s={big ? 96 : 60} />)}</span>}
       {tile.frame !== undefined && <TenFrame n={tile.frame} s={s} />}
     </>
+  )
+}
+
+/* ───────── drawings for the "how do we calculate?" pages ───────── */
+
+/** A number line from `lo` to `hi` with hops from `start` through each of `hops`. Each hop is counted (1, 2, 3…)
+    and the last landing is ringed: that's where we stop. Drawn left to right, as numbers are written. */
+export function NumberLine({ lo, hi, start, hops }: { lo: number; hi: number; start: number; hops: number[] }) {
+  const n = hi - lo, step = Math.min(48, 380 / Math.max(1, n)), W = n * step + 30, x = (v: number) => 15 + (v - lo) * step
+  const end = hops.at(-1) ?? start, path = [start, ...hops]
+  return (
+    <svg width={Math.min(420, W)} style={{ maxWidth: "100%" }} viewBox={`0 0 ${W} 92`} aria-label={`קופצים מ־${start} ל־${end}`}>
+      <line x1="6" y1="62" x2={W - 6} y2="62" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
+      {Array.from({ length: n + 1 }, (_, i) => {
+        const v = lo + i, on = v === start || v === end
+        return (
+          <g key={v}>
+            <line x1={x(v)} y1="56" x2={x(v)} y2="68" stroke={INK} strokeWidth="2" />
+            {v === end && <circle cx={x(v)} cy="82" r="10" fill="#ffe08a" stroke="#e5383b" strokeWidth="2.5" />}
+            <text x={x(v)} y="87" textAnchor="middle" fontSize={on ? 13 : 11} fontWeight={on ? 900 : 700} fill={v === start ? '#2f6fde' : INK} fontFamily="system-ui, sans-serif">{v}</text>
+          </g>
+        )
+      })}
+      <circle cx={x(start)} cy="62" r="5.5" fill="#2f6fde" />
+      {path.slice(1).map((v, i) => {
+        const a = x(path[i]), b = x(v), mid = (a + b) / 2, h = Math.min(30, 12 + Math.abs(b - a) * 0.35)
+        return (
+          <g key={i} className="hop" style={{ animationDelay: `${0.4 + i * 0.45}s` }}>
+            <path d={`M${a} 58 Q${mid} ${58 - h * 2} ${b} 58`} fill="none" stroke="#e5383b" strokeWidth="2.5" strokeLinecap="round" />
+            <path d={`M${b - 4} 51 L${b} 58 L${b + 4} 51`} fill="none" stroke="#e5383b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" transform={`rotate(${b > a ? -20 : 20} ${b} 58)`} />
+            <text x={mid} y={58 - h - 4} textAnchor="middle" fontSize="11" fontWeight="800" fill="#e5383b" fontFamily="system-ui, sans-serif">{i + 1}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+/** Ten-frames side by side: `a` red counters, then `b` blue ones (filling the first ten before the next frame).
+    `gone` crosses out the last red counters, for taking away. */
+export function Frames({ a, b, gone = 0 }: { a: number; b: number; gone?: number }) {
+  const total = a + b, frames = Math.max(1, Math.ceil(total / 10))
+  return (
+    <span dir="ltr" className="inline-flex flex-wrap justify-center gap-3">
+      {Array.from({ length: frames }, (_, f) => (
+        <svg key={f} width="210" height="92" style={{ maxWidth: '100%' }} viewBox="0 0 160 70" aria-label={f ? 'עוד עשר' : 'עשר'}>
+          {Array.from({ length: 10 }, (_, j) => {
+            const i = f * 10 + j, x = 5 + (j % 5) * 30, y = 5 + Math.floor(j / 5) * 30, red = i < a, blue = i >= a && i < total, off = red && i >= a - gone
+            return (
+              <g key={j}>
+                <rect x={x} y={y} width="30" height="30" fill="#fff" stroke={INK} strokeWidth="2.5" />
+                {(red || blue) && <circle className="hop" style={{ animationDelay: `${0.2 + i * 0.06}s` }} cx={x + 15} cy={y + 15} r="10" fill={red ? '#e5383b' : '#2f6fde'} stroke={INK} strokeWidth="1.5" opacity={off ? 0.35 : 1} />}
+                {off && <path d={`M${x + 6} ${y + 6}L${x + 24} ${y + 24}M${x + 24} ${y + 6}L${x + 6} ${y + 24}`} stroke={INK} strokeWidth="3" strokeLinecap="round" />}
+              </g>
+            )
+          })}
+        </svg>
+      ))}
+    </span>
   )
 }

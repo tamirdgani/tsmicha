@@ -9,7 +9,7 @@
      the style that waited longest goes first, so the same kind of question doesn't keep coming back. */
 
 import type { PathNode, Skill, Spec } from './course'
-import type { ArcadeStep, ExplainStep, FactStep, Lesson, MemoryStep, Part, PuzzleStep, Step, TraceStep } from './lessonTypes'
+import type { ArcadeStep, ExplainStep, FactStep, Lesson, MemoryStep, Part, Pic, Tile, PuzzleStep, Step, TraceStep } from './lessonTypes'
 import { isQuestion } from './lessonTypes'
 import { alike, ANALOGIES, COLORS, FACTS, FEELINGS, LETTER_NAME, LETTERS, RHYMES, SEASONS, SHAPES, WORDS_BY_LETTER, type Fact } from './kdata'
 import { STYLES, type Style, type Topic } from './bank'
@@ -225,19 +225,22 @@ const INTRO: Partial<Record<Skill, { body: string[]; scene: string }>> = {
 
 /* ───────── "how do we calculate?" — taught before the first exercise of every lesson that calculates ───────── */
 const CALC: Skill[] = ['plus', 'minus', 'add', 'sub', 'times', 'divide', 'wordprob']
-function howTo(sp: Spec, short: boolean, r: R): ExplainStep | null {
+const HOW: Skill[] = [...CALC, 'clock', 'money']
+function howMain(sp: Spec, short: boolean, r: R): ExplainStep | null {
   // every page works a fresh example, so the same "63 − 27" never comes back
   const max = sp.max ?? 10, hard = !!sp.hard, s = sp.s
-  const page = (title: string, body: string[], math: string[]): ExplainStep => ({ kind: 'explain', title: he(title), body: (short ? body.slice(0, 1) : body).map(he), math })
+  const page = (title: string, body: string[], math: string[], pic?: Pic): ExplainStep => ({ kind: 'explain', title: he(title), body: (short ? body.slice(0, 1) : body).map(he), math: math.length ? math : undefined, pic: short ? undefined : pic })
   const seq = (from: number, k: number, dir: 1 | -1) => Array.from({ length: k }, (_, i) => from + dir * (i + 1)).join(', ')
   if (s === 'plus' || s === 'add') {
     if (max <= 10) {
       const a = int(r, 3, Math.max(3, max - 3)), b = int(r, 2, Math.max(2, Math.min(4, max - a)))
-      return page('איך מחברים?', ['מתחילים מהמספר הגדול, ושומרים אותו בראש.', 'סופרים קדימה את המספר הקטן על האצבעות.', `${a} + ${b}: אומרים "${a}", וסופרים ${seq(a, b, 1)}. יצא ${a + b}!`], [`${a} + ${b} = ?`, `${a} … ${seq(a, b, 1)}`, `${a} + ${b} = ${a + b}`])
+      return page('איך מחברים?', ['מתחילים מהמספר הגדול, ושומרים אותו בראש.', `קופצים קדימה ${b} קפיצות, וסופרים אותן על האצבעות: ${seq(0, b, 1)}.`, `אחרי ${b} קפיצות עוצרים! ${a} + ${b}: מ־${a} קופצים ל־${seq(a, b, 1)}. יצא ${a + b}.`], [`${a} + ${b} = ?`, `${a} … ${seq(a, b, 1)}`, `${a} + ${b} = ${a + b}`],
+        { kind: 'line', lo: 0, hi: 10, start: a, hops: Array.from({ length: b }, (_, i) => a + i + 1) })
     }
     if (max <= 20) {
       const a = int(r, 6, 9), b = int(r, 11 - a, 9), need = 10 - a, rest = b - need
-      return page('איך מחברים עד 20?', [`משלימים קודם ל־10: ל־${a} חסרים ${need} כדי להגיע ל־10.`, `את ה־${need} לוקחים מה־${b}, ונשארו ממנו ${rest}.`, `10 ועוד ${rest} זה ${a + b}. קל לחבר ל־10!`], [`${a} + ${b} = ?`, `${a} + ${need} = 10`, `10 + ${rest} = ${a + b}`, `${a} + ${b} = ${a + b}`])
+      return page('איך מחברים עד 20?', [`משלימים קודם ל־10: ל־${a} חסרים ${need} כדי להגיע ל־10.`, `את ה־${need} לוקחים מה־${b}, ונשארו ממנו ${rest}.`, `10 ועוד ${rest} זה ${a + b}. קל לחבר ל־10!`], [`${a} + ${b} = ?`, `${a} + ${need} = 10`, `10 + ${rest} = ${a + b}`, `${a} + ${b} = ${a + b}`],
+        { kind: 'frames', a, b })
     }
     if (max <= 100) {
       let a = 0, b = 0
@@ -253,11 +256,13 @@ function howTo(sp: Spec, short: boolean, r: R): ExplainStep | null {
   if (s === 'minus' || s === 'sub') {
     if (max <= 10) {
       const a = int(r, 6, Math.max(6, max)), b = int(r, 2, 4), d = a - b
-      return page('איך מחסרים?', ['מתחילים מהמספר הראשון, ושומרים אותו בראש.', 'סופרים אחורה כמה שמורידים.', `${a} − ${b}: אומרים "${a}", וסופרים אחורה ${seq(a, b, -1)}. נשארו ${d}!`, `בודקים: ${d} + ${b} = ${a}. צדקנו!`], [`${a} − ${b} = ?`, `${a} … ${seq(a, b, -1)}`, `${a} − ${b} = ${d}`])
+      return page('איך מחסרים?', ['מתחילים מהמספר הראשון, ושומרים אותו בראש.', `קופצים אחורה ${b} קפיצות, וסופרים אותן על האצבעות.`, `אחרי ${b} קפיצות עוצרים! ${a} − ${b}: מ־${a} קופצים ל־${seq(a, b, -1)}. נשארו ${d}.`, `בודקים: ${d} + ${b} = ${a}. צדקנו!`], [`${a} − ${b} = ?`, `${a} … ${seq(a, b, -1)}`, `${a} − ${b} = ${d}`],
+        { kind: 'line', lo: 0, hi: 10, start: a, hops: Array.from({ length: b }, (_, i) => a - i - 1) })
     }
     if (max <= 20) {
       const a = int(r, 11, 17), b = int(r, a - 9, 9), toTen = a - 10, rest = b - toTen, d = a - b
-      return page('איך מחסרים עד 20?', [`יורדים קודם ל־10: מ־${a} מורידים ${toTen} ומגיעים ל־10.`, `היינו צריכים להוריד ${b}. הורדנו ${toTen}, נשאר להוריד עוד ${rest}.`, `10 פחות ${rest} זה ${d}!`], [`${a} − ${b} = ?`, `${a} − ${toTen} = 10`, `10 − ${rest} = ${d}`, `${a} − ${b} = ${d}`])
+      return page('איך מחסרים עד 20?', [`יורדים קודם ל־10: מ־${a} מורידים ${toTen} ומגיעים ל־10.`, `היינו צריכים להוריד ${b}. הורדנו ${toTen}, נשאר להוריד עוד ${rest}.`, `10 פחות ${rest} זה ${d}!`], [`${a} − ${b} = ?`, `${a} − ${toTen} = 10`, `10 − ${rest} = ${d}`, `${a} − ${b} = ${d}`],
+        { kind: 'line', lo: Math.max(0, d - 1), hi: a + 1, start: a, hops: [10, d] })
     }
     if (max <= 100) {
       let a = 0, b = 0
@@ -278,8 +283,42 @@ function howTo(sp: Spec, short: boolean, r: R): ExplainStep | null {
     const a = int(r, 2, 5), b = int(r, 2, Math.min(10, Math.max(3, max)))
     return page('איך מחלקים?', [`${a * b} : ${a} שואל: אם מחלקים ${a * b} ל־${a} שווה בשווה, כמה כל אחד מקבל?`, `חושבים בכפל: ${a} כפול כמה זה ${a * b}?`, `${a} × ${b} = ${a * b}, אז ${a * b} : ${a} = ${b}.`], [`${a * b} : ${a} = ?`, `${a} × ? = ${a * b}`, `${a} × ${b} = ${a * b}`, `${a * b} : ${a} = ${b}`])
   }
+  if (s === 'clock') {
+    const h = int(r, 2, 10), lv = sp.set ?? 'h'
+    const items: Tile[] = [{ clock: [h, 0] }], caps = [`${h}:00`]
+    if (lv === 'h') { const h2 = h + int(r, 1, 2); items.push({ clock: [h2, 0] }); caps.push(`${h2}:00`) }
+    else { items.push({ clock: [h, 30] }); caps.push(`${h} וחצי`) }
+    if (lv === 'q') { items.push({ clock: [h, 15] }); caps.push(`${h} ורבע`) }
+    return page('איך קוראים שעון?', ['קודם מסתכלים על המחוג הקצר: הוא אומר את השעה.', 'אחר כך על המחוג הארוך (האדום). כשהוא על 12, השעה עגולה.', ...(lv !== 'h' ? ['כשהארוך על 6, עבר חצי שעה: זה "וחצי".'] : []), ...(lv === 'q' ? ['כשהארוך על 3, עבר רבע שעה: זה "ורבע".'] : [])], [], { kind: 'tiles', items, caps })
+  }
+  if (s === 'money') {
+    const cs = some(r, [10, 5, 2, 1], 3).sort((x, y) => y - x), run = cs.map((_, i) => cs.slice(0, i + 1).reduce((x, y) => x + y, 0)), t = run.at(-1)!
+    return page('איך סופרים כסף?', ['מסתכלים מה כתוב על כל מטבע: 1, 2, 5 או 10 שקלים.', `מתחילים מהמטבע הגדול ומוסיפים: ${run.join(', ')}.`, `ביחד ${t} שקלים!`], [cs.join(' + ') + ` = ${t} ₪`], { kind: 'tiles', items: [{ coins: cs }] })
+  }
   if (s === 'wordprob') return page('איך פותרים שאלה סיפורית?', ['קוראים לאט ומוצאים את המספרים.', 'קיבלו עוד? מחברים. נתנו, אכלו או הלכו? מחסרים.'], ['+ עוד', '− נשאר'])
   return null
+}
+
+/** The explanations a chapter gives, one per lesson in this order: how to calculate, then (for small numbers)
+    how to find a missing number, then how much is missing up to ten. */
+function howTo(sp: Spec, short: boolean, r: R): ExplainStep[] {
+  const main = howMain(sp, short, r)
+  if (!main) return []
+  const out = [main], max = sp.max ?? 10, s = sp.s
+  const page = (title: string, body: string[], math: string[], pic: Pic): ExplainStep => ({ kind: 'explain', title: he(title), body: (short ? body.slice(0, 1) : body).map(he), math: math.length ? math : undefined, pic: short ? undefined : pic })
+  if (max <= 20 && s === 'plus') {
+    const b = int(r, 2, 6), k = int(r, 2, 4), t = b + k
+    out.push(page('מה חסר בתרגיל?', ['כשחסר מספר, מתחילים מהמספר שיש לנו.', `קופצים עד התוצאה, וסופרים כמה קפיצות: ${Array.from({ length: k }, (_, i) => i + 1).join(', ')}.`, `${b} + ? = ${t}: מ־${b} עד ${t} יש ${k} קפיצות. חסר ${k}!`], [`${b} + ? = ${t}`, `${b} … ${Array.from({ length: k }, (_, i) => b + i + 1).join(', ')}`, `${b} + ${k} = ${t}`],
+      { kind: 'line', lo: Math.max(0, b - 1), hi: t + 1, start: b, hops: Array.from({ length: k }, (_, i) => b + i + 1) }))
+    const a = int(r, 3, 8)
+    out.push(page('כמה חסר עד 10?', ['במסגרת יש 10 משבצות.', `${a} משבצות מלאות. סופרים את הריקות: חסרים ${10 - a}.`, `${a} ו־${10 - a} הם חברים של 10.`], [`${a} + ? = 10`, `${a} + ${10 - a} = 10`], { kind: 'frames', a, b: 0 }))
+  }
+  if (max <= 20 && s === 'minus') {
+    const d = int(r, 2, 6), k = int(r, 2, 4), a = d + k
+    out.push(page('מה חסר בתרגיל?', ['כשחסר כמה הורדנו, מתחילים מהמספר הגדול.', 'קופצים אחורה עד מה שנשאר, וסופרים כמה קפיצות.', `${a} − ? = ${d}: מ־${a} עד ${d} יש ${k} קפיצות. הורדנו ${k}!`], [`${a} − ? = ${d}`, `${a} … ${Array.from({ length: k }, (_, i) => a - i - 1).join(', ')}`, `${a} − ${k} = ${d}`],
+      { kind: 'line', lo: Math.max(0, d - 1), hi: a + 1, start: a, hops: Array.from({ length: k }, (_, i) => a - i - 1) }))
+  }
+  return out
 }
 
 /* ───────── games inside the lessons ─────────
@@ -414,14 +453,13 @@ function buildLesson(node: PathNode): Lesson {
       const seen = new Set<string>()
       const unit = node.id.match(/^u\d+/)?.[0] ?? ''
       for (const sp of specs) {
-        if (!CALC.includes(sp.s)) continue
-        const how = howTo(sp, isMix, r)
+        if (!HOW.includes(sp.s)) continue
+        // once per chapter, each page: the first lesson (or check) that calculates that way explains how, the next
+        // ones add the next page (missing numbers, friends of ten), and after that they just practise
+        const how = howTo(sp, isMix, r).find((x) => !YEAR.how.has(`${unit}|${x.title.he}`))
         if (!how || seen.has(how.title.he)) continue
         seen.add(how.title.he)
-        // once per chapter: the first lesson (or check) that calculates that way explains how; later ones just practise
-        const key = `${unit}|${how.title.he}`
-        if (YEAR.how.has(key)) continue
-        YEAR.how.add(key)
+        YEAR.how.add(`${unit}|${how.title.he}`)
         if (how.title.he === node.title.he) how.title = he('ככה מחשבים')
         steps.push(how)
       }

@@ -341,6 +341,7 @@ export function Order({ step, status, report }: { step: OrderStep; status: Statu
   return (
     <div>
       <Question text={pick(step.q)} />
+      {step.show && <ShowView show={step.show} />}
       <p className="t-small ink-3 text-center mt-2 mb-0">{t('kid.order.hint')}</p>
       {/* the answer row: numbered slots, filled in reading order */}
       <div className={`grid gap-2 sm:gap-3 mt-4 sm:mt-6 max-w-2xl mx-auto`} style={{ gridTemplateColumns: `repeat(${step.items.length}, minmax(0, 1fr))` }}>

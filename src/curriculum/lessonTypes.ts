@@ -5,7 +5,13 @@ export type Visual = 'barter' | 'commodity' | 'jobs' | 'shekel' | 'trust' | 'sou
 
 /** `scene`: a big row of emoji that sets the scene for a pre-reader (the parent reads the text aloud). */
 /** `math`: a worked example, one line per step ("8 + 2 = 10", "10 + 3 = 13"), shown big and left-to-right. */
-export type ExplainStep = { kind: 'explain'; title: L; body: L[]; visual?: Visual; scene?: string; math?: string[] }
+/** `pic`: a drawing that shows the method — hops on a number line (stopping on the last one), counters in ten-frames
+    (`a` red then `b` blue, filling ten first), or school pictures (clocks, coins) with captions. */
+export type Pic =
+  | { kind: 'line'; lo: number; hi: number; start: number; hops: number[] }
+  | { kind: 'frames'; a: number; b: number; gone?: number }
+  | { kind: 'tiles'; items: Tile[]; caps?: string[] }
+export type ExplainStep = { kind: 'explain'; title: L; body: L[]; visual?: Visual; scene?: string; math?: string[]; pic?: Pic }
 /** `challenge`: the harder question that closes a part, worth bonus XP when right on the first try. */
 export type McqStep = { kind: 'mcq'; q: L; options: L[]; correct: number; why: L; challenge?: boolean }
 /** Guess before the explanation. Never graded or retried: it's there to make you commit to an idea first. */
@@ -30,7 +36,7 @@ export type Tile = { e?: string; g?: string; shape?: Shape; color?: string; scal
   /** School pictures: a clock [hour, minute] · shekel coins · a fraction [coloured, parts, pizza|bar, unequal parts?]
       · an object on a ruler · a flat shape · a solid · dice faces · a ten-frame with n counters. */
   clock?: [number, number]; coins?: number[]; frac?: [number, number, 'pie' | 'bar', boolean?]
-  bar?: { len: number; ruler?: boolean; color?: string }; poly?: 'tri' | 'sq' | 'rect' | 'pent' | 'hex' | 'circle'
+  bar?: { len: number; ruler?: boolean; color?: string; blocks?: number }; poly?: 'tri' | 'sq' | 'rect' | 'pent' | 'hex' | 'circle'
   solid?: 'cube' | 'sphere' | 'cylinder' | 'cone' | 'pyramid'; dice?: number[]; frame?: number }
 /** What the child looks at above the answers. */
 export type Show =
@@ -50,7 +56,7 @@ export type Show =
   | { kind: 'bars'; items: { e: string; n: number }[] }
 
 export type PickStep = { kind: 'pick'; q: L; show?: Show; options: Tile[]; correct: number; why: L; challenge?: boolean }
-export type OrderStep = { kind: 'order'; q: L; items: Tile[]; why: L; challenge?: boolean }
+export type OrderStep = { kind: 'order'; q: L; show?: Show; items: Tile[]; why: L; challenge?: boolean }
 export type MatchStep = { kind: 'match'; q: L; pairs: [Tile, Tile][]; why: L; challenge?: boolean }
 /** Tap every card that fits (all the red things, every word that rhymes…). Right only when exactly those are chosen. */
 export type TapAllStep = { kind: 'tapall'; q: L; show?: Show; options: Tile[]; right: number[]; why: L; challenge?: boolean }

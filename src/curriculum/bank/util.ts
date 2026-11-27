@@ -54,7 +54,7 @@ export function tapall(r: R, q: string, rights: Tile[], wrongs: Tile[], why: str
   const all = mix(r, [...rights.map((t) => ({ t, ok: true })), ...ws.map((t) => ({ t, ok: false }))])
   return { kind: 'tapall', q: he(q), show, options: all.map((x) => x.t), right: all.flatMap((x, i) => (x.ok ? [i] : [])), why: he(why) }
 }
-export const order = (q: string, items: Tile[], why: string): OrderStep => ({ kind: 'order', q: he(q), items, why: he(why) })
+export const order = (q: string, items: Tile[], why: string, show?: Show): OrderStep => ({ kind: 'order', q: he(q), items, why: he(why), ...(show ? { show } : {}) })
 export const match = (q: string, pairs: [Tile, Tile][], why: string): MatchStep => ({ kind: 'match', q: he(q), pairs, why: he(why) })
 export function sort(prompt: string, buckets: string[], items: { e: string; w: string; b: number }[], why: string): SortStep {
   return { kind: 'sort', prompt: he(prompt), buckets: buckets.map(he), items: items.map((x) => ({ text: he(`${x.e} ${nice(x.w)}`), bucket: x.b })), why: he(why) }

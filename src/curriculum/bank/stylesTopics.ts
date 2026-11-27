@@ -151,6 +151,11 @@ export const MEASURE_STYLES: Style[] = [
     const ls = some(r, [3, 5, 7, 9, 11, 13], 3).sort((a, b) => a - b)
     return [`mso|${ls.join()}`, order('מסדרים את הפסים מהקצר לארוך', ls.map((len, i) => ({ bar: { len, color: BAR_COLORS[i] } })), 'הקצר ביותר ראשון, הארוך ביותר אחרון.')]
   }),
+  // before the ruler: measuring with something we have (cubes laid end to end) — and fewer big cubes than small ones
+  style('ms-blocks', 'כמה קוביות?', ['measure'], 'h', (_sp, r) => {
+    const u = one(r, [2, 3]), n = int(r, 2, u === 2 ? 7 : 4), len = n * u
+    return [`msb|${u}|${n}`, pick(r, 'כמה קוביות ארוך הפס?', num(n), wrongs(r, n, 3, [len]).filter((x) => x > 0).map(num), `שמים קוביות אחת אחרי השנייה, מתחילת הפס ועד הסוף, וסופרים: ${n} קוביות.`, tile({ bar: { len, blocks: u, color: one(r, BAR_COLORS) } }))]
+  }),
   style('ms-cm', 'כמה סנטימטרים?', ['measure'], 'h', (sp, r) => {
     if (sp.set === 'c') return null
     const len = int(r, 3, 14)
