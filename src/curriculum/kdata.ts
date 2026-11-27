@@ -20,7 +20,7 @@ export const WORDS_BY_LETTER: Record<string, Pic[]> = {
   ד: P('דג 🐟, דבורה 🐝, דוב 🐻, דלת 🚪, דינוזאור 🦕'),
   ה: P('הר ⛰️, היפופוטם 🦛, הליקופטר 🚁, המבורגר 🍔'),
   ו: P('ורד 🌹, וופל 🧇'),
-  ז: P('זברה 🦓, זאב 🐺, זית 🫒, זיקית 🦎'),
+  ז: P('זברה 🦓, זאב 🐺, זית 🫒'),
   ח: P('חתול 🐱, חמור 🫏, חלב 🥛, חזיר 🐷, חללית 🛸'),
   ט: P('טלפון 📱, טרקטור 🚜, טווס 🦚, טיל 🚀, טיגריס 🐅'),
   י: P('ירח 🌙, יד ✋, ינשוף 🦉, יונה 🕊️'),
@@ -77,6 +77,9 @@ export const CATS: Record<string, Cat> = {
   hot: { name: 'חמים', items: P('שמש ☀️, אש 🔥, תה ☕, מרק 🍲, הר־געש 🌋') },
   cold: { name: 'קרים', items: P('שלג ❄️, קרח 🧊, גלידה 🍦, בובת־שלג ⛄, פינגווין 🐧') },
 }
+/** Groups that overlap: a fish IS an animal, a plane IS in the sky, a toy train IS a toy. Never set one against the other in "what doesn't belong?". */
+const CLASH = ['animals|sea', 'animals|sky', 'vehicles|sky', 'vehicles|toys', 'animals|cold', 'sea|cold']
+export const catsClash = (a: string, b: string) => CLASH.includes(`${a}|${b}`) || CLASH.includes(`${b}|${a}`)
 /** Group pairs for sorting; the hard ones need more thought (fruit vs vegetables, sea vs sky). */
 export const SORT_PAIRS: [string, string][] = [['animals', 'vehicles'], ['clothes', 'toys'], ['hot', 'cold']]
 export const SORT_PAIRS_HARD: [string, string][] = [['fruit', 'veg'], ['sea', 'sky'], ['hot', 'cold']]

@@ -13,7 +13,7 @@ import type { ArcadeStep, ExplainStep, FactStep, Lesson, MemoryStep, Part, Puzzl
 import { isQuestion } from './lessonTypes'
 import { alike, ANALOGIES, COLORS, FACTS, FEELINGS, LETTER_NAME, LETTERS, RHYMES, SEASONS, SHAPES, WORDS_BY_LETTER, type Fact } from './kdata'
 import { STYLES, type Style, type Topic } from './bank'
-import { he, int, mix, one, picTile, rng, signature, some, type R } from './bank/util'
+import { he, int, mix, one, picTile, range, rng, signature, some, type R } from './bank/util'
 import { kitMemory, kitStyles } from './bank/stylesKit'
 import { art, KITS, type Kit, type WorldId } from '../worlds/kits'
 import { setKitCtx } from './bank/ctx'
@@ -97,14 +97,16 @@ function ask(slot: Slot, c: Ctx): Step {
   const grownUp = (st: Style) => !(YEAR.stage === 'g1' || YEAR.stage === 'g2') || st.lv !== 'e' || st.skills.some((t) => SCHOOL.includes(t as Skill))
   // a lesson about one thing ("making ten", "times 6 and 7") names the styles that teach exactly that
   const only = slot.spec.only
+  // …and then the lesson's other own-topic styles stay out ("which got the most?" isn't followed by a sum to 19)
+  const ownOk = (st: Style) => !only || only.includes(st.id)
   // the lesson stays on its own topic: its own styles (even a second time) come before borrowing from neighbours
   const passes: Style[][] = [
     only ? pool([slot.topic]).filter((st) => only.includes(st.id) && (c.inLesson.get(st.id) ?? 0) < 3) : [],
-    kitPool([slot.topic]).filter(atLevel),
-    pool([slot.topic]).filter((st) => fresh(st) && levels.includes(st.lv)),
-    kitPool([slot.topic]),
-    pool([slot.topic]).filter(fresh),
-    pool([slot.topic]).filter((st) => !c.inPart.has(st.id) && (c.inLesson.get(st.id) ?? 0) < 2),
+    kitPool([slot.topic]).filter((st) => atLevel(st) && ownOk(st)),
+    pool([slot.topic]).filter((st) => fresh(st) && levels.includes(st.lv) && ownOk(st)),
+    kitPool([slot.topic]).filter(ownOk),
+    pool([slot.topic]).filter((st) => fresh(st) && ownOk(st)),
+    pool([slot.topic]).filter((st) => !c.inPart.has(st.id) && (c.inLesson.get(st.id) ?? 0) < 2 && ownOk(st)),
     kitPool(kin).filter(atLevel),
     slot.topic === 'riddle' ? [] : pool(lessonTopics).filter(fresh),
     pool(kin).filter(fresh),
@@ -244,7 +246,8 @@ function howTo(sp: Spec, short: boolean, r: R): ExplainStep | null {
     return page('איך מחסרים מאות?', [`מורידים קודם את המאות: ${a} − ${hb} = ${x}.`, `אחר כך את העשרות ואת האחדות: ${x} − ${tb} = ${y}, ${y} − ${ob} = ${d}.`, `בודקים בחיבור: ${d} + ${b} = ${a}.`], [`${a} − ${b} = ?`, `${a} − ${hb} = ${x}`, `${x} − ${tb} = ${y}`, `${y} − ${ob} = ${d}`])
   }
   if (s === 'times') {
-    const a = int(r, 2, 4), b = int(r, 3, Math.min(10, Math.max(3, max)))
+    // two different numbers, so swapping them shows something ("3 × 3 = 3 × 3" teaches nothing)
+    const a = int(r, 2, 4), b = one(r, range(3, Math.min(10, Math.max(5, max))).filter((x) => x !== a))
     return page('איך כופלים?', [`${a} × ${b} זה ${a} קבוצות, ובכל קבוצה ${b}.`, `סופרים בקפיצות של ${b}: ${Array.from({ length: a }, (_, i) => b * (i + 1)).join(', ')}.`, `אפשר גם להחליף: ${b} × ${a} = ${a} × ${b} = ${a * b}.`], [`${a} × ${b} = ?`, Array(a).fill(b).join(' + '), Array.from({ length: a }, (_, i) => b * (i + 1)).join(', '), `${a} × ${b} = ${a * b}`])
   }
   if (s === 'divide') {
@@ -441,11 +444,11 @@ function intro(node: PathNode, sp: Spec, isMix: boolean): ExplainStep {
   const it = { ...(INTRO[sp.s] ?? { body: ['בוא נלמד משהו חדש!'], scene: '✨' }) }
   // the last lesson of a chapter celebrates what was learned, it doesn't promise new letters
   if (/-l8$/.test(node.id)) it.body = ['היום חוגגים את סוף הפרק!', 'מתרגלים את כל מה שלמדנו, והשאלות קצת יותר קשות.']
-  else if (sp.s === 'bignum') it.body = (sp.max ?? 100) <= 20 ? ['מ־11 עד 20 יש עשר אחד, ועוד כמה אחדות.', 'במספר 14 יש עשר אחד ו־4 אחדות.'] : (sp.max ?? 100) <= 100 ? ['במספר דו־ספרתי יש עשרות ואחדות.', 'במספר 47 יש 4 עשרות ו־7 אחדות.'] : ['במספר תלת־ספרתי יש מאות, עשרות ואחדות.', 'במספר 365 יש 3 מאות, 6 עשרות ו־5 אחדות.']
+  else if (sp.s === 'bignum') it.body = (sp.max ?? 100) <= 20 ? ['מ־11 עד 20 יש עשרת אחת, ועוד כמה אחדות.', 'במספר 14 יש עשרת אחת ו־4 אחדות.'] : (sp.max ?? 100) <= 100 ? ['במספר דו־ספרתי יש עשרות ואחדות.', 'במספר 47 יש 4 עשרות ו־7 אחדות.'] : ['במספר תלת־ספרתי יש מאות, עשרות ואחדות.', 'במספר 365 יש 3 מאות, 6 עשרות ו־5 אחדות.']
   else if (sp.s === 'grammar') {
     // each grammar lesson opens with its own rule (a mixed lesson rotates between them)
     const kinds = [...(sp.set ?? 'pog')], k = kinds[YEAR.lesson % kinds.length]
-    it.body = k === 'p' ? ['אחד, והרבה: כלב, כלבים. ילדה, ילדות.', 'ויש מילים מיוחדות שמשנות צורה: בית, בתים. איש, אנשים!']
+    it.body = k === 'p' ? ['יחיד ורבים: כלב, כלבים. ילדה, ילדות.', 'ויש מילים מיוחדות שמשנות צורה: בית, בתים. איש, אנשים!']
       : k === 'o' ? ['הפכים הם מילים הפוכות: גדול וקטן, יום ולילה, חם וקר.', 'נמצא עוד הפכים ביחד?']
       : k === 'g' ? ['בעברית מדברים אחרת על בן ועל בת: הילד שמח, הילדה שמחה.', 'מקשיבים לסוף המילה!']
       : k === 't' ? ['אתמול, עכשיו ומחר: אתמול שיחקתי, עכשיו אני משחק, מחר אשחק.', 'המילה משתנה לפי הזמן.']
@@ -458,7 +461,8 @@ function intro(node: PathNode, sp: Spec, isMix: boolean): ExplainStep {
         ? [['כמה מילים ביחד עושות משפט.', 'קוראים את כל המשפט, ואז עונים.'], ['במשפט יש מי, ומה הוא עושה: נועה אוכלת תפוח.', 'מוצאים את המילה שחסרה!'], ['משפט נגמר בנקודה, ושאלה נגמרת בסימן שאלה.', 'קוראים עד הנקודה, ואז עונים.']][v]
         : [['עכשיו קוראים מילים ארוכות!', 'קוראים אות אחרי אות, מימין לשמאל, עד הסוף.'], ['מילה ארוכה מחלקים לחלקים קטנים: בַּ־נָ־נָה.', 'קוראים כל חלק, ואז ביחד.'], ['יש מילים שנראות דומות: כלב וכלבה, ספר וספרים.', 'מסתכלים טוב על כל אות!']][v]
   } else if (sp.s === 'nikud') {
-    const v = (sp.set ?? 'a').at(-1)
+    // the newest vowel, in the order they're taught (a set like 'aeiou' is alphabetical, not in teaching order)
+    const v = ['a', 'i', 'o', 'u', 'e'].filter((x) => (sp.set ?? 'a').includes(x)).at(-1)
     it.body = v === 'a' ? ['הניקוד הוא סימנים קטנים ליד האות, שאומרים איך לקרוא אותה.', 'קמץ ( ָ ) ופתח ( ַ ) נשמעים אותו דבר: אַ. בָּ, מַ, דָּ.']
       : v === 'i' ? ['היום מכירים את החיריק: נקודה אחת מתחת לאות.', 'חיריק נשמע אִי: בִּי, מִי, פִּיל.']
       : v === 'u' ? ['היום מכירים את החולם ( וֹ ) ואת השורוק ( וּ ).', 'חולם נשמע אוֹ: דּוֹב. שורוק נשמע אוּ: סוּס. גם הקובוץ ( ֻ ) נשמע אוּ.']

@@ -42,6 +42,11 @@ export function pick(r: R, q: string, right: Tile, others: Tile[], why: string, 
   const { options, correct } = choices(r, right, others)
   return { kind: 'pick', q: he(q), show, options, correct, why: he(why) }
 }
+/** Odd one out: three copies of the same card and one different card (here repeats are the point). */
+export function pickOdd(r: R, q: string, odd: Tile, same: Tile, why: string): PickStep {
+  const all = mix(r, [odd, same, { ...same }, { ...same }])
+  return { kind: 'pick', q: he(q), options: all, correct: all.indexOf(odd), why: he(why) }
+}
 export function tapall(r: R, q: string, rights: Tile[], wrongs: Tile[], why: string, show?: Show): TapAllStep {
   const rk = new Set(rights.map(tileKey))
   const seenW = new Set<string>()

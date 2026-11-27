@@ -287,7 +287,7 @@ export const SEEDS_G2: UnitSeed[] = [
   u('לוח הכפל', 'The times table', 'כפל עד 10 × 10', 'Times up to 10 × 10', [
     ['כפל ב־2, 5 ו־10', 'Times 2, 5, 10', [tm(10, '2,5,10'), sk('2,5,10')]],
     ['כפל ב־3 וב־4', 'Times 3 and 4', [tm(10, '3,4'), sk('3,4')]],
-    ['מחליפים סדר', 'Swapping the order', [tm(7), S('reading')]],
+    ['מחליפים סדר', 'Swapping the order', [only(tm(7), 'tm-swap'), S('reading')]],
     ['כפל ב־6 וב־7', 'Times 6 and 7', [tm(10, '6,7'), pl(100, true)]],
     ['כפל ב־8 וב־9', 'Times 8 and 9', [tm(10, '8,9'), mi(100, true)]],
     ['כמה חסר בכפל?', 'Missing factor', [tm(10), gr('pogts')]],

@@ -1,7 +1,8 @@
 /* Question styles for looking and thinking: colors, shapes, sizes, places, odd one out, patterns, sorting, logic. */
 
 import type { Shape, Tile } from '../lessonTypes'
-import { ANALOGIES, CATS, COLORS, CORNERS, CRITTERS, KIDS, ODD_PROPS, PLACES, PROP_SORTS, SHAPES, SORT_PAIRS, SORT_PAIRS_HARD, type Pic } from '../kdata'
+import { ANALOGIES, catsClash, CATS, COLORS, CORNERS, CRITTERS, KIDS, ODD_PROPS, PLACES, PROP_SORTS, SHAPES, SORT_PAIRS, SORT_PAIRS_HARD, type Pic } from '../kdata'
+import { agree } from './gender'
 import { GOES, HABITAT, JOBS, OPPOSITES, POCKET, PRODUCTS, REAL_SIZE, ROOMS, VEHICLE_WAY, WEIGHT } from './data'
 import { he, int, match, mix, nice, one, order, pick, picTile, some, sort, style, tapall, type Style } from './util'
 
@@ -221,8 +222,9 @@ export const ODD_STYLES: Style[] = [
   style('odd-cat', 'מה לא שייך?', ['odd'], 'e', (sp, r) => {
     const keys = Object.keys(CATS).filter((k) => !['hot', 'cold'].includes(k))
     const [ka, kb] = some(r, sp.hard ? ['fruit', 'veg', 'sea', 'sky', 'animals', 'toys'] : keys, 2)
+    if (catsClash(ka, kb)) return null
     const ins = some(r, CATS[ka].items, 3), out = one(r, CATS[kb].items)
-    return [`odd-cat|${ka}|${out.w}`, pick(r, 'מה לא שייך?', { e: out.e }, ins.map((p) => ({ e: p.e })), `ה${nice(out.w)} לא שייך. כל השאר הם ${CATS[ka].name}.`)]
+    return [`odd-cat|${ka}|${out.w}`, pick(r, 'מה לא שייך?', { e: out.e }, ins.map((p) => ({ e: p.e })), `ה${nice(out.w)} לא ${agree(out.w, 'שייך', 'שייכת', 'שייכים')}. כל השאר הם ${CATS[ka].name}.`)]
   }),
   style('odd-trap', 'מה לא שייך? (מלכודת)', ['odd', 'logic'], 't', (_sp, r) => {
     const i = int(r, 0, ODD_PROPS.length - 1), g = ODD_PROPS[i]
@@ -336,13 +338,14 @@ export const SORT_STYLES: Style[] = [
   }),
   style('srt-tap', 'מסמנים את כל הקבוצה', ['sortcat', 'odd'], 'e', (_sp, r) => {
     const [ka, kb] = some(r, ['animals', 'fruit', 'veg', 'vehicles', 'clothes', 'toys'], 2)
+    if (catsClash(ka, kb)) return null
     const k = int(r, 2, 3)
     return [`srt-tap|${ka}`, tapall(r, `מסמנים את כל ה${CATS[ka].name}`, some(r, CATS[ka].items, k).map(picTile), some(r, CATS[kb].items, 6 - k).map(picTile), `יש כאן ${k} ${CATS[ka].name}.`)]
   }),
   style('srt-room', 'לאיזה חדר זה שייך?', ['sortcat'], 'h', (_sp, r) => {
     const room = one(r, ROOMS), item = one(r, room.items)
     const label: Record<string, string> = { מטבח: '🍳', 'חדר אמבטיה': '🛁', 'חדר שינה': '🛏️' }
-    return [`srt-room|${item.w}`, pick(r, `לאיזה חדר בבית שייך ה${item.w}?`, { e: label[room.w], t: room.w }, ROOMS.filter((x) => x !== room).map((x) => ({ e: label[x.w], t: x.w })), `${item.w} נמצא ב${room.w}.`, { kind: 'tile', tile: picTile(item) })]
+    return [`srt-room|${item.w}`, pick(r, `לאיזה חדר בבית שמים ${item.w}?`, { e: label[room.w], t: room.w }, ROOMS.filter((x) => x !== room).map((x) => ({ e: label[x.w], t: x.w })), `ב${room.w} שמים ${item.w}.`, { kind: 'tile', tile: picTile(item) })]
   }),
 ]
 

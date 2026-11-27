@@ -7,7 +7,7 @@ import type { Spec } from '../course'
 import type { Tile } from '../lessonTypes'
 import { alike, LETTER_NAME, LETTERS } from '../kdata'
 import { art, COLOR_F, COLOR_HEX, type Char, type Kit, type Thing } from '../../worlds/kits'
-import { int, match, mix, near, one, order, pick, range, some, style, tapall, NO, YES, type R, type Style } from './util'
+import { int, match, mix, near, one, order, pick, pickOdd, range, some, style, tapall, NO, YES, type R, type Style } from './util'
 
 const top = (sp: Spec, d = 5) => sp.max ?? d
 const num = (n: number): Tile => ({ g: String(n) })
@@ -68,7 +68,7 @@ export function kitStyles(K: Kit): Style[] {
 
     /* ───── numbers ───── */
     S('numrec', 'איפה המספר?', ['numrec'], 'e', (sp, r) => {
-      const t = one(r, things), max = top(sp), n = int(r, 1, max)
+      const t = one(r, things), max = top(sp), n = int(r, 2, Math.max(2, max))
       return [`k-numrec|${t.k}|${n}`, pick(r, `איפה יש ${n} ${t.pl}?`, pile(t, n), near(r, n, 2, Math.max(max, 3), 1).map((k) => pile(t, k)), `סופרים: ${range(1, n).join(', ')}.`, { kind: 'tile', tile: num(n) })]
     }),
     S('nummatch', 'מחברים קבוצה למספר', ['numrec', 'count'], 'h', (sp, r) => {
@@ -173,7 +173,7 @@ export function kitStyles(K: Kit): Style[] {
     /* ───── odd one out, patterns, sorting ───── */
     S('odd', 'מה לא שייך?', ['odd'], 'e', (_sp, r) => {
       const [a, b] = some(r, things, 2)
-      return [`k-odd|${a.k}|${b.k}`, pick(r, 'מה לא שייך?', tt(b), [tt(a), tt(a), tt(a)], `כולם ${a.pl}, חוץ מ${b.f ? 'אחת' : 'אחד'}.`)]
+      return [`k-odd|${a.k}|${b.k}`, pickOdd(r, 'מה לא שייך?', tt(b), tt(a), `כולם ${a.pl}, חוץ מ${b.f ? 'אחת' : 'אחד'}.`)]
     }),
     S('odd-world', 'מי הגיע מעולם אחר?', ['odd', 'sortcat', 'logic'], 't', (_sp, r) => {
       const set = some(r, [...things.map((t) => t.k), ...chars.map((c) => c.k)], 3), out = one(r, OUTSIDERS)

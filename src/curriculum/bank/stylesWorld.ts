@@ -6,6 +6,7 @@ import {
   BABIES, CLASS_TIME, DAYTIME, DAYTIME_NAMES, FOODS, HEALTHY, HELPERS, HOLIDAYS, HOMES, JOBS, MANNERS, OUTLINES, PEEKERS, RIDDLES,
   SAFE, SCHOOL_FOR, SENSES, SOUNDS, SPOT, TREATS, TRUE_FALSE, UNSAFE, USES, WEAR, WEATHER,
 } from './data'
+import { agree } from './gender'
 import { int, match, mix, nice, one, order, pick, picTile, some, sort, style, tapall, YES, NO, type Style } from './util'
 
 const P = (list: string): Pic[] => list.trim().split(/\s*,\s*/).map((x) => { const i = x.lastIndexOf(' '); return { w: x.slice(0, i), e: x.slice(i + 1) } })
@@ -99,7 +100,7 @@ export const SEASON_STYLES: Style[] = [
   }),
   style('se-weather', 'מה לוקחים?', ['seasons', 'logic'], 't', (_sp, r) => {
     const x = one(r, WEATHER)
-    return [`se-weather|${x.w}`, pick(r, `בחוץ ${x.w}. מה הכי כדאי לקחת?`, picTile(x.need), x.bad.map(picTile), `כש${x.w}, ${x.need.w} עוזר.`, { kind: 'tile', tile: { e: x.e } })]
+    return [`se-weather|${x.w}`, pick(r, `בחוץ ${x.w}. מה הכי כדאי לקחת?`, picTile(x.need), x.bad.map(picTile), `כש${x.w}, ${x.need.w} ${agree(x.need.w, 'עוזר', 'עוזרת', 'עוזרות')}.`, { kind: 'tile', tile: { e: x.e } })]
   }),
   style('se-holiday', 'איזה חג?', ['seasons', 'days', 'riddle'], 'h', (_sp, r) => {
     const h = one(r, HOLIDAYS)
@@ -216,7 +217,7 @@ export const RIDDLE_STYLES: Style[] = [
   }),
   style('rd-home', 'איפה הוא גר?', ['riddle'], 'h', (_sp, r) => {
     const i = int(r, 0, HOMES.length - 1), [a, b] = HOMES[i]
-    return [`rd-home|${a.w}`, pick(r, `איפה גר ה${a.w}?`, picTile(b), some(r, HOMES.filter((_, k) => k !== i), 2).map((x) => picTile(x[1])), `ה${a.w} גר ב${b.w}.`, { kind: 'tile', tile: picTile(a) })]
+    return [`rd-home|${a.w}`, pick(r, `איפה ${agree(a.w, 'גר', 'גרה')} ה${a.w}?`, picTile(b), some(r, HOMES.filter((_, k) => k !== i), 2).map((x) => picTile(x[1])), `ה${a.w} ${agree(a.w, 'גר', 'גרה')} ב${b.w}.`, { kind: 'tile', tile: picTile(a) })]
   }),
   style('rd-baby', 'איך קוראים לתינוק?', ['riddle'], 't', (_sp, r) => {
     const i = int(r, 0, BABIES.length - 1), [a, b] = BABIES[i]
@@ -224,7 +225,7 @@ export const RIDDLE_STYLES: Style[] = [
   }),
   style('rd-food', 'מה הוא אוהב לאכול?', ['riddle'], 'e', (_sp, r) => {
     const i = int(r, 0, FOODS.length - 1), [a, b] = FOODS[i]
-    return [`rd-food|${a.w}`, pick(r, `מה ה${a.w} הכי אוהב לאכול?`, picTile(b), some(r, FOODS.filter((_, k) => k !== i), 2).map((x) => picTile(x[1])), `ה${a.w} אוהב ${b.w}. יאמי!`, { kind: 'tile', tile: picTile(a) })]
+    return [`rd-food|${a.w}`, pick(r, `מה ה${a.w} הכי ${agree(a.w, 'אוהב', 'אוהבת')} לאכול?`, picTile(b), some(r, FOODS.filter((_, k) => k !== i), 2).map((x) => picTile(x[1])), `ה${a.w} ${agree(a.w, 'אוהב', 'אוהבת')} ${b.w}. יאמי!`, { kind: 'tile', tile: picTile(a) })]
   }),
   style('rd-sense', 'במה משתמשים?', ['riddle'], 'e', (_sp, r) => {
     const x = one(r, SENSES), o = some(r, SENSES.filter((y) => y !== x), 2)

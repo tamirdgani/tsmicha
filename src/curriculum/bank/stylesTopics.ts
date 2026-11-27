@@ -13,6 +13,7 @@ import type { Spec } from '../course'
 import type { Tile } from '../lessonTypes'
 import { SHORT2, SHORT3 } from '../kdata'
 import { hero, v } from './ctx'
+import { agree, gOf } from './gender'
 import { wrongs } from './stylesArith'
 import { int, match, one, order, pick, some, style, tapall, type R, type Style } from './util'
 
@@ -88,7 +89,7 @@ export const MONEY_STYLES: Style[] = [
     return [`mop|${price}|${right.join()}`, pick(r, `${item} עולה ${price} שקלים. באיזה ארנק יש בדיוק ${price}?`, { coins: right }, [{ coins: w1 }, { coins: w2 }], coinsWhy(right))]
   }),
   style('mo-change', 'עודף', ['money', 'wordprob'], 't', (sp, r) => {
-    const paid = one(r, (sp.max ?? 20) >= 50 ? [10, 20, 50] : [5, 10]), price = int(r, 1, paid - 1), h = hero(r)
+    const paid = one(r, (sp.max ?? 20) >= 50 ? [10, 20, 50] : [5, 10]), price = int(r, 2, paid - 1), h = hero(r)
     return [`moc|${paid}-${price}`, pick(r, `${h.n} ${v(h, 'קנה', 'קנתה')} ממתק ב־${price} שקלים, ${v(h, 'ושילם', 'ושילמה')} ${paid} שקלים. כמה עודף ${v(h, 'יקבל', 'תקבל')}?`, num(paid - price), wrongs(r, paid - price, 3, [paid + price]).map(num), `עודף זה מה שמחזירים: ${paid} − ${price} = ${paid - price}.`, paid <= 10 ? tile({ coins: [paid] }) : undefined)]
   }),
   style('mo-more', 'למי יותר כסף?', ['money'], 't', (sp, r) => {
@@ -133,7 +134,7 @@ export const FRACTION_STYLES: Style[] = [
 ]
 
 /* ───────── measuring ───────── */
-const UNITS: [string, 'cm' | 'm'][] = [['עיפרון', 'cm'], ['מחק', 'cm'], ['ספר', 'cm'], ['כף', 'cm'], ['נעל', 'cm'], ['דלת', 'm'], ['אוטובוס', 'm'], ['בריכה', 'm'], ['עץ גבוה', 'm'], ['מגרש כדורגל', 'm']]
+const UNITS: [string, 'cm' | 'm'][] = [['עיפרון', 'cm'], ['מחק', 'cm'], ['ספר', 'cm'], ['כף', 'cm'], ['נעל', 'cm'], ['דלת', 'm'], ['אוטובוס', 'm'], ['בריכה', 'm'], ['עץ', 'm'], ['מגרש כדורגל', 'm']]
 const BAR_COLORS = ['#ffc83d', '#6db7ff', '#9ad98a', '#ff8fab']
 export const MEASURE_STYLES: Style[] = [
   style('ms-longer', 'מה יותר ארוך?', ['measure', 'size'], 'e', (_sp, r) => {
@@ -154,12 +155,12 @@ export const MEASURE_STYLES: Style[] = [
   style('ms-diff', 'בכמה יותר ארוך?', ['measure'], 't', (sp, r) => {
     if (sp.set === 'c') return null
     const [a, b] = some(r, [4, 6, 7, 9, 11, 13], 2).sort((x, y) => y - x)
-    return [`msd|${a}|${b}`, pick(r, `פס אחד ארוך ${a} סנטימטרים, והשני ${b}. בכמה הראשון ארוך יותר?`, num(a - b), wrongs(r, a - b, 3, [a + b]).map(num), `${a} − ${b} = ${a - b} סנטימטרים.`)]
+    return [`msd|${a}|${b}`, pick(r, `פס אחד ארוך ${a} סנטימטרים, והשני ${b}. בכמה הראשון ארוך יותר?`, num(a - b), wrongs(r, a - b, 3, [a + b]).map(num), `${a} − ${b} = ${a - b === 1 ? 'סנטימטר אחד' : `${a - b} סנטימטרים`}.`)]
   }),
   style('ms-unit', 'סנטימטרים או מטרים?', ['measure'], 't', (sp, r) => {
     if (sp.set === 'c') return null
-    const [w, u] = one(r, UNITS)
-    return [`msu|${w}`, pick(r, `במה כדאי למדוד ${w}?`, { t: u === 'cm' ? 'בסנטימטרים' : 'במטרים' }, [{ t: u === 'cm' ? 'במטרים' : 'בסנטימטרים' }], u === 'cm' ? `${w} קטן: מודדים בסנטימטרים, כמו על הסרגל.` : `${w} ארוך מאוד: מודדים במטרים. מטר אחד זה 100 סנטימטרים.`)]
+    const [w, u] = one(r, UNITS), f = gOf(w) === 'f'
+    return [`msu|${w}`, pick(r, `במה כדאי למדוד ${w}?`, { t: u === 'cm' ? 'בסנטימטרים' : 'במטרים' }, [{ t: u === 'cm' ? 'במטרים' : 'בסנטימטרים' }], u === 'cm' ? `${w} ${f ? 'קטנה' : 'קטן'}: מודדים בסנטימטרים, כמו על הסרגל.` : `${w} ${f ? 'גדולה' : 'גדול'} מאוד: מודדים במטרים. מטר אחד זה 100 סנטימטרים.`)]
   }),
 ]
 
@@ -168,7 +169,7 @@ const POLY: { p: Tile['poly']; name: string; sides: number }[] = [
   { p: 'tri', name: 'משולש', sides: 3 }, { p: 'sq', name: 'ריבוע', sides: 4 }, { p: 'rect', name: 'מלבן', sides: 4 }, { p: 'pent', name: 'מחומש', sides: 5 }, { p: 'hex', name: 'משושה', sides: 6 },
 ]
 const SOLIDS: { k: Tile['solid']; name: string; like: string }[] = [
-  { k: 'cube', name: 'קובייה', like: 'קוביית משחק' }, { k: 'sphere', name: 'כדור', like: 'כדור כדורגל' }, { k: 'cylinder', name: 'גליל', like: 'פחית שתייה' },
+  { k: 'cube', name: 'קובייה', like: 'קוביית משחק' }, { k: 'sphere', name: 'כדור', like: 'תפוז' }, { k: 'cylinder', name: 'גליל', like: 'פחית שתייה' },
   { k: 'cone', name: 'חרוט', like: 'גביע גלידה' }, { k: 'pyramid', name: 'פירמידה', like: 'הפירמידות במצרים' },
 ]
 export const GEOMETRY_STYLES: Style[] = [
@@ -186,11 +187,11 @@ export const GEOMETRY_STYLES: Style[] = [
   }),
   style('ge-solid', 'איזה גוף?', ['geometry'], 'h', (_sp, r) => {
     const x = one(r, SOLIDS), o = some(r, SOLIDS.filter((y) => y !== x), 2)
-    return [`geo|${x.k}`, pick(r, 'איך קוראים לגוף הזה?', { t: x.name }, o.map((y) => ({ t: y.name })), `זה ${x.name}, כמו ${x.like}.`, tile({ solid: x.k }))]
+    return [`geo|${x.k}`, pick(r, 'איך קוראים לגוף הזה?', { t: x.name }, o.map((y) => ({ t: y.name })), `${agree(x.name, 'זה', 'זאת')} ${x.name}, כמו ${x.like}.`, tile({ solid: x.k }))]
   }),
   style('ge-like', 'למה זה דומה?', ['geometry'], 't', (_sp, r) => {
     const x = one(r, SOLIDS), o = some(r, SOLIDS.filter((y) => y !== x), 2)
-    return [`gel|${x.k}`, pick(r, `לאיזה גוף דומה ${x.like}?`, { solid: x.k, t: x.name }, o.map((y) => ({ solid: y.k, t: y.name })), `${x.like} נראה כמו ${x.name}.`)]
+    return [`gel|${x.k}`, pick(r, `לאיזה גוף ${agree(x.like, 'דומה', 'דומה', 'דומות')} ${x.like}?`, { solid: x.k }, o.map((y) => ({ solid: y.k })), `${x.like} ${agree(x.like, 'נראה', 'נראית', 'נראות')} כמו ${x.name}.`)]
   }),
 ]
 
@@ -198,7 +199,7 @@ export const GEOMETRY_STYLES: Style[] = [
 const VOTES: { title: string; items: { e: string; w: string }[] }[] = [
   { title: 'איזה פרי הכי אוהבים?', items: [{ e: '🍎', w: 'תפוח' }, { e: '🍌', w: 'בננה' }, { e: '🍓', w: 'תות' }, { e: '🍇', w: 'ענבים' }] },
   { title: 'איזו חיה הכי אוהבים?', items: [{ e: '🐶', w: 'כלב' }, { e: '🐱', w: 'חתול' }, { e: '🐰', w: 'ארנב' }, { e: '🐟', w: 'דג' }] },
-  { title: 'איך מגיעים לבית הספר?', items: [{ e: '🚶', w: 'ברגל' }, { e: '🚌', w: 'באוטובוס' }, { e: '🚗', w: 'במכונית' }, { e: '🚲', w: 'באופניים' }] },
+  { title: 'איך הכי כיף לנסוע לטיול?', items: [{ e: '🚌', w: 'אוטובוס' }, { e: '🚗', w: 'מכונית' }, { e: '🚲', w: 'אופניים' }, { e: '🚂', w: 'רכבת' }] },
 ]
 function poll(r: R) {
   const v0 = one(r, VOTES), items = some(r, v0.items, 3), ns = some(r, [2, 3, 4, 5, 6, 7, 8, 9], 3)
@@ -267,7 +268,7 @@ export const PHON_STYLES: Style[] = [
 export const MIXED_STYLES: Style[] = [
   style('wp-mix', 'כפל וחיבור', ['wordprob', 'times'], 't', (sp, r) => {
     if ((sp.max ?? 10) < 100 && sp.s !== 'times') return null
-    const packs = int(r, 2, 5), per = int(r, 3, 8), gone = int(r, 1, per), h = hero(r)
+    const packs = int(r, 2, 5), per = int(r, 3, 8), gone = int(r, 2, per), h = hero(r)
     const total = packs * per, ans = total - gone
     const thing = one(r, [['חבילות', 'ביצים', 'נשברו'], ['קופסאות', 'עוגיות', 'נאכלו'], ['שקיות', 'תפוחים', 'נפלו']])
     return [`wpx|${packs}x${per}-${gone}`, pick(r, `${h.n} ${v(h, 'קנה', 'קנתה')} ${packs} ${thing[0]}, ובכל אחת ${per} ${thing[1]}. ${gone} ${thing[1]} ${thing[2]}. כמה ${thing[1]} נשארו?`, num(ans), wrongs(r, ans, 3, [total, packs + per - gone]).map(num), `קודם כפל: ${packs} × ${per} = ${total}. אחר כך חיסור: ${total} − ${gone} = ${ans}.`)]

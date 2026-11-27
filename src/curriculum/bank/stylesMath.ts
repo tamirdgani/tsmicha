@@ -60,7 +60,7 @@ export const COUNT_STYLES: Style[] = [
     const hands = [['☝️', 1], ['✌️', 2], ['🖐️', 5]].filter(([, n]) => (n as number) <= top(sp)) as [string, number][]
     if (!hands.length) return null
     const [e, n] = one(r, hands)
-    return [`cnt-fingers|${n}`, pick(r, 'כמה אצבעות מורמות? מרימים גם אנחנו!', num(n), nums(near(r, n, 2, 6, 1)), `${n} אצבעות. עכשיו נסו אתם!`, { kind: 'tile', tile: { e } })]
+    return [`cnt-fingers|${n}`, pick(r, 'כמה אצבעות מורמות? מרימים גם אנחנו!', num(n), nums(near(r, n, 2, 6, 1)), `${n === 1 ? 'אצבע אחת' : `${n} אצבעות`}. עכשיו נסו אתם!`, { kind: 'tile', tile: { e } })]
   }),
   style('cnt-ten', 'כמה חסר עד 10?', ['count', 'add'], 't', (sp, r) => {
     if (top(sp) < 10) return null
@@ -119,7 +119,7 @@ const STORY_ADD = [
   (a: number, b: number, e: string) => `לפיקו היו ${a} ${e}, וקיבל עוד ${b}. כמה יש לו עכשיו?`,
   (a: number, b: number) => `על העץ ישבו ${a} 🐦. הגיעו עוד ${b}. כמה ציפורים יש עכשיו?`,
   (a: number, b: number) => `בסל היו ${a} 🍎. אבא הוסיף עוד ${b}. כמה תפוחים בסל?`,
-  (a: number, b: number) => `בבריכה שחו ${a} 🦆, ועוד ${b} קפצו פנימה. כמה ברווזים בבריכה?`,
+  (a: number, b: number) => `בבריכה שחו ${a} 🦆, ועוד ${b} ${b === 1 ? 'קפץ' : 'קפצו'} פנימה. כמה ברווזים בבריכה?`,
 ]
 const STORY_SUB = [
   (a: number, b: number) => `היו ${a} 🎈. ${b} עפו לשמיים. כמה בלונים נשארו?`,

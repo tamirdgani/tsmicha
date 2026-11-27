@@ -95,6 +95,7 @@ export function subPair(sp: Spec, r: R): [number, number] { const [x, y] = addPa
 
 /* ───────── adding ───────── */
 const story = (r: R, kind: '+' | '-', a: number, b: number) => {
+  if (kind === '+' && a === 1) [a, b] = [b, a] // "היו 1 כדורים" doesn't read well; adding works either way
   const h = hero(r), s = stuff(r, a + b > 100), h2 = hero(r, h.n)
   if (kind === '+') return one(r, [
     `ל${h.n} היו ${a} ${s.pl}. ${h2.n} ${v(h2, 'נתן', 'נתנה')} ${v(h, 'לו', 'לה')} עוד ${b}. כמה ${s.pl} יש ל${h.n} עכשיו?`,
@@ -311,7 +312,7 @@ export const DIVIDE_STYLES: Style[] = [
 /* ───────── big numbers: place value, comparing, order ───────── */
 const bnum = (sp: Spec, r: R) => { const m = top(sp); return m <= 20 ? int(r, 11, m) : m <= 100 ? int(r, 21, m - 1) : int(r, 101, m - 1) }
 const unitsOf = (k: number, one: string, many: string) => (k === 1 ? one : `${k} ${many}`)
-const parts = (n: number) => { const h = Math.floor(n / 100), t = Math.floor((n % 100) / 10), o = n % 10, T = unitsOf(t, 'עשרת אחת', 'עשרות'), O = unitsOf(o, 'אחדת אחת', 'אחדות'); return n >= 100 ? `${unitsOf(h, 'מאה אחת', 'מאות')}, ${T} ו־${O}` : `${T} ו־${O}` }
+const parts = (n: number) => { const h = Math.floor(n / 100), t = Math.floor((n % 100) / 10), o = n % 10, T = unitsOf(t, 'עשרת אחת', 'עשרות'), O = unitsOf(o, 'אחדת אחת', 'אחדות'); const and = (x: string) => (/^\d/.test(x) ? `ו־${x}` : `ו${x}`); return n >= 100 ? `${unitsOf(h, 'מאה אחת', 'מאות')}, ${T} ${and(O)}` : `${T} ${and(O)}` }
 export const BIG_STYLES: Style[] = [
   style('bn-after', 'מה בא אחרי?', ['bignum'], 'e', (sp, r) => {
     const n = bnum(sp, r) - 1
@@ -368,7 +369,8 @@ export const BIG_STYLES: Style[] = [
   }),
   style('bn-ten-more', 'עוד עשר', ['bignum'], 'h', (sp, r) => {
     const n = bnum(sp, r), up = r() < 0.6 || n < 20, ans = up ? n + 10 : n - 10
-    if (ans > top(sp) + 10) return null
+    // stays inside the lesson's numbers, and inside the same hundred, so "only the tens digit changes" is true
+    if (ans > top(sp) || Math.floor(ans / 100) !== Math.floor(n / 100)) return null
     return [`bn10|${n}|${up}`, pick(r, up ? `מה גדול ב־10 מ־${n}?` : `מה קטן ב־10 מ־${n}?`, num(ans), wrongs(r, ans, 3, [up ? n + 1 : n - 1]).map(num), `${up ? 'עוד' : 'פחות'} עשר: רק ספרת העשרות משתנה. ${n} ${up ? '+' : M} 10 = ${ans}.`)]
   }),
   style('bn-even', 'זוגי ואי־זוגי', ['bignum', 'skip'], 'h', (sp, r) => {
@@ -442,7 +444,7 @@ export const WORD_STYLES: Style[] = [
     return [`wpa|${age}|${d}|${older}`, pick(r, `${h.n} ${v(h, 'בן', 'בת')} ${age}. האחות של ${h.n} ${older ? 'גדולה' : 'קטנה'} ${v(h, 'ממנו', 'ממנה')} ב־${d} שנים. בת כמה האחות?`, num(sis), wrongs(r, sis, 3, [older ? age - d : age + d].filter((x) => x > 0)).map(num), `${older ? 'גדולה' : 'קטנה'} ב־${d}: ${age} ${older ? '+' : M} ${d} = ${sis}.`)]
   }),
   style('wp-legs', 'כמה רגליים?', ['times'], 't', (sp, r) => {
-    if (top(sp) < 20) return null
+    if (top(sp) < 10) return null
     const c = int(r, 2, 5), d = int(r, 2, 4), ans = c * 2 + d * 4
     return [`wpl|${c}|${d}`, pick(r, `בחצר יש ${c} תרנגולות ו־${d} כלבים. כמה רגליים יש לכולם ביחד?`, num(ans), wrongs(r, ans, 3, [c + d, (c + d) * 4]).map(num), `לתרנגולת 2 רגליים: ${c} × 2 = ${c * 2}. לכלב 4: ${d} × 4 = ${d * 4}. ביחד ${ans}.`, { kind: 'row', items: [{ many: { e: '🐔', n: c } }, { many: { e: '🐶', n: d } }] })]
   }),

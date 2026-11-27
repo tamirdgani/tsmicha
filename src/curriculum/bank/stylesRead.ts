@@ -5,7 +5,7 @@
 
 import type { Spec } from '../course'
 import type { Show, Tile } from '../lessonTypes'
-import { alike, CATS, LETTER_NAME, LETTERS, LOOKALIKE, SHORT3, WORDS_BY_LETTER, type Pic } from '../kdata'
+import { alike, catsClash, CATS, LETTER_NAME, LETTERS, LOOKALIKE, SHORT3, WORDS_BY_LETTER, type Pic } from '../kdata'
 import { COLOR_HEX, COLOR_F } from '../../worlds/kits'
 import { hero, v } from './ctx'
 import { choices, he, int, match, mix, nice, one, order, pick, some, style, tapall, YES, NO, type R, type Style } from './util'
@@ -162,7 +162,9 @@ export const WORDS_STYLES: Style[] = [
     return [`wdc|${w.w}`, pick(r, `כמה אותיות יש במילה ${w.w}?`, { g: String(n) }, [n - 1, n + 1].map((k) => ({ g: String(k) })), `${plainLetters(w.w).join(' · ')}: ${n} אותיות.`, { kind: 'word', w: w.w })]
   }),
   style('wd-odd', 'מה לא שייך?', ['words', 'grammar'], 't', (_sp, r) => {
-    const [a, b] = some(r, Object.values(CATS), 2), ins = some(r, a.items, 3), out = one(r, b.items.filter((x) => !a.items.some((y) => y.w === x.w)))
+    const [ka, kb] = some(r, Object.keys(CATS), 2)
+    if (catsClash(ka, kb)) return null
+    const a = CATS[ka], b = CATS[kb], ins = some(r, a.items, 3), out = one(r, b.items.filter((x) => !a.items.some((y) => y.w === x.w)))
     if (ins.length < 3 || !out) return null
     return [`wdo|${ins.map((x) => x.w).sort().join()}|${out.w}`, pick(r, 'קוראים את המילים. איזו מילה לא שייכת?', { t: nice(out.w) }, ins.map((x) => ({ t: nice(x.w) })), `${ins.map((x) => nice(x.w)).join(', ')} הם ${a.name}. ${nice(out.w)} לא.`)]
   }),
@@ -195,6 +197,9 @@ const SILLY: [string, boolean][] = [
   ['הגזר כתום', true], ['העננים עשויים מאבן', false], ['תינוק גדול מסבא', false], ['כדור הוא עגול', true],
 ]
 const NUM_M = ['', '', 'שני', 'שלושה', 'ארבעה', 'חמישה']
+const NUM_F = ['', '', 'שתי', 'שלוש', 'ארבע', 'חמש']
+/** "three goats" is שלוש עזים, "three dogs" is שלושה כלבים */
+const numOf = (n: number, m: { f?: boolean }) => (m.f ? NUM_F : NUM_M)[n]
 const MANY: { pl: string; e: string }[] = [{ pl: 'כלבים', e: '🐶' }, { pl: 'פילים', e: '🐘' }, { pl: 'דגים', e: '🐟' }, { pl: 'צבים', e: '🐢' }, { pl: 'ברווזים', e: '🦆' }, { pl: 'ארנבים', e: '🐰' }]
 const actThings = (a: Act) => (a.things.length ? a.things : RIDES)
 const sentence = (r: R) => {
@@ -268,13 +273,13 @@ export const GRAMMAR_STYLES: Style[] = [
   style('gr-plural', 'אחד והרבה', ['grammar'], 'h', (sp, r) => {
     if (!kinds(sp).includes('p')) return null
     const [s, p, e] = one(r, PLURALS), wr = [...new Set([naive(s), naive2(s), s])].filter((x) => x !== p).slice(0, 2)
-    return [`grp|${s}`, pick(r, `אחד: ${s}. הרבה: ?`, { t: p }, wr.map((t) => ({ t })), `אחד ${s}, הרבה ${p}.`, { kind: 'row', items: [{ e }, { e: '➡️' }, { many: { e, n: 3 } }] })]
+    return [`grp|${s}`, pick(r, `יחיד: ${s}. רבים: ?`, { t: p }, wr.map((t) => ({ t })), `יחיד: ${s}. רבים: ${p}.`, { kind: 'row', items: [{ e }, { e: '➡️' }, { many: { e, n: 3 } }] })]
   }),
   style('gr-single', 'מהרבה לאחד', ['grammar'], 't', (sp, r) => {
     if (!kinds(sp).includes('p')) return null
-    const [s, p, e] = one(r, PLURALS), wr = [...new Set([p.replace(/(ים|ות)$/, ''), p.replace(/(ים|ות)$/, 'ה'), p])].filter((x) => x !== s && x.length > 1).slice(0, 2)
+    const [s, p, e] = one(r, PLURALS), wr = [...new Set([p.replace(/(ים|ות)$/, ''), p, p.endsWith('ים') ? p.replace(/ים$/, 'ות') : p.replace(/ות$/, 'ים')])].filter((x) => x !== s && x.length > 1).slice(0, 2)
     if (wr.length < 2) return null
-    return [`grs|${s}`, pick(r, `הרבה: ${p}. אחד: ?`, { t: s }, wr.map((t) => ({ t })), `הרבה ${p}, אחד ${s}.`, { kind: 'tile', tile: { e } })]
+    return [`grs|${s}`, pick(r, `רבים: ${p}. יחיד: ?`, { t: s }, wr.map((t) => ({ t })), `רבים: ${p}. יחיד: ${s}.`, { kind: 'tile', tile: { e } })]
   }),
   style('gr-opp', 'מה ההפך?', ['grammar'], 'h', (sp, r) => {
     if (!kinds(sp).includes('o')) return null
@@ -304,11 +309,11 @@ export const GRAMMAR_STYLES: Style[] = [
 /* ───────── short stories to read and understand ───────── */
 const GO = P('לים 🏖️, לפארק 🌳, לגן־החיות 🦒, להר ⛰️, לחווה 🐄')
 /** Who you might see in each place. */
-const SEEN_AT: Record<string, { pl: string; e: string }[]> = {
+const SEEN_AT: Record<string, { pl: string; e: string; f?: boolean }[]> = {
   'לים': [{ pl: 'דגים', e: '🐟' }, { pl: 'סרטנים', e: '🦀' }, { pl: 'שחפים', e: '🐦' }],
   'לפארק': [{ pl: 'כלבים', e: '🐶' }, { pl: 'ברווזים', e: '🦆' }, { pl: 'פרפרים', e: '🦋' }],
   'לגן־החיות': [{ pl: 'פילים', e: '🐘' }, { pl: 'קופים', e: '🐵' }, { pl: 'אריות', e: '🦁' }],
-  'להר': [{ pl: 'ציפורים', e: '🐦' }, { pl: 'עזים', e: '🐐' }, { pl: 'פרפרים', e: '🦋' }],
+  'להר': [{ pl: 'ציפורים', e: '🐦', f: true }, { pl: 'עזים', e: '🐐', f: true }, { pl: 'פרפרים', e: '🦋' }],
   'לחווה': [{ pl: 'סוסים', e: '🐴' }, { pl: 'ברווזים', e: '🦆' }, { pl: 'ארנבים', e: '🐰' }],
 }
 const WITH = P('אמא 👩, סבא 👴, הכלב 🐶, סבתא 👵, אבא 👨')
@@ -318,7 +323,7 @@ function tale(r: R) {
   const h = hero(r), go = one(r, GO), wi = one(r, WITH.filter((x) => !(go.w.includes('חיות') && x.w === 'הכלב'))), m = one(r, SEEN_AT[go.w] ?? MANY), n = int(r, 2, 5), fd = one(r, FOUND), c = one(r, COLS)
   const color = fd.f ? COLOR_F[c] : c
   const sawFirst = r() < 0.5
-  const saw = `${v(h, 'הוא ראה', 'היא ראתה')} ${NUM_M[n]} ${m.pl}`, found = `${v(h, 'הוא מצא', 'היא מצאה')} ${fd.w} ${color}`
+  const saw = `${v(h, 'הוא ראה', 'היא ראתה')} ${numOf(n, m)} ${m.pl}`, found = `${v(h, 'הוא מצא', 'היא מצאה')} ${fd.w} ${color}`
   const text = `${h.n} ${v(h, 'הלך', 'הלכה')} ${nice(go.w)} עם ${wi.w}. ${sawFirst ? `שם ${saw}. אחר כך ${found}.` : `קודם ${found}. אחר כך ${saw}.`}`
   return { h, go, wi, m, n, fd, c, text, sawFirst, key: `${h.n}|${go.w}|${wi.w}|${m.pl}${n}|${fd.w}${c}|${sawFirst}` }
 }
@@ -333,7 +338,7 @@ export const READING_STYLES: Style[] = [
   }),
   style('rc-many', 'כמה?', ['reading'], 't', (_sp, r) => {
     const t = tale(r)
-    return [`rcn|${t.key}`, pick(r, `כמה ${t.m.pl} ${v(t.h, 'ראה', 'ראתה')} ${t.h.n}?`, { g: String(t.n) }, [2, 3, 4, 5].filter((x) => x !== t.n).slice(0, 2).map((x) => ({ g: String(x) })), `כתוב "${NUM_M[t.n]} ${t.m.pl}": זה ${t.n}.`, txt(t.text))]
+    return [`rcn|${t.key}`, pick(r, `כמה ${t.m.pl} ${v(t.h, 'ראה', 'ראתה')} ${t.h.n}?`, { g: String(t.n) }, [2, 3, 4, 5].filter((x) => x !== t.n).slice(0, 2).map((x) => ({ g: String(x) })), `כתוב "${numOf(t.n, t.m)} ${t.m.pl}": זה ${t.n}.`, txt(t.text))]
   }),
   style('rc-color', 'באיזה צבע?', ['reading'], 't', (_sp, r) => {
     const t = tale(r), o = some(r, COLS.filter((x) => x !== t.c), 2)

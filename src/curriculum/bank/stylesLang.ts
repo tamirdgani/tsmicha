@@ -163,7 +163,7 @@ export const FIRST_STYLES: Style[] = [
 export const SYLL_STYLES: Style[] = [
   style('sy-clap', 'כמה מחיאות כפיים?', ['syll'], 'e', (sp, r) => {
     const w = one(r, SYLL.filter((x) => (sp.hard ? true : x.n <= 3)))
-    return [`sy-clap|${w.w}`, pick(r, `כמה מחיאות כפיים במילה "${w.w}"? מוחאים יחד!`, { g: String(w.n), t: '👏'.repeat(w.n) }, some(r, [1, 2, 3, 4].filter((k) => k !== w.n), 2).map((k) => ({ g: String(k), t: '👏'.repeat(k) })), `${w.w}: ${w.n} מחיאות כפיים.`, { kind: 'tile', tile: picTile(w) })]
+    return [`sy-clap|${w.w}`, pick(r, `כמה מחיאות כפיים במילה "${w.w}"? מוחאים יחד!`, { g: String(w.n), t: '👏'.repeat(w.n) }, some(r, [1, 2, 3, 4].filter((k) => k !== w.n), 2).map((k) => ({ g: String(k), t: '👏'.repeat(k) })), `${w.w}: ${w.n === 1 ? 'מחיאת כף אחת' : `${w.n} מחיאות כפיים`}.`, { kind: 'tile', tile: picTile(w) })]
   }),
   style('sy-long', 'המילה הכי ארוכה', ['syll'], 't', (_sp, r) => {
     let ws = some(r, SYLL, 3); while (new Set(ws.map((w) => w.n)).size < 3) ws = some(r, SYLL, 3)
