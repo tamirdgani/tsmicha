@@ -323,7 +323,9 @@ export const BIG_STYLES: Style[] = [
     return [`bnb|${n}`, pick(r, `איזה מספר בא מיד לפני ${n}?`, num(n - 1), wrongs(r, n - 1, 3, [n + 1, n - 10]).map(num), `${n} פחות 1 זה ${n - 1}.`, expr(`?, ${n}`))]
   }),
   style('bn-compare', 'גדול, קטן או שווה', ['bignum'], 'h', (sp, r) => {
-    const a = bnum(sp, r), b = r() < 0.15 ? a : r() < 0.5 && a >= 10 ? Number(String(a).split('').reverse().join('')) || a + 1 : bnum(sp, r)
+    // the swapped-digits trap (47 vs 74) only when the swap stays inside the lesson's numbers
+    const a = bnum(sp, r), rev = Number(String(a).split('').reverse().join(''))
+    const b = r() < 0.15 ? a : r() < 0.5 && a >= 10 && rev && rev <= top(sp) ? rev : bnum(sp, r)
     const sign = a > b ? '>' : a < b ? '<' : '='
     return [`bnc|${a}|${b}`, pick(r, 'איזה סימן מתאים?', { g: sign }, ['>', '<', '='].filter((x) => x !== sign).map((g) => ({ g })), sign === '=' ? `${a} ו־${b} שווים.` : `${Math.max(a, b)} גדול מ־${Math.min(a, b)}. הפה של התנין פתוח אל המספר הגדול.`, expr(`${a} ? ${b}`))]
   }),

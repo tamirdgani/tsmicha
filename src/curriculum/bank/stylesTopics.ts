@@ -228,7 +228,7 @@ export const GRAPH_STYLES: Style[] = [
 export const QUICK_STYLES: Style[] = [
   style('qk-dice', 'כמה נקודות?', ['quick', 'count'], 'e', (_sp, r) => {
     const n = int(r, 2, 6)
-    return [`qkd|${n}`, pick(r, 'כמה נקודות? מנסים לראות בלי לספור!', num(n), wrongs(r, n, 2).filter((k) => k > 0 && k <= 6).map(num), `זאת הצורה של ${n} בקובייה.`, tile({ dice: [n] }))]
+    return [`qkd|${n}`, pick(r, 'כמה נקודות? מנסים לראות בלי לספור!', num(n), [...new Set([...wrongs(r, n, 2), n - 1, n + 1, n - 2])].filter((k) => k > 0 && k <= 6 && k !== n).slice(0, 2).map(num), `זאת הצורה של ${n} בקובייה.`, tile({ dice: [n] }))]
   }),
   style('qk-dice2', 'שתי קוביות', ['quick', 'add'], 'h', (_sp, r) => {
     const a = int(r, 1, 6), b = int(r, 1, 6)
