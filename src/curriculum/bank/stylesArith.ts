@@ -115,7 +115,7 @@ export const PLUS_STYLES: Style[] = [
     return [`pl|${a}+${b}`, pick(r, one(r, ['כמה זה?', 'כמה יוצא?', 'מה התשובה?']), num(s), wrongs(r, s, 3, [Math.abs(a - b)]).map(num), howPlus(a, b), expr(`${a} + ${b} = ?`))]
   }),
   style('pl-hard', 'חיבור בראש', ['plus'], 'h', (sp, r) => {
-    const [a, b] = addPair({ ...sp, hard: top(sp) > 10 ? true : sp.hard }, r), s = a + b
+    const [a, b] = addPair({ ...sp, hard: top(sp) > 10 && top(sp) <= 20 ? true : sp.hard }, r), s = a + b
     return [`pl|${a}+${b}`, pick(r, 'פותרים בראש. כמה זה?', num(s), wrongs(r, s, 3, [s - 10, s + 10]).map(num), howPlus(a, b), expr(`${a} + ${b} = ?`))]
   }),
   style('pl-missing', 'מה חסר בתרגיל?', ['plus'], 't', (sp, r) => {
@@ -187,7 +187,7 @@ export const MINUS_STYLES: Style[] = [
     return [`mi|${a}-${b}`, pick(r, one(r, ['כמה זה?', 'כמה נשאר?', 'מה התשובה?']), num(d), wrongs(r, d, 3, [a + b > 1000 ? d + 1 : a + b].slice(0, 1)).map(num), howMinus(a, b), expr(`${a} ${M} ${b} = ?`))]
   }),
   style('mi-hard', 'חיסור בראש', ['minus'], 'h', (sp, r) => {
-    const [a, b] = subPair({ ...sp, hard: top(sp) > 10 ? true : sp.hard }, r), d = a - b
+    const [a, b] = subPair({ ...sp, hard: top(sp) > 10 && top(sp) <= 20 ? true : sp.hard }, r), d = a - b
     return [`mi|${a}-${b}`, pick(r, 'פותרים בראש. כמה זה?', num(d), wrongs(r, d, 3, [d + 10, d - 10]).map(num), howMinus(a, b), expr(`${a} ${M} ${b} = ?`))]
   }),
   style('mi-missing', 'מה חסר בתרגיל?', ['minus'], 't', (sp, r) => {
@@ -384,7 +384,7 @@ export const BIG_STYLES: Style[] = [
     return [`bne|${want}|${all.sort().join()}`, tapall(r, want ? 'מסמנים את כל המספרים הזוגיים' : 'מסמנים את כל המספרים האי־זוגיים', (want ? ev : od).map(num), (want ? od : ev).map(num), 'מסתכלים רק על ספרת האחדות: 0, 2, 4, 6, 8 זה זוגי. 1, 3, 5, 7, 9 אי־זוגי.')]
   }),
   style('bn-digits', 'בונים מהספרות', ['bignum'], 't', (sp, r) => {
-    if (top(sp) < 100) return null
+    if (top(sp) <= 100) return null // three digits: second grade
     const ds = some(r, [1, 2, 3, 4, 5, 6, 7, 8, 9], 3), big = r() < 0.5
     const sorted = [...ds].sort((a, b) => (big ? b - a : a - b)), ans = Number(sorted.join(''))
     const others = [Number(ds.join('')), Number([...sorted].reverse().join('')), Number([sorted[0], sorted[2], sorted[1]].join(''))].filter((x) => x !== ans)

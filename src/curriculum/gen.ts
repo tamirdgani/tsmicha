@@ -31,8 +31,15 @@ let LEVELS = LEVELS_PRE
 const byTopic = new Map<Topic, Style[]>()
 for (const st of STYLES) for (const t of st.skills) byTopic.set(t, [...(byTopic.get(t) ?? []), st])
 
-type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage; how: Set<string>; unit: string; unitFacts: Set<string> }
-let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k', how: new Set(), unit: '', unitFacts: new Set() }
+type Year = { used: Set<string>; last: Map<string, number>; facts: Map<string, number>; lesson: number; relaxed: number; kit?: Kit; kitByTopic: Map<Topic, Style[]>; stage: Stage; how: Set<string>; unit: string; unitFacts: Set<string>; taught: Set<Topic>; letters: Set<string> }
+let YEAR: Year = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kitByTopic: new Map(), stage: 'k', how: new Set(), unit: '', unitFacts: new Set(), taught: new Set(), letters: new Set() }
+
+/** Topics a question can't lean on before they're taught: a story about change waits for the coins lesson. */
+const GATED: Topic[] = ['clock', 'money', 'times', 'divide', 'fraction']
+/** Styles that use a gated topic without being tagged with it. */
+const NEEDS: Record<string, Topic[]> = { 'wp-money': ['money'], 'wp-time': ['clock'], 'wp-legs': ['times'], 'wp-mix': ['times'] }
+/** What earlier years already taught. */
+const TAUGHT_BEFORE: Record<Stage, Topic[]> = { pre: [], k: [], g1: [], g2: ['clock', 'money', 'fraction', 'times'] }
 
 /** What was chosen where (for scripts/check-lessons.ts). */
 export const GEN_LOG: { node: string; style: string; topic: Topic; pass: number }[] = []
@@ -43,6 +50,18 @@ type Ctx = { r: R; specs: Spec[]; inLesson: Map<string, number>; inPart: Set<str
 /** Picture riddles that don't teach the lesson's topic. */
 const FILLER = new Set(['k-shadow', 'k-peek', 'k-upside', 'k-shadow-match', 'k-color-tf', 'k-color-shadow', 'rd-shadow', 'rd-shadows', 'rd-peek', 'rd-spot', 'rd-upside'])
 
+const HEB = /^[\u05d0-\u05ea]$/
+/** The biggest number a card may show: pre-K counts to 10, first grade works to 100. */
+const CAP: Partial<Record<Stage, number>> = { pre: 10, g1: 100 }
+/** Nothing on the cards the child hasn't learned yet: a letter before its lesson, or (in pre-K) a number past 10. */
+function known(step: Step): boolean {
+  for (const [, g] of JSON.stringify(step).matchAll(/"g":"([^"]*)"/g)) {
+    if (HEB.test(g) && !YEAR.letters.has(g)) return false
+    if (/^\d+$/.test(g) && Number(g) > (CAP[YEAR.stage] ?? Infinity)) return false
+  }
+  return true
+}
+
 /** Tries a style a few times for a question nobody has seen yet. */
 function attempt(st: Style, sp: Spec, r: R, allowSeen = false): Step | null {
   for (let i = 0; i < 40; i++) {
@@ -50,7 +69,7 @@ function attempt(st: Style, sp: Spec, r: R, allowSeen = false): Step | null {
     if (!made) return null
     const [key, step] = made
     const sig = signature(step)
-    if (allowSeen || (!YEAR.used.has(key) && !YEAR.used.has(sig))) { YEAR.used.add(key); YEAR.used.add(sig); return step }
+    if ((allowSeen || (!YEAR.used.has(key) && !YEAR.used.has(sig))) && (known(step) || (allowSeen && i === 39))) { YEAR.used.add(key); YEAR.used.add(sig); return step }
   }
   return null
 }
@@ -70,7 +89,7 @@ const FAMILY: Partial<Record<Skill, Skill[]>> = {
   graph: ['moreless', 'minus'], quick: ['count', 'add'], phon: ['firstsound', 'syll'],
 }
 /** Skills whose `set` isn't a set of letters (vowels, grammar kinds, skip steps): never hand it to a letter style. */
-const OWN_SET: Skill[] = ['nikud', 'grammar', 'skip', 'clock', 'measure']
+const OWN_SET: Skill[] = ['nikud', 'grammar', 'skip', 'clock', 'measure', 'fraction']
 const SCHOOL: Skill[] = ['plus', 'minus', 'times', 'divide', 'bignum', 'skip', 'wordprob', 'nikud', 'finals', 'words', 'sentence', 'grammar', 'reading', 'clock', 'money', 'fraction', 'measure', 'geometry', 'graph', 'quick', 'phon']
 const LETTER_SET: Skill[] = ['letters', 'lettersound', 'trace']
 
@@ -99,6 +118,8 @@ function ask(slot: Slot, c: Ctx): Step {
   const only = slot.spec.only
   // …and then the lesson's other own-topic styles stay out ("which got the most?" isn't followed by a sum to 19)
   const ownOk = (st: Style) => !only || only.includes(st.id)
+  // nothing from a topic the child hasn't met yet (the lesson's own topics count as met)
+  const taughtOk = (st: Style) => [...st.skills.filter((t) => GATED.includes(t)), ...(NEEDS[st.id] ?? [])].every((t) => t === slot.topic || YEAR.taught.has(t) || c.specs.some((s) => s.s === t))
   // the lesson stays on its own topic: its own styles (even a second time) come before borrowing from neighbours
   const passes: Style[][] = [
     only ? pool([slot.topic]).filter((st) => only.includes(st.id) && (c.inLesson.get(st.id) ?? 0) < 3) : [],
@@ -116,7 +137,7 @@ function ask(slot: Slot, c: Ctx): Step {
   // shadows, peeks and upside-down pictures are a nice surprise, not the lesson: one per lesson (two in pre-K)
   const fillerOk = (st: Style) => !FILLER.has(st.id) || (!c.test && c.filler < (YEAR.stage === 'pre' ? 2 : YEAR.stage === 'k' ? 1 : 0))
   for (const [pass, all] of passes.entries()) {
-    const candidates = pass < passes.length - 1 ? all.filter((st) => grownUp(st) && fillerOk(st)) : all
+    const candidates = (pass < passes.length - 1 ? all.filter((st) => grownUp(st) && fillerOk(st)) : all).filter(taughtOk)
     // the style that waited longest goes first; ties are broken at random
     const ranked = mix(c.r, candidates).sort((a, b) => (YEAR.last.get(a.id) ?? -1) - (YEAR.last.get(b.id) ?? -1))
     for (const st of ranked) {
@@ -266,6 +287,8 @@ const NUMBER_SKILLS: Skill[] = ['count', 'numrec', 'moreless', 'numorder', 'add'
 
 function family(specs: Spec[]): { kind: 'letters'; set: string } | { kind: 'numbers'; max: number } | { kind: 'other'; spec: Spec } {
   const lettersSet = specs.filter((x) => LETTER_SKILLS.includes(x.s) || (x.s === 'trace' && !/\d/.test(x.set ?? ''))).map((x) => (x.s === 'letters' || x.s === 'lettersound' || x.s === 'trace' ? x.set ?? LETTERS : LETTERS)).join('')
+    // a sounds lesson isn't about letters: it lends only the ones the child already knows
+    .split('').filter((g) => YEAR.letters.has(g)).join('')
   if (lettersSet) return { kind: 'letters', set: [...new Set(lettersSet)].join('') }
   const nums = specs.filter((x) => NUMBER_SKILLS.includes(x.s) || (x.s === 'trace' && /\d/.test(x.set ?? '')))
   if (nums.length) return { kind: 'numbers', max: Math.max(5, ...nums.map((x) => x.max ?? 5)) }
@@ -305,8 +328,11 @@ function memoryGame(unit: number, specs: Spec[], r: R): MemoryStep {
   }
   if (f.kind === 'letters') {
     const ls: string[] = []
-    for (const l of mix(r, [...f.set, ...LETTERS])) { if (ls.length >= n) break; if (WORDS_BY_LETTER[l] && !ls.some((x) => alike(x, l))) ls.push(l) }
-    return { kind: 'memory', title: he('זיכרון: אות ותמונה'), pairs: ls.map((l) => [{ g: l }, picTile(one(r, WORDS_BY_LETTER[l]))]) }
+    // only letters the child has met (the first lessons know two or three: that's too few for a game)
+    for (const l of mix(r, [...f.set, ...mix(r, [...YEAR.letters])])) { if (ls.length >= n) break; if (WORDS_BY_LETTER[l] && !ls.includes(l) && !ls.some((x) => alike(x, l))) ls.push(l) }
+    if (ls.length >= 3) return { kind: 'memory', title: he('זיכרון: אות ותמונה'), pairs: ls.map((l) => [{ g: l }, picTile(one(r, WORDS_BY_LETTER[l]))]) }
+    if (kit) return { kind: 'memory', title: he(`זיכרון: ${kit.title}`), pairs: kitMemory(kit, r, n) }
+    return { kind: 'memory', title: he('זיכרון: מה הולך ביחד?'), pairs: some(r, ANALOGIES, n).map(([a, b]) => [picTile(a), picTile(b)]) }
   }
   const s = f.spec.s
   if (s === 'colors') return { kind: 'memory', title: he('זיכרון: צבע ותמונה'), pairs: some(r, COLORS, n).map((c) => [{ shape: 'circle', color: c.c }, { e: one(r, c.e) }]) }
@@ -347,10 +373,16 @@ export function buildYear(nodes: PathNode[], world?: WorldId, stage: Stage = 'k'
   CURVE = stage === 'pre' ? CURVE_PRE : CURVE_SCHOOL
   const kitByTopic = new Map<Topic, Style[]>()
   if (kit) for (const st of kitStyles(kit)) for (const t of st.skills) kitByTopic.set(t, [...(kitByTopic.get(t) ?? []), st])
-  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage, how: new Set(), unit: '', unitFacts: new Set() }
+  YEAR = { used: new Set(), last: new Map(), facts: new Map(), lesson: 0, relaxed: 0, kit, kitByTopic, stage, how: new Set(), unit: '', unitFacts: new Set(), taught: new Set(TAUGHT_BEFORE[stage]), letters: new Set(stage === 'g1' || stage === 'g2' ? LETTERS : '') }
   const out: Record<string, Lesson> = {}
   GEN_LOG.length = 0
-  for (const n of nodes) { NODE = n.id; out[n.id] = buildLesson(n); YEAR.lesson++ }
+  for (const n of nodes) {
+    NODE = n.id
+    // what this lesson teaches counts as known from its first question
+    for (const sp of n.specs) { YEAR.taught.add(sp.s as Topic); if (LETTER_SET.includes(sp.s) && sp.set) for (const g of sp.set) YEAR.letters.add(g) }
+    out[n.id] = buildLesson(n)
+    YEAR.lesson++
+  }
   if (YEAR.relaxed && import.meta.env?.DEV) console.warn(`[gen] ${YEAR.relaxed} questions had to repeat`)
   return out
 }
@@ -362,7 +394,8 @@ function buildLesson(node: PathNode): Lesson {
   if (unitId !== YEAR.unit) { YEAR.unit = unitId; YEAR.unitFacts = new Set() }
   const base = node.specs.length ? node.specs : [{ s: 'count' as Skill }]
   // the chapter challenge is harder than a lesson: every skill at its hard end, thinking questions throughout
-  const specs = node.kind === 'test' ? base.map((x) => ({ ...x, hard: true })) : base
+  // …except carrying and borrowing past 20: a chapter that didn't teach them doesn't test them
+  const specs = node.kind === 'test' ? base.map((x) => ({ ...x, hard: x.hard || !(CALC.includes(x.s) && (x.max ?? 10) > 20) })) : base
   const isMix = node.kind !== 'lesson'
   const riddles = YEAR.stage === 'pre' ? RIDDLE_AT : RIDDLE_AT.slice(0, 1)
   let turn = int(r, 0, specs.length - 1)
@@ -395,7 +428,8 @@ function buildLesson(node: PathNode): Lesson {
     ctx.inPart = new Set()
     for (let i = 0; i < count; i++) {
       const sp = specs[turn++ % specs.length]
-      const riddle = riddles.some(([pd, pi]) => pd === d && pi === i)
+      // the chapter challenge tests the chapter: no riddle in the middle of it
+      const riddle = node.kind !== 'test' && riddles.some(([pd, pi]) => pd === d && pi === i)
       if (sp.s === 'trace' && !riddle) { steps.push(trace(sp, r, traced)); continue }
       steps.push(ask({ topic: riddle ? 'riddle' : sp.s, level: node.kind === 'test' ? 3 : CURVE[d][i] ?? 2, spec: sp }, ctx))
     }

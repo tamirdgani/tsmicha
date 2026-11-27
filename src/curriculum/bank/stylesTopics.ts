@@ -111,23 +111,27 @@ export const MONEY_STYLES: Style[] = [
 /* ───────── fractions ───────── */
 const FR_NAME: Record<string, string> = { '1/2': 'חצי', '1/4': 'רבע', '1/3': 'שליש', '3/4': 'שלושה רבעים', '2/3': 'שני שלישים', '2/4': 'חצי' }
 const FRACS: [number, number][] = [[1, 2], [1, 4], [1, 3], [3, 4], [2, 3]]
+/** Which parts the lesson teaches: `set` '24' (first grade: halves and quarters) or '234' (second grade adds thirds). */
+const dens = (sp: Spec) => [...(sp.set ?? '24')].map(Number)
+const frName = (d: number) => (d === 2 ? 'חצי' : d === 4 ? 'רבע' : 'שליש')
 export const FRACTION_STYLES: Style[] = [
-  style('fr-name', 'איזה חלק?', ['fraction'], 'e', (_sp, r) => {
-    const [n, d] = one(r, FRACS), kind = one(r, ['pie', 'bar'] as const), name = FR_NAME[`${n}/${d}`]
-    const o = some(r, [...new Set(Object.values(FR_NAME))].filter((x) => x !== name), 2)
+  style('fr-name', 'איזה חלק?', ['fraction'], 'e', (sp, r) => {
+    const ok = FRACS.filter(([, d]) => dens(sp).includes(d))
+    const [n, d] = one(r, ok), kind = one(r, ['pie', 'bar'] as const), name = FR_NAME[`${n}/${d}`]
+    const o = some(r, [...new Set(ok.map(([a, b]) => FR_NAME[`${a}/${b}`]))].filter((x) => x !== name), 2)
     return [`frn|${n}/${d}|${kind}`, pick(r, 'איזה חלק צבוע?', { t: name }, o.map((t) => ({ t })), `חילקו ל־${d} חלקים שווים, וצבעו ${n === 1 ? 'אחד' : n}: ${name}.`, tile({ frac: [n, d, kind] }))]
   }),
-  style('fr-equal', 'חלקים שווים', ['fraction'], 'h', (_sp, r) => {
-    const d = one(r, [2, 4, 3]), name = d === 2 ? 'חצי' : d === 4 ? 'רבע' : 'שליש', kind = one(r, ['pie', 'bar'] as const)
-    return [`fre|${d}|${kind}`, pick(r, `באיזו תמונה צבוע ${name} באמת?`, { frac: [1, d, kind] }, [{ frac: [1, d, kind, true] }, { frac: [1, d === 2 ? 3 : 2, kind] }], `${name} זה רק כשכל החלקים שווים בגודל.`)]
+  style('fr-equal', 'חלקים שווים', ['fraction'], 'h', (sp, r) => {
+    const d = one(r, dens(sp)), name = frName(d), kind = one(r, ['pie', 'bar'] as const)
+    return [`fre|${d}|${kind}`, pick(r, `באיזו תמונה צבוע ${name} באמת?`, { frac: [1, d, kind] }, [{ frac: [1, d, kind, true] }, { frac: [1, d === 2 ? one(r, dens(sp).filter((x) => x !== 2)) : 2, kind] }], `${name} זה רק כשכל החלקים שווים בגודל.`)]
   }),
-  style('fr-of', 'חצי מ...', ['fraction'], 't', (_sp, r) => {
-    const d = one(r, [2, 2, 4, 3]), k = int(r, 2, 4), total = d * k, name = d === 2 ? 'חצי' : d === 4 ? 'רבע' : 'שליש'
+  style('fr-of', 'חצי מ...', ['fraction'], 't', (sp, r) => {
+    const d = one(r, [2, ...dens(sp)]), k = int(r, 2, 4), total = d * k, name = frName(d)
     const e = one(r, ['🍪', '🍓', '🎈', '⭐'])
     return [`fro|${d}|${total}`, pick(r, `כמה זה ${name} מ־${total}?`, num(k), wrongs(r, k, 3, [total - k, d]).filter((x) => x > 0).map(num), `מחלקים ${total} ל־${d} קבוצות שוות: בכל קבוצה ${k}.`, { kind: 'pile', e, n: total })]
   }),
-  style('fr-bigger', 'מה יותר?', ['fraction'], 't', (_sp, r) => {
-    const [a, b] = one(r, [[[1, 2], [1, 4]], [[1, 2], [1, 3]], [[1, 3], [1, 4]], [[3, 4], [1, 2]]] as [number, number][][])
+  style('fr-bigger', 'מה יותר?', ['fraction'], 't', (sp, r) => {
+    const [a, b] = one(r, ([[[1, 2], [1, 4]], [[1, 2], [1, 3]], [[1, 3], [1, 4]], [[3, 4], [1, 2]]] as [number, number][][]).filter((pr) => pr.every(([, d]) => dens(sp).includes(d))))
     const flip = r() < 0.5
     return [`frb|${a.join('/')}|${b.join('/')}|${flip}`, pick(r, `מה יותר פיצה: ${FR_NAME[a.join('/')]} או ${FR_NAME[b.join('/')]}?`, { frac: [a[0], a[1], 'pie'], t: FR_NAME[a.join('/')] }, [{ frac: [b[0], b[1], 'pie'], t: FR_NAME[b.join('/')] }], a[0] === 1 && b[0] === 1 ? 'כשמחלקים לפחות חלקים, כל חלק גדול יותר!' : `${FR_NAME[a.join('/')]} זה יותר מחצי פיצה.`)]
   }),
@@ -267,7 +271,7 @@ export const PHON_STYLES: Style[] = [
 /* ───────── mixed operations (second grade) ───────── */
 export const MIXED_STYLES: Style[] = [
   style('wp-mix', 'כפל וחיבור', ['wordprob', 'times'], 't', (sp, r) => {
-    if ((sp.max ?? 10) < 100 && sp.s !== 'times') return null
+    if ((sp.max ?? 10) <= 100 && sp.s !== 'times') return null
     const packs = int(r, 2, 5), per = int(r, 3, 8), gone = int(r, 2, per), h = hero(r)
     const total = packs * per, ans = total - gone
     const thing = one(r, [['חבילות', 'ביצים', 'נשברו'], ['קופסאות', 'עוגיות', 'נאכלו'], ['שקיות', 'תפוחים', 'נפלו']])
